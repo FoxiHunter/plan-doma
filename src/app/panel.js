@@ -292,7 +292,13 @@ function syncTools() {
   document.querySelectorAll("#rail [data-g], #gmodes [data-g]").forEach(b => b.setAttribute("aria-pressed", String(!tool && b.dataset.g === gmode)));
   document.body.classList.toggle("placing", !!tool);
   const ht = $("#hint");
-  if (ht) ht.textContent = hintText();
+  const txt = hintText();
+  if (ht && ht.textContent !== txt) {
+    ht.textContent = txt;
+    ht.classList.add("show");
+    clearTimeout(ht.hideT);
+    ht.hideT = setTimeout(() => ht.classList.remove("show"), 8000);
+  }
   const t3 = $("#toolchip");
   if (t3) {
     const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
@@ -969,9 +975,9 @@ document.querySelectorAll("#rail [data-tool]").forEach(b => b.addEventListener("
   else if (t === "room") setTool(tool && tool.t === "room" ? null : {t: "room"});
   else if (t === "catalog") {
     UIP.ptab = "cat";
+    if (!UIP.side) setSide(true);
     saveUI();
     renderPanel();
-    if (window.innerWidth < 1150) $(".side").scrollIntoView({behavior: "smooth", block: "start"});
   } else if (t === "person") setTool(tool && tool.t === "thing" && tool.kind === "person" ? null : {t: "thing", kind: "person"});
   else setTool(tool && tool.t === "open" && tool.kind === t ? null : {t: "open", kind: t});
 }));
@@ -1113,7 +1119,7 @@ function tipShow(t) {
   const r = t.getBoundingClientRect();
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  const side = t.closest("#rail") && window.innerWidth > 640;
+  const side = t.closest("#rail") && window.innerWidth > 700;
   let x;
   let y;
   if (side) {
@@ -1155,6 +1161,61 @@ function tipsInit() {
   document.addEventListener("keydown", tipHide, true);
   document.addEventListener("wheel", tipHide, {passive: true, capture: true});
   window.addEventListener("blur", tipHide);
+}
+
+const ICON_MOON = `<svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
+const ICON_SUN = `<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>`;
+
+function themeNow() {
+  if (UIP.theme === "light" || UIP.theme === "dark") return UIP.theme;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  if (UIP.theme === "light" || UIP.theme === "dark") root.dataset.theme = UIP.theme;
+  else delete root.dataset.theme;
+  const ts = $("#themesel");
+  if (ts) ts.value = UIP.theme;
+  const tb = $("#theme");
+  if (tb) {
+    const dark = themeNow() === "dark";
+    tb.innerHTML = dark ? ICON_SUN : ICON_MOON;
+    tb.dataset.tip = dark ? "Светлая тема" : "Тёмная тема";
+  }
+}
+
+function setSide(on, quiet) {
+  UIP.side = !!on;
+  const app = $("#app");
+  if (app) app.classList.toggle("side-off", !UIP.side);
+  const b = $("#sidebtn");
+  if (b) b.setAttribute("aria-pressed", String(UIP.side));
+  if (!quiet) saveUI();
+  setTimeout(() => {
+    frozen = null;
+    render2D();
+    size3D();
+  }, 280);
+}
+
+$("#theme").addEventListener("click", () => {
+  UIP.theme = themeNow() === "dark" ? "light" : "dark";
+  applyTheme();
+  saveUI();
+});
+
+$("#themesel").addEventListener("change", e => {
+  UIP.theme = ["light", "dark"].includes(e.target.value) ? e.target.value : "auto";
+  applyTheme();
+  saveUI();
+});
+
+$("#sidebtn").addEventListener("click", () => setSide(!UIP.side));
+
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", applyTheme);
 }
 
 tipsInit();

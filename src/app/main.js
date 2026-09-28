@@ -18,6 +18,8 @@
         RF.max = QUALITY[ui.q][1];
       }
       if (has(LAMP_MODES, ui.lights)) LAMP.mode = ui.lights;
+      if (["auto", "light", "dark"].includes(ui.theme)) UIP.theme = ui.theme;
+      if (typeof ui.side === "boolean" && window.innerWidth > 1000) UIP.side = ui.side;
       if (ui.sky && typeof ui.sky === "object") {
         const k = ui.sky;
         if (k.m >= 1 && k.m <= 12) SKY.m = Math.round(k.m);
@@ -39,6 +41,8 @@
     view = window.innerWidth < 1000 ? "2d" : "split";
   }
   $("#views").className = "views v-" + view;
+  applyTheme();
+  setSide(UIP.side, true);
   const pl = $("#presets");
   if (pl) pl.innerHTML = Object.entries(PRESETS).map(([key, v]) => `<button type="button" data-m="preset:${key}">${esc(v[0])}<small></small></button>`).join("");
   const had = loadLocal();

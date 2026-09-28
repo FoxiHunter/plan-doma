@@ -604,6 +604,28 @@ function syncSkyUI() {
   const pp = $("#skpath");
   if (pp) pp.setAttribute("aria-pressed", String(SKY.path));
   if (tl && st) tl.dataset.tip = st.alt > -0.833 ? `Солнце ${Math.round(st.alt)}° над горизонтом, ${compassName(st.az * 180 / Math.PI)}` : "Солнце за горизонтом";
+  dayStrip();
+}
+
+function dayStrip() {
+  const site = S.site || siteDefault();
+  const key = [SKY.m, SKY.d, site.lat, site.lon, site.tz].join("|");
+  if (SKY.stripKey === key) return;
+  SKY.stripKey = key;
+  const dy = daySun(SKY.m, SKY.d);
+  const sl = $("#skt");
+  const lb = $("#skday");
+  const N = "#1b2440";
+  const pc = t => (clamp(t, 0, 1440) / 14.4).toFixed(2) + "%";
+  let g;
+  if (dy.rise === null && dy.set === null) g = dy.top > 0 ? "linear-gradient(90deg, #8fd0ff, #8fd0ff)" : `linear-gradient(90deg, ${N}, ${N})`;
+  else {
+    const r = dy.rise === null ? 0 : dy.rise;
+    const e = dy.set === null ? 1440 : dy.set;
+    g = `linear-gradient(90deg, ${N} ${pc(r - 50)}, #f59e0b ${pc(r)}, #8fd0ff ${pc(r + 110)}, #8fd0ff ${pc(e - 110)}, #f97316 ${pc(e)}, ${N} ${pc(e + 50)})`;
+  }
+  if (sl) sl.style.setProperty("--daygrad", g);
+  if (lb) lb.textContent = dy.rise === null && dy.set === null ? (dy.top > 0 ? "полярный день" : "полярная ночь") : `↑${dy.rise === null ? "нет" : hm(dy.rise)} ↓${dy.set === null ? "нет" : hm(dy.set)}`;
 }
 
 function skySet(p) {

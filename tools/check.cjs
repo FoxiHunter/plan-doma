@@ -309,6 +309,13 @@ setTimeout(() => {
   });
   test("ползунок двери открывает её, галочка комнаты открывает зону", () => run(`(() => { S = presetExample(); const d = S.doors.find(x => x.kind === 'door'); sel = {t: 'door', id: d.id}; const el = document.createElement('input'); el.type = 'range'; el.dataset.b = 'sel.open'; el.value = '50'; applyBind(el); const r = S.rooms[0]; sel = {t: 'room', id: r.id}; const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.b = 'sel.open'; cb.checked = true; applyBind(cb); sel = null; return d.open === 0.5 && r.open === true; })()`));
   test("в каталоге больше сотни моделей, у каждой есть категория", () => run("Object.keys(MODELS).length > 100 && Object.values(MODELS).every(m => CATS.some(c => c[0] === m.cat))"));
+  test("тема переключается, панель сворачивается, всё сохраняется", () => {
+    run("UIP.theme = 'dark'; applyTheme(); setSide(false); saveUI();");
+    const ui = JSON.parse(w.localStorage.getItem("house-plan-ui") || "{}");
+    const ok = d.documentElement.dataset.theme === "dark" && d.getElementById("app").classList.contains("side-off") && ui.theme === "dark" && ui.side === false;
+    run("UIP.theme = 'auto'; applyTheme(); setSide(true); saveUI();");
+    return ok && !d.documentElement.dataset.theme && !d.getElementById("app").classList.contains("side-off");
+  });
   run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
   run("LAMP.mode = 'auto';");
   run("S = presetExample(); changed(); save();");
