@@ -43,6 +43,128 @@ const test = (name, fn) => {
   }
 };
 const meshes = () => run("(() => { let n = 0; V.root.traverse(o => { if (o.isMesh) n++; }); return n; })()");
+const ZF = `window.zfScan = function (root) {
+  const tolD = 0.0004;
+  const minArea = 2e-5;
+  root.updateMatrixWorld(true);
+  const tris = [];
+  let id = 0;
+  root.traverse(o => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    for (let p = o; p; p = p.parent) if (!p.visible) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const g = o.geometry;
+    const pos = g.attributes.position;
+    const idx = g.index;
+    const n = idx ? idx.count : pos.count;
+    const groups = g.groups.length ? g.groups : [{start: 0, count: n, materialIndex: 0}];
+    const mid = id++;
+    for (const gr of groups) {
+      const mt = mats[gr.materialIndex] || mats[0];
+      if (!mt || mt.visible === false || (mt.transparent && !mt.depthWrite)) continue;
+      for (let i = gr.start; i + 2 < Math.min(n, gr.start + gr.count); i += 3) {
+        const v = [0, 1, 2].map(k => new THREE.Vector3().fromBufferAttribute(pos, idx ? idx.getX(i + k) : i + k).applyMatrix4(o.matrixWorld));
+        const nn = new THREE.Vector3().subVectors(v[1], v[0]).cross(new THREE.Vector3().subVectors(v[2], v[0]));
+        const len = nn.length();
+        if (len < 2e-7) continue;
+        nn.divideScalar(len);
+        if (nn.y < -0.99 && v.every(q => q.y < 0.003)) continue;
+        tris.push({v, n: nn, d: nn.dot(v[0]), id: mid, o, mt});
+      }
+    }
+  });
+  const nk = n => Math.round(n.x * 50) + "," + Math.round(n.y * 50) + "," + Math.round(n.z * 50);
+  const buckets = new Map();
+  for (const t of tris) {
+    const k = nk(t.n) + "|" + Math.round(t.d / (tolD * 2));
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push(t);
+  }
+  const area2 = P => {
+    let s = 0;
+    for (let i = 0; i < P.length; i++) {
+      const a = P[i];
+      const b = P[(i + 1) % P.length];
+      s += a[0] * b[1] - b[0] * a[1];
+    }
+    return s / 2;
+  };
+  const clip = (subj, cl) => {
+    let out = subj;
+    const ccw = area2(cl) > 0;
+    for (let i = 0; i < cl.length && out.length; i++) {
+      const A = cl[i];
+      const B2 = cl[(i + 1) % cl.length];
+      const side = p => {
+        const c = (B2[0] - A[0]) * (p[1] - A[1]) - (B2[1] - A[1]) * (p[0] - A[0]);
+        return ccw ? c >= -1e-12 : c <= 1e-12;
+      };
+      const cross = (p, q) => {
+        const dx = q[0] - p[0];
+        const dy = q[1] - p[1];
+        const ex = B2[0] - A[0];
+        const ey = B2[1] - A[1];
+        const den = dx * ey - dy * ex;
+        if (Math.abs(den) < 1e-15) return p;
+        const t = ((A[0] - p[0]) * ey - (A[1] - p[1]) * ex) / den;
+        return [p[0] + t * dx, p[1] + t * dy];
+      };
+      const inp = out;
+      out = [];
+      for (let j = 0; j < inp.length; j++) {
+        const P = inp[j];
+        const Q = inp[(j + 1) % inp.length];
+        const pi = side(P);
+        const qi = side(Q);
+        if (pi) {
+          out.push(P);
+          if (!qi) out.push(cross(P, Q));
+        } else if (qi) out.push(cross(P, Q));
+      }
+    }
+    return out;
+  };
+  const tag = o => {
+    for (let p = o; p && p !== root; p = p.parent) if (p.userData && p.userData.pick) return p.userData.pick.t + ":" + (p.userData.pick.id || "");
+    return "";
+  };
+  const mname = t => t.mt.name || (t.mt.userData && t.mt.userData.key) || t.mt.type;
+  const found = new Map();
+  for (const [k, own] of buckets) {
+    const [nkey, dq] = k.split("|");
+    const list = own.concat(buckets.get(nkey + "|" + (Number(dq) + 1)) || []);
+    for (let i = 0; i < own.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const s = list[i];
+        const t = list[j];
+        if (s.id === t.id) continue;
+        if (s.n.dot(t.n) < 0.999 || t.v.some(q => Math.abs(s.n.dot(q) - s.d) > tolD)) continue;
+        const ax = Math.abs(s.n.x) >= Math.abs(s.n.y) && Math.abs(s.n.x) >= Math.abs(s.n.z) ? 0 : Math.abs(s.n.y) >= Math.abs(s.n.z) ? 1 : 2;
+        const to2 = tr => tr.v.map(q => ax === 0 ? [q.y, q.z] : ax === 1 ? [q.x, q.z] : [q.x, q.y]);
+        const P = clip(to2(s), to2(t));
+        if (P.length < 3) continue;
+        const ar = Math.abs(area2(P)) / Math.abs(s.n.getComponent(ax));
+        if (ar < minArea) continue;
+        const ok2 = nk(s.n.clone().negate());
+        const od = Math.round(-s.d / (tolD * 2));
+        let cov = 0;
+        for (const dq2 of [od - 1, od, od + 1]) {
+          for (const u of buckets.get(ok2 + "|" + dq2) || []) {
+            if (u.id === s.id || u.id === t.id || u.n.dot(s.n) > -0.999 || u.v.some(q => Math.abs(s.n.dot(q) - s.d) > tolD)) continue;
+            const Q = clip(P, to2(u));
+            if (Q.length >= 3) cov += Math.abs(area2(Q)) / Math.abs(s.n.getComponent(ax));
+          }
+        }
+        if (cov >= ar - minArea) continue;
+        const key = tag(s.o) + " " + mname(s) + " vs " + tag(t.o) + " " + mname(t) + " n=" + [s.n.x, s.n.y, s.n.z].map(x => x.toFixed(2)).join(",");
+        const f = found.get(key) || {key, area: 0, at: s.v[0].toArray().map(x => Math.round(x * 1000) / 1000)};
+        f.area += ar;
+        found.set(key, f);
+      }
+    }
+  }
+  return {tris: tris.length, hits: [...found.values()].sort((a, b) => b.area - a.area)};
+};`;
 
 setTimeout(() => {
   const d = w.document;
@@ -234,14 +356,14 @@ setTimeout(() => {
     const s2 = sanitize(p);
     return s2.site.lat === 89 && s2.site.tz === 14 && s2.site.north === 10 && s2.site.city === "" && s2.house.roof === "hip" && s2.house.pitch2 === 45;
   })()`));
-  test("все материалы получают общий патч шейдера", () => run(`(() => { const sh = {uniforms: {}, fragmentShader: THREE.ShaderLib.physical.fragmentShader}; mat("glass", true).onBeforeCompile(sh); return sh.fragmentShader.includes("uSkyIdx") && sh.fragmentShader.includes("shAmb") && !!sh.uniforms.uEnvDiff && !sh.fragmentShader.includes("#include <lights_fragment_begin>"); })()`));
+  test("все материалы получают общий патч шейдера", () => run(`(() => { const sh = {uniforms: {}, fragmentShader: THREE.ShaderLib.physical.fragmentShader}; mat("glass", true).onBeforeCompile(sh); const f = sh.fragmentShader; return f.includes("uSkyIdx") && f.includes("shAmb") && !!sh.uniforms.uEnvDiff && !f.includes("#include <lights_fragment_begin>") && f.includes("if ( shLM( uPLA[ i ], uPLB[ i ], shWP, shIn ) > 0.5 )") && f.includes("uSkyOn > 0.5") && f.includes("min( uEnvDiff, uInEnv )") && sh.uniforms.uInEnv.value < 0.5; })()`));
   test("лак, ткань и стекло стали физическими материалами", () => run(`mat("lacquer").isMeshPhysicalMaterial && !!mat("fabric_grey").sheen && mat("glass").transmission > 0.5 && !mat("plaster").isMeshPhysicalMaterial`));
   test("внутри дома рассеянный свет приглушается", () => run(`(() => { S = presetExample(); V.mode = "roof"; build3D(); const b = SHU.uInBox.value; const ok = b.z > b.x && b.w > b.y && SHU.uInK.value < 0.5; V.mode = "noroof"; build3D(); return ok && SHU.uInK.value > 0.5; })()`));
-  const lights = () => run("(() => { let n = 0; V.root.traverse(o => { if (o.isPointLight) n++; }); return n; })()");
+  const lights = () => run("(() => { let n = 0; V.root.traverse(o => { if (o.isPointLight && o.intensity > 0) n++; }); return n; })()");
   test("лампы из каталога светят ночью, свет не проходит сквозь стены", () => {
     run("S = presetExample(); S.items.push(thing('floorlamp', 1, 1)); S.objects.push(thing('streetlamp', 3, 26)); LAMP.mode = 'on'; build3D(); lampSync();");
     const n = lights();
-    const masked = run("(() => { let ok = true; V.root.traverse(o => { if (o.isPointLight && !(o.userData.lb && o.userData.lb.z > 0)) ok = false; }); return ok; })()");
+    const masked = run("(() => { let ok = true; V.root.traverse(o => { if (o.isPointLight && o.intensity > 0 && !(o.userData.lb && o.userData.lb.z > 0)) ok = false; }); return ok; })()");
     return n === run("S.rooms.length") + 2 + run("S.rooms.filter(r => Math.max(r.w, r.d) > 6.5).length") && masked && run("SHU.uPLB.value[0].z") > 0;
   });
   test("днём свет сам выключается", () => {
@@ -263,6 +385,41 @@ setTimeout(() => {
     const s2 = run("(() => { const p = JSON.parse(JSON.stringify(S)); p.items[p.items.length - 1].k = 99999; p.items[p.items.length - 1].lm = -5; return sanitize(p).items.find(x => x.id === 'fl'); })()");
     return run("hist.length") === h0 + 1 && s2.on === false && s2.k === 7000 && s2.lm === 20;
   });
+  test("набор источников света один днём, ночью и после выключателя, шейдеры не пересобираются", () => run(`(() => {
+    S = presetExample(); S.items.push(thing('floorlamp', 1, 1, {id: 'fl2'})); LAMP.mode = 'auto'; V.mode = 'noroof';
+    const sig = () => { let n = 0; let ns = 0; let on = 0; let dir = 0; let dirs = 0; V.scene.traverseVisible(o => { if (o.isPointLight) { n++; if (o.castShadow) ns++; if (o.intensity > 0) on++; } if (o.isDirectionalLight) { dir++; if (o.castShadow) dirs++; } }); return {k: n + '/' + ns + '/' + dir + '/' + dirs, on}; };
+    SKY.m = 6; SKY.d = 21; SKY.t = 720; applySky(true); build3D(); const day = sig();
+    SKY.t = 23 * 60; applySky(true); build3D(); const night = sig();
+    toggleOpen({t: 'item', id: 'fl2'}); build3D(); const off = sig();
+    SKY.t = 720; applySky(true);
+    return day.on === 0 && night.on > 5 && off.on === night.on - 1 && day.k === night.k && night.k === off.k && V.sun.castShadow && SHU.uSkyOn.value === 0 && SHU.uSkyIdx.value >= 0;
+  })()`));
+  test("у дома, окон, дверей и моделей каталога нет совпадающих граней", () => {
+    run(ZF);
+    return run(`(() => {
+      S = presetExample(); V.mode = 'noroof'; build3D();
+      const bad = zfScan(V.hgi).hits.map(h => 'дом ' + h.key);
+      for (const kind of Object.keys(MODELS)) {
+        if (kind === 'flowers') continue;
+        const md = MODELS[kind];
+        const root = new THREE.Group();
+        thingGroup({id: 'zf_' + kind, kind, name: md.name, x: 0, y: 0, w: md.w, d: md.d, h: md.h, z: 0, rot: 0}, root, matPlot, 0, {t: 'obj', id: 'zf_' + kind});
+        for (const h of zfScan(root).hits) bad.push(kind + ' ' + h.key);
+      }
+      if (bad.length) console.log(bad.slice(0, 8).join(' | '));
+      return bad.length === 0;
+    })()`);
+  });
+  test("подсказка прогулки видна при входе, гаснет через 5 секунд и прячется на выходе", () => run(`(() => {
+    const ok0 = V.ok; V.ok = true; const h = document.getElementById('walkhint');
+    const st = window.setTimeout; let fade = null; window.setTimeout = (f, ms) => { if (ms === 5000) fade = f; return 0; };
+    startWalk(); window.setTimeout = st;
+    const shown = h.classList.contains('show') && !h.hidden;
+    if (fade) fade();
+    const faded = !h.classList.contains('show');
+    startWalk(); const again = h.classList.contains('show'); exitWalk(); V.ok = ok0;
+    return shown && faded && again && !h.classList.contains('show') && document.getElementById('help3').textContent.includes('Прогулка');
+  })()`));
   test("снег копится в снегопад и тает в тепле", () => {
     run("S = presetExample(); Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'snow'; SKY.m = 1; SKY.d = 15; SKY.t = 720; wxStep(150);");
     const fell = run("WX.snow");

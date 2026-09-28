@@ -225,7 +225,7 @@ function baseboards(g, ws, sides, base, m) {
         for (const [p0, p1] of cut(lo, hi, holes)) {
           const c1 = face + E.inw * 0.012;
           const y0 = base + 0.02;
-          const y1 = base + 0.09;
+          const y1 = base + (E.o === "h" ? 0.09 : 0.089);
           const mm = E.o === "h" ? B(g, p0, p1, y0, y1, Math.min(face, c1), Math.max(face, c1), bm) : B(g, Math.min(face, c1), Math.max(face, c1), y0, y1, p0, p1, bm);
           if (mm) mm.castShadow = false;
         }
@@ -281,8 +281,20 @@ function buildHouse3D() {
     const bm = B(g, x0, x1, 0, 0.04, z0, z1, bam);
     if (bm) bm.userData.pick = hp;
   }
+  const lift = new Map();
+  const byArea = S.rooms.slice().sort((a, b) => b.w * b.d - a.w * a.d);
+  for (const r of byArea) {
+    let up = 0;
+    for (const q of byArea) {
+      if (q === r) break;
+      const ox = Math.min(r.x + r.w, q.x + q.w) - Math.max(r.x, q.x);
+      const oy = Math.min(r.y + r.d, q.y + q.d) - Math.max(r.y, q.y);
+      if (ox > 0.01 && oy > 0.01) up = Math.max(up, lift.get(q) + 0.002);
+    }
+    lift.set(r, up);
+  }
   for (const r of S.rooms) {
-    const f = B(g, r.x, r.x + r.w, base, base + 0.02, r.y, r.y + r.d, m(objKey(r, "floor", floorMat(r))));
+    const f = B(g, r.x, r.x + r.w, base, base + 0.02 + lift.get(r), r.y, r.y + r.d, m(objKey(r, "floor", floorMat(r))));
     if (f) {
       f.userData.pick = {t: "room", id: r.id};
       f.castShadow = false;
@@ -532,6 +544,7 @@ function init3D() {
   V.scene.add(sun);
   V.scene.add(sun.target);
   V.sun = sun;
+  refineInit();
   V.ray = new THREE.Raycaster();
   try {
     V.renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: false});

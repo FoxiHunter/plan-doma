@@ -74,7 +74,7 @@ function fenceInfill(mg, M, style, a, b, H, frame) {
     return;
   }
   if (style === "mesh") {
-    mgBox(mg, M.chain, a, b, y0, H, -0.004, 0.004);
+    mgBox(mg, M.chain, a, b, y0, H - 0.01, -0.004, 0.004);
     mgBox(mg, M.post, a, b, H - 0.02, H, -0.006, 0.006);
     return;
   }

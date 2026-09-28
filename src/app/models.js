@@ -266,7 +266,7 @@ MB.gazebo = (g, P, m) => {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
     const x = sx * (w / 2 - pw / 2);
     const z = sz * (d / 2 - pw / 2);
-    B(g, x - pw / 2, x + pw / 2, 0.15, h, z - pw / 2, z + pw / 2, m("wood_mid", "frame"));
+    B(g, x - pw / 2, x + pw / 2, 0.15, h - 0.12, z - pw / 2, z + pw / 2, m("wood_mid", "frame"));
   }
   const rail = (x0, x1, z0, z1) => {
     for (const y of [0.45, 0.95]) B(g, x0, x1, y, y + 0.06, z0, z1, m("wood_mid", "frame"));
@@ -276,8 +276,8 @@ MB.gazebo = (g, P, m) => {
   rail(w / 2 - 0.08, w / 2 - 0.02, -d / 2 + pw, d / 2 - pw);
   B(g, -w / 2, w / 2, h - 0.12, h, -d / 2, -d / 2 + 0.12, m("wood_mid", "frame"));
   B(g, -w / 2, w / 2, h - 0.12, h, d / 2 - 0.12, d / 2, m("wood_mid", "frame"));
-  B(g, -w / 2, -w / 2 + 0.12, h - 0.12, h, -d / 2, d / 2, m("wood_mid", "frame"));
-  B(g, w / 2 - 0.12, w / 2, h - 0.12, h, -d / 2, d / 2, m("wood_mid", "frame"));
+  B(g, -w / 2, -w / 2 + 0.12, h - 0.12, h, -d / 2 + 0.12, d / 2 - 0.12, m("wood_mid", "frame"));
+  B(g, w / 2 - 0.12, w / 2, h - 0.12, h, -d / 2 + 0.12, d / 2 - 0.12, m("wood_mid", "frame"));
   const R = (Math.max(w, d) / 2 + 0.35) * Math.SQRT2;
   const roof = Cone(g, R, h, h + 1.0, 0, 0, m("roof", "roof"), 4);
   roof.rotation.y = Math.PI / 4;
@@ -297,7 +297,7 @@ MB.terrace = (g, P, m) => {
   if (h > 0.22) {
     const n = Math.max(1, Math.round(h / 0.17));
     const sw = Math.min(w * 0.45, 1.6);
-    for (let i = 1; i < n; i++) B(g, -sw / 2, sw / 2, 0, h - i * h / n, d / 2, d / 2 + i * 0.3, [side, side, m("deck", "deck"), side, side, side]);
+    for (let i = 1; i < n; i++) B(g, -sw / 2, sw / 2, 0, h - i * h / n, d / 2 + (i - 1) * 0.3, d / 2 + i * 0.3, [side, side, m("deck", "deck"), side, side, side]);
   }
 };
 
@@ -543,7 +543,7 @@ MB.chair = (g, P, m) => {
   const wood = m("wood_mid", "chair");
   for (const sx of [-1, 1]) {
     const x = sx * (w / 2 - 0.035);
-    TLeg(g, x, d / 2 - 0.04, 0, sy - 0.03, 0.013, 0.019, wood);
+    TLeg(g, x, d / 2 - 0.04, 0, sy - 0.035, 0.013, 0.019, wood);
     Lb(g, [x, 0, -d / 2 + 0.035], [x, h - 0.05, -d / 2 + 0.01], 0.014, 0.019, wood, 10);
   }
   RB(g, -w / 2 + 0.01, w / 2 - 0.01, sy - 0.055, sy - 0.03, -d / 2 + 0.02, d / 2 - 0.01, 0.008, wood);
@@ -602,7 +602,7 @@ MB.lamp = (g, P, m) => {
   Cy(g, 0.1, 0, 0.1, 0, 0, m("darkmetal", "body"), 12);
   Cy(g, 0.035, 0.1, h - 0.3, 0, 0, m("darkmetal", "body"), 10);
   ns(B(g, -0.1, 0.1, h - 0.3, h - 0.08, -0.1, 0.1, bulbMat(P, m, true)));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * 0.1 - 0.012, sx * 0.1 + 0.012, h - 0.3, h - 0.08, sz * 0.1 - 0.012, sz * 0.1 + 0.012, m("darkmetal", "body")));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * 0.1 - 0.012, sx * 0.1 + 0.012, h - 0.302, h - 0.08, sz * 0.1 - 0.012, sz * 0.1 + 0.012, m("darkmetal", "body")));
   const cap = ns(Cone(g, 0.17, h - 0.08, h, 0, 0, m("darkmetal", "body"), 4));
   cap.rotation.y = Math.PI / 4;
   lightAt(P, 0, h - 0.19, 0);
@@ -778,8 +778,8 @@ MB.sofa = (g, P, m, rnd, opt) => {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.07), sz * (d / 2 - 0.07), 0, 0.1, 0.014, 0.022, legs);
   const xl = -w / 2 + (armL ? arm : 0);
   const xr = w / 2 - (armR ? arm : 0);
-  Cushion(g, xl - 0.01, xr + 0.01, 0.1, seatY - 0.13, -d / 2 + bf - 0.02, d / 2, 0.03, 0, fab);
-  Cushion(g, -w / 2, w / 2, 0.1, h - 0.07, -d / 2, -d / 2 + bf, 0.045, 0, fab);
+  Cushion(g, xl - 0.01, xr + 0.01, 0.1, seatY - 0.13, -d / 2 + bf - 0.02, d / 2 - 0.004, 0.03, 0, fab);
+  Cushion(g, -w / 2 + 0.003, w / 2 - 0.003, 0.1, h - 0.07, -d / 2 + 0.003, -d / 2 + bf, 0.045, 0, fab);
   const armTop = Math.min(h - 0.05, seatY + 0.2);
   if (armL) Cushion(g, -w / 2, -w / 2 + arm, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
   if (armR) Cushion(g, w / 2 - arm, w / 2, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
@@ -859,7 +859,7 @@ MB.shelf = (g, P, m, rnd) => {
   B(g, -w / 2 + t, w / 2 - t, 0, h, -d / 2, -d / 2 + 0.008, wood);
   const n = Math.max(2, Math.round(h / 0.38));
   const lh = (h - t) / n;
-  for (let i = 0; i <= n; i++) B(g, -w / 2 + t, w / 2 - t, i * lh, i * lh + t, -d / 2, d / 2, wood);
+  for (let i = 0; i <= n; i++) B(g, -w / 2 + t, w / 2 - t, i * lh, i * lh + t, -d / 2 + 0.008, d / 2, wood);
   for (let i = 0; i < n; i++) {
     if (rnd() < 0.2) continue;
     let x = -w / 2 + t + 0.01;
@@ -929,7 +929,7 @@ MB.bed = (g, P, m) => {
     Pillow(g, x, 0.66, -d / 2 + hb + 0.2, pw, 0.44, 0.17, pm, -1.2, 0);
   }
   if (w > 1.3) Pillow(g, 0, 0.72, -d / 2 + hb + 0.36, 0.45, 0.32, 0.13, m("fabric_terra", "cushions"), -0.55, 0);
-  Cushion(g, -w / 2 - 0.03, w / 2 + 0.03, 0.5, 0.645, d / 2 - 0.5, d / 2 + 0.035, 0.05, 0.012, m("fabric_grey", "throw"));
+  Cushion(g, -w / 2 - 0.03, w / 2 + 0.03, 0.5, 0.67, d / 2 - 0.5, d / 2 + 0.035, 0.05, 0.012, m("fabric_grey", "throw"));
 };
 
 MB.bed2 = MB.bed;
@@ -1069,8 +1069,8 @@ MB.bathtub = (g, P, m) => {
   const t = 0.07;
   RB(g, -w / 2, w / 2, 0, h, -d / 2, -d / 2 + t, 0.02, c);
   RB(g, -w / 2, w / 2, 0, h, d / 2 - t, d / 2, 0.02, c);
-  RB(g, -w / 2, -w / 2 + t, 0, h, -d / 2, d / 2, 0.02, c);
-  RB(g, w / 2 - t, w / 2, 0, h, -d / 2, d / 2, 0.02, c);
+  RB(g, -w / 2, -w / 2 + t, 0, h, -d / 2 + t - 0.02, d / 2 - t + 0.02, 0.02, c);
+  RB(g, w / 2 - t, w / 2, 0, h, -d / 2 + t - 0.02, d / 2 - t + 0.02, 0.02, c);
   B(g, -w / 2 + t, w / 2 - t, 0, 0.14, -d / 2 + t, d / 2 - t, c);
   Cy(g, 0.02, h, h + 0.14, 0, -d / 2 + 0.035, m("chrome", "faucet"), 10);
   Lb(g, [0, h + 0.13, -d / 2 + 0.035], [0, h + 0.1, -d / 2 + 0.17], 0.013, 0.013, m("chrome", "faucet"), 8);
@@ -1125,7 +1125,7 @@ MB.hanger = (g, P, m) => {
   fronts(g, -w / 2, w / 2, 0.02, 0.5, d / 2 - 0.018, 1, Math.max(1, Math.round(w / 0.5)), 1, m("white_gloss", "fronts"), m("steel", "handles"), false);
   RB(g, -w / 2 + 0.02, w / 2 - 0.02, 0.5, 0.56, -d / 2 + 0.02, d / 2 - 0.02, 0.02, m("fabric_grey", "seat"));
   B(g, -w / 2, w / 2, 0.56, h, -d / 2, -d / 2 + 0.02, m("wood_light", "panel"));
-  B(g, -w / 2, w / 2, h - 0.25, h - 0.23, -d / 2, d / 2 - 0.05, m("wood_light", "panel"));
+  B(g, -w / 2, w / 2, h - 0.25, h - 0.23, -d / 2 + 0.02, d / 2 - 0.05, m("wood_light", "panel"));
   const n = Math.max(2, Math.floor(w / 0.25));
   const cols = ["fabric_blue", "fabric_dark", "fabric_beige", "fabric_terra"];
   for (let i = 0; i < n; i++) {

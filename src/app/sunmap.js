@@ -108,7 +108,7 @@ async function smapCompute() {
   quad.frustumCulled = false;
   qs.add(quad);
   const lam = new THREE.MeshLambertMaterial({color: 0xffffff, toneMapped: false});
-  const saved = {sun: V.sun.position.clone(), si: V.sun.intensity, sc: V.sun.color.clone(), cs: V.sun.castShadow, hemi: V.hemi.visible, fog: V.scene.fog, env: V.scene.environment, bg: V.sky.visible, lights: [], sb: V.sun.shadow.bias, snb: V.sun.shadow.normalBias, sl: V.sun.layers.mask, au: R.shadowMap.autoUpdate, tm: R.toneMapping, ac: R.autoClear, prev: R.getRenderTarget(), cc: R.getClearColor(new THREE.Color()), ca: R.getClearAlpha()};
+  const saved = {sun: V.sun.position.clone(), si: V.sun.intensity, sc: V.sun.color.clone(), cs: V.sun.castShadow, hemi: V.hemi.visible, fog: V.scene.fog, env: V.scene.environment, bg: V.sky.visible, lights: [], sb: V.sun.shadow.bias, snb: V.sun.shadow.normalBias, sl: V.sun.layers.mask, sau: V.sun.shadow.autoUpdate, au: R.shadowMap.autoUpdate, tm: R.toneMapping, ac: R.autoClear, prev: R.getRenderTarget(), cc: R.getClearColor(new THREE.Color()), ca: R.getClearAlpha()};
   V.scene.traverse(x => {
     if (x.isLight && x !== V.sun && x.visible) {
       saved.lights.push(x);
@@ -122,6 +122,7 @@ async function smapCompute() {
   V.sky.visible = false;
   V.sun.color.setRGB(1, 1, 1);
   V.sun.castShadow = true;
+  V.sun.shadow.autoUpdate = true;
   V.sun.layers.enable(1);
   V.sun.shadow.bias = -0.0006;
   V.sun.shadow.normalBias = 0.06;
@@ -196,6 +197,7 @@ async function smapCompute() {
     V.sun.intensity = saved.si;
     V.sun.color.copy(saved.sc);
     V.sun.castShadow = saved.cs;
+    V.sun.shadow.autoUpdate = saved.sau;
     V.sun.layers.mask = saved.sl;
     V.sun.shadow.bias = saved.sb;
     V.sun.shadow.normalBias = saved.snb;

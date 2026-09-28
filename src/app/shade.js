@@ -1,10 +1,12 @@
 "use strict";
 const SHU = {
   uSkyIdx: {value: -1},
+  uSkyOn: {value: 0},
   uEnvDiff: {value: 1},
   uInBox: {value: new THREE.Vector4(0, 0, -1, -1)},
   uInY: {value: new THREE.Vector2(0, 0)},
   uInK: {value: 1},
+  uInEnv: {value: 0.4},
   uPLA: {value: Array.from({length: 64}, () => new THREE.Vector4())},
   uPLB: {value: Array.from({length: 64}, () => new THREE.Vector4())},
   uSnow: {value: 0},
@@ -16,10 +18,12 @@ const SHU = {
 };
 
 const SH_PARS = `uniform float uSkyIdx;
+uniform float uSkyOn;
 uniform float uEnvDiff;
 uniform vec4 uInBox;
 uniform vec2 uInY;
 uniform float uInK;
+uniform float uInEnv;
 uniform float uSnow;
 uniform float uWet;
 uniform float uPud;
@@ -43,9 +47,10 @@ uniform vec4 uPLA[ NUM_POINT_LIGHTS ];
 uniform vec4 uPLB[ NUM_POINT_LIGHTS ];
 #endif
 float shLM( vec4 a, vec4 b, vec3 p, float inside ) {
-	if ( b.z < 0.5 ) return 1.0;
+	if ( b.z < 0.5 ) return 0.0;
 	if ( b.z < 1.5 ) return step( a.x, p.x ) * step( p.x, a.z ) * step( a.y, p.z ) * step( p.z, a.w ) * step( b.x, p.y ) * step( p.y, b.y );
-	return 1.0 - inside;
+	if ( b.z < 2.5 ) return 1.0 - inside;
+	return 1.0;
 }
 `;
 
@@ -121,13 +126,17 @@ const SH_CHUNKS = (() => {
   const beg = C.lights_fragment_begin;
   const at = beg.indexOf("#if ( NUM_DIR_LIGHTS > 0 )");
   const call = "RE_Direct( directLight, geometry, material, reflectedLight );";
-  const dir = beg.slice(at).replace(call, `{
+  const dcall = "directionalLight = directionalLights[ i ];";
+  const dir = beg.slice(at).replace(dcall, `if ( uSkyOn > 0.5 || abs( float( UNROLLED_LOOP_INDEX ) - uSkyIdx ) > 0.5 ) {
+		${dcall}`).replace(call, `{
 			vec3 shSpec = reflectedLight.directSpecular;
 			${call}
 			if ( abs( float( UNROLLED_LOOP_INDEX ) - uSkyIdx ) < 0.5 ) reflectedLight.directSpecular = shSpec;
+		}
 		}`).replace("irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );", "irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry ) * shAmb;");
-  const pcall = "getPointDirectLightIrradiance( pointLight, geometry, directLight );";
-  const pre = beg.slice(0, at).replace(pcall, pcall + "\n\t\tdirectLight.color *= shLM( uPLA[ i ], uPLB[ i ], shWP, shIn );").replace(`		RE_Direct( directLight, geometry, material, reflectedLight );
+  const pline = "pointLight = pointLights[ i ];";
+  const pre = beg.slice(0, at).replace(pline, `if ( shLM( uPLA[ i ], uPLB[ i ], shWP, shIn ) > 0.5 ) {
+		${pline}`).replace(`		RE_Direct( directLight, geometry, material, reflectedLight );
 	}
 	#pragma unroll_loop_end
 #endif
@@ -145,11 +154,12 @@ const SH_CHUNKS = (() => {
 				material.clearcoatRoughness = shCR;
 			#endif
 		}
+		}
 	}
 	#pragma unroll_loop_end
 #endif
 #if ( NUM_SPOT_LIGHTS > 0 )`);
-  if (pre.indexOf("shB") < 0) throw new Error("point light patch");
+  if (pre.indexOf("shB") < 0 || pre.indexOf("shLM") < 0 || dir.indexOf("uSkyOn") < 0 || dir.indexOf("shSpec") < 0) throw new Error("light loop patch");
   const fall = C.bsdfs.replace(`	if( cutoffDistance > 0.0 && decayExponent > 0.0 ) {
 		return pow( saturate( -lightDistance / cutoffDistance + 1.0 ), decayExponent );
 	}
@@ -157,7 +167,7 @@ const SH_CHUNKS = (() => {
 	if( cutoffDistance > 0.0 ) distanceFalloff *= pow2( saturate( 1.0 - pow4( lightDistance / cutoffDistance ) ) );
 	return distanceFalloff;`);
   const maps = C.lights_fragment_maps
-    .replace("iblIrradiance += getLightProbeIndirectIrradiance( geometry, maxMipLevel );", "iblIrradiance += getLightProbeIndirectIrradiance( geometry, maxMipLevel ) * uEnvDiff * shAmb;")
+    .replace("iblIrradiance += getLightProbeIndirectIrradiance( geometry, maxMipLevel );", "iblIrradiance += getLightProbeIndirectIrradiance( geometry, maxMipLevel ) * mix( uEnvDiff, min( uEnvDiff, uInEnv ), shIn ) * shAmb;")
     .replace("radiance += getLightProbeIndirectRadiance( geometry.viewDir, geometry.normal, material.specularRoughness, maxMipLevel );", "radiance += getLightProbeIndirectRadiance( geometry.viewDir, geometry.normal, material.specularRoughness, maxMipLevel ) * mix( 1.0, shAmb, 0.85 );");
   const nrm = C.normal_fragment_maps.replace("vec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;", `vec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;
 	float shNL = clamp( length( mapN ), 0.05, 1.0 );

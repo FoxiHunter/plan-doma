@@ -222,7 +222,7 @@ function flames(g, P, m, x, y, z, s) {
   for (let i = 0; i < 5; i++) {
     const a = i * 1.26;
     const r = i ? 0.08 * s : 0;
-    ns(Cone(g, (i ? 0.045 : 0.07) * s, y, y + (i ? 0.18 : 0.3) * s, x + Math.cos(a) * r, z + Math.sin(a) * r, fm, 8));
+    ns(Cone(g, (i ? 0.045 : 0.07) * s, y + i * 0.002, y + (i ? 0.18 : 0.3) * s, x + Math.cos(a) * r, z + Math.sin(a) * r, fm, 8));
   }
   lightAt(P, x, y + 0.2 * s, z);
 }
@@ -236,14 +236,14 @@ MB.fireplace = (g, P, m) => {
   B(g, -w / 2 + 0.3, w / 2 - 0.3, h * 0.62, h - 0.08, -d / 2, d / 2, st);
   B(g, -w / 2 + 0.3, w / 2 - 0.3, 0.12, h * 0.62, -d / 2, -d / 2 + 0.08, m("black", "inside"));
   B(g, -w / 2 - 0.05, w / 2 + 0.05, h - 0.08, h, -d / 2, d / 2 + 0.06, m("wood_dark", "mantel"));
-  for (const x of [-0.12, 0.1]) CyX(g, 0.05, x - 0.2, x + 0.2, 0.2, 0, m("bark", "logs"), 10);
+  for (const [x, z] of [[-0.12, -0.04], [0.1, 0.04]]) CyX(g, 0.05, x - 0.2, x + 0.2, 0.2, z, m("bark", "logs"), 10);
   flames(g, P, m, 0, 0.22, 0, 1);
 };
 
 MB.piano = (g, P, m) => {
   const {w, d, h} = P;
   const body = m("lacq#15171a", "body");
-  B(g, -w / 2, w / 2, 0.02, h, -d / 2, -d / 2 + 0.3, body);
+  B(g, -w / 2 + 0.003, w / 2 - 0.003, 0.02, h, -d / 2 + 0.003, -d / 2 + 0.3, body);
   B(g, -w / 2, -w / 2 + 0.06, 0, 0.75, -d / 2, d / 2, body);
   B(g, w / 2 - 0.06, w / 2, 0, 0.75, -d / 2, d / 2, body);
   B(g, -w / 2 + 0.06, w / 2 - 0.06, 0.66, 0.72, -d / 2 + 0.3, d / 2, body);
@@ -306,7 +306,7 @@ MB.wallart = (g, P, m, rnd) => {
   for (let i = 0; i < 5; i++) {
     const x0 = -w / 2 + 0.06 + rnd() * (w - 0.3);
     const y0 = 0.06 + rnd() * (h - 0.3);
-    B(g, x0, Math.min(w / 2 - 0.05, x0 + 0.1 + rnd() * 0.3), y0, Math.min(h - 0.05, y0 + 0.08 + rnd() * 0.25), d / 2 + 0.002, d / 2 + 0.004, m("col#" + cols[i], "canvas"));
+    B(g, x0, Math.min(w / 2 - 0.05, x0 + 0.1 + rnd() * 0.3), y0, Math.min(h - 0.05, y0 + 0.08 + rnd() * 0.25), d / 2 + 0.002, d / 2 + 0.003 + i * 0.001, m("col#" + cols[i], "canvas"));
   }
 };
 
@@ -608,7 +608,7 @@ MB.lounger = (g, P, m) => {
   const {w, d, h} = P;
   const fr = m("wood_mid", "frame");
   for (const sx of [-1, 1]) B(g, sx * (w / 2 - 0.03) - 0.03, sx * (w / 2 - 0.03) + 0.03, 0.05, 0.3, -d / 2 + 0.05, d / 2 - 0.05, fr);
-  for (const z of [-d / 2 + 0.1, d / 2 - 0.1]) for (const sx of [-1, 1]) B(g, sx * (w / 2 - 0.03) - 0.03, sx * (w / 2 - 0.03) + 0.03, 0, 0.3, z - 0.03, z + 0.03, fr);
+  for (const z of [-d / 2 + 0.1, d / 2 - 0.1]) for (const sx of [-1, 1]) B(g, sx * (w / 2 - 0.03) - 0.028, sx * (w / 2 - 0.03) + 0.028, 0, 0.29, z - 0.03, z + 0.03, fr);
   RB(g, -w / 2 + 0.03, w / 2 - 0.03, 0.3, 0.37, -d / 2 + 0.7, d / 2 - 0.02, 0.03, m("fabric_white", "cushions"));
   const bk = new THREE.Group();
   bk.position.set(0, 0.34, -d / 2 + 0.7);

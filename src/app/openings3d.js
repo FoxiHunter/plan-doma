@@ -116,10 +116,14 @@ function handleLever(g, x, y, lt, ch) {
 
 function handleBar(g, x, y0, y1, lt, ch) {
   for (const s of [1, -1]) {
-    const z0 = s > 0 ? lt / 2 : -lt / 2 - 0.05;
-    B(g, x - 0.012, x + 0.012, y0, y1, z0 + (s > 0 ? 0.03 : 0), z0 + (s > 0 ? 0.05 : 0.02), ch);
-    B(g, x - 0.007, x + 0.007, y0 + 0.05, y0 + 0.07, Math.min(z0, z0 + s * 0.05), Math.max(z0, z0 + s * 0.05), ch);
-    B(g, x - 0.007, x + 0.007, y1 - 0.07, y1 - 0.05, Math.min(z0, z0 + s * 0.05), Math.max(z0, z0 + s * 0.05), ch);
+    const zf = s * lt / 2;
+    const za = Math.min(zf + s * 0.03, zf + s * 0.05);
+    const zb = Math.max(zf + s * 0.03, zf + s * 0.05);
+    const sa = Math.min(zf, zf + s * 0.04);
+    const sb = Math.max(zf, zf + s * 0.04);
+    B(g, x - 0.012, x + 0.012, y0, y1, za, zb, ch);
+    B(g, x - 0.007, x + 0.007, y0 + 0.05, y0 + 0.07, sa, sb, ch);
+    B(g, x - 0.007, x + 0.007, y1 - 0.07, y1 - 0.05, sa, sb, ch);
   }
 }
 
@@ -229,8 +233,8 @@ function door3D(g, d, L, base, m) {
   const cas = (zf, dir) => {
     const za = Math.min(zf, zf + dir * 0.012);
     const zb = Math.max(zf, zf + dir * 0.012);
-    B(dg, -hw - 0.065, -hw + 0.004, 0.02, top + 0.065, za, zb, M.frame);
-    B(dg, hw - 0.004, hw + 0.065, 0.02, top + 0.065, za, zb, M.frame);
+    B(dg, -hw - 0.065, -hw + 0.004, 0.02, top - 0.004, za, zb, M.frame);
+    B(dg, hw - 0.004, hw + 0.065, 0.02, top - 0.004, za, zb, M.frame);
     B(dg, -hw - 0.065, hw + 0.065, top - 0.004, top + 0.065, za, zb, M.frame);
   };
   if (!isExt) {
@@ -454,10 +458,10 @@ function win3D(g, w, L, base, m) {
   const frameOut = zo * 0.035;
   if (w.sill > 0.15) {
     const za = inner + zin * 0.06;
-    B(wg, -hw - 0.05, hw + 0.05, yb - 0.025, yb, Math.min(za, frameIn), Math.max(za, frameIn), m(objKey(w, "sill_in", "sill_in")));
+    B(wg, -hw - 0.05, hw + 0.05, yb - 0.02, yb + 0.006, Math.min(za, frameIn), Math.max(za, frameIn), m(objKey(w, "sill_in", "sill_in")));
   }
   const zb = outer + zo * 0.05;
-  B(wg, -hw - 0.03, hw + 0.03, yb - 0.02, yb, Math.min(frameOut, zb), Math.max(frameOut, zb), m(objKey(w, "sill_out", "sill_out")));
+  B(wg, -hw - 0.03, hw + 0.03, yb - 0.02, yb + 0.004, Math.min(frameOut, zb), Math.max(frameOut, zb), m(objKey(w, "sill_out", "sill_out")));
   if (!V.hq && sel && sel.t === "win" && sel.id === w.id) {
     const a0 = aC - hw;
     const a1 = aC + hw;
@@ -575,8 +579,8 @@ function bldOpening(g, P, m, op, sh, M) {
         secs.push(sg);
       }
       for (const s of [-1, 1]) {
-        B(ag, s * (W / 2 + 0.06) - 0.02, s * (W / 2 + 0.06) + 0.02, 0, H + 0.08, zf - 0.03, zf + 0.03, M.box);
-        B(ag, s * (W / 2 + 0.06) - 0.02, s * (W / 2 + 0.06) + 0.02, H + 0.06, H + 0.1, zf - H - 0.2, zf, M.box);
+        B(ag, s * (W / 2 + 0.06) - 0.02, s * (W / 2 + 0.06) + 0.02, 0, H + 0.06, zf - 0.03, zf + 0.03, M.box);
+        B(ag, s * (W / 2 + 0.06) - 0.02, s * (W / 2 + 0.06) + 0.02, H + 0.06, H + 0.1, zf - H - 0.2, zf + 0.03, M.box);
       }
       animBind(key, op.open, v => {
         secs.forEach((sg, i) => {

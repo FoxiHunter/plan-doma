@@ -354,6 +354,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .sunrow:last-child { border-bottom: 0; }
 .sunrow span { color: var(--ink-2); font-size: 12.5px; }
 body.walking .sunbar { bottom: 62px; }
+#walkhint { top: auto; left: 12px; bottom: 14px; transform: none; max-width: calc(100% - 190px); text-align: left; padding: 6px 12px; font-size: 12px; color: var(--ink-2); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.6s, visibility 0.6s; }
+#walkhint.show { opacity: 1; visibility: visible; }
+.v-split #walkhint { max-width: calc(100% - 24px); }
 .rail button[data-g][aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
 .rail button[data-g][aria-pressed="true"] b { color: var(--accent); }
 .selx { width: 170px; }
@@ -563,8 +566,11 @@ body.walking .sunbar { bottom: 62px; }
           <p>Двойной клик по двери, окну, воротам или лампе открывает, закрывает и включает их</p>
           <p><kbd>1</kbd> двигать, <kbd>2</kbd> вращать, <kbd>3</kbd> размер, <kbd>F</kbd> или двойной клик показывают выбранное</p>
           <p><kbd>R</kbd> поворот на 90°, <kbd>Delete</kbd> удалить, Alt при перетаскивании отключает сетку и привязку</p>
+          <h3>Прогулка</h3>
+          <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> или стрелки - идти с ростом 175 см, мышь - смотреть, Shift быстрее</p>
+          <p><kbd>E</kbd> или клик открывает двери и ворота и щёлкает выключателями, <kbd>Esc</kbd> выход</p>
         </div>
-        <div class="float" id="walkhint" hidden>Прогулка с ростом 175 см. W A S D или стрелки идти, мышь смотреть, Shift быстрее, E или клик открывает двери, ворота и щёлкает выключателями, Esc выход</div>
+        <div class="float" id="walkhint">W A S D идти, мышь смотреть, E или клик открывает двери, Esc выход</div>
         <div class="float" id="nogl" hidden>Браузер не дал включить 3D. Обнови браузер или включи аппаратное ускорение.</div>
         <div class="tip" id="tip3" hidden></div>
       </div>

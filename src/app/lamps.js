@@ -99,7 +99,7 @@ function lampMaskHouse(px, py) {
 }
 
 function lampMaskPlot() {
-  return {a: new THREE.Vector4(), b: new THREE.Vector4(0, 0, ext() ? 2 : 0, 0)};
+  return {a: new THREE.Vector4(), b: new THREE.Vector4(0, 0, ext() ? 2 : 3, 0)};
 }
 
 function lampAdd(parent, pos, lm, K, mask, prio) {
@@ -107,7 +107,9 @@ function lampAdd(parent, pos, lm, K, mask, prio) {
 }
 
 function lampThing(g, P, o, isItem) {
-  if (!P.lights || !P.lights.length || !lampLit(o)) return;
+  if (!P.lights || !P.lights.length) return;
+  LAMP.pot += P.lights.length;
+  if (!lampLit(o)) return;
   const L = lampDef(o);
   const mask = isItem ? lampMaskHouse(o.x + o.w / 2, o.y + o.d / 2) : lampMaskPlot();
   const lm = lampLm(o) / P.lights.length;
@@ -147,7 +149,9 @@ function lampHalo(parent, pos, lm, K) {
 }
 
 function autoLights(g, base, H, m) {
-  if (!S.house.autoLights || !LAMP.lit) return;
+  if (!S.house.autoLights) return;
+  for (const r of S.rooms) if (r.w >= 0.8 && r.d >= 0.8) LAMP.pot += Math.max(r.w, r.d) > 6.5 ? 2 : 1;
+  if (!LAMP.lit) return;
   const own = new Set();
   for (const it of S.items) {
     const L = lampDef(it);
@@ -183,19 +187,27 @@ function autoLights(g, base, H, m) {
 function lampsBegin() {
   LAMP.lit = lampsOn();
   LAMP.cands = [];
+  LAMP.pot = 0;
+}
+
+function lampSlots() {
+  const cap = LAMP_CAP[RF.q] || LAMP_CAP.nice;
+  return [Math.min(cap[0], Math.max(8, Math.ceil(LAMP.pot / 8) * 8)), cap[1]];
 }
 
 function lampsFinish() {
-  const cap = LAMP_CAP[RF.q] || LAMP_CAP.nice;
+  const [n, ns] = lampSlots();
   const list = LAMP.cands.slice().sort((a, b) => b.prio - a.prio || b.lm - a.lm);
-  list.forEach((c, i) => {
-    if (i >= cap[0]) return;
-    const range = clamp(Math.sqrt(c.lm) * 0.32, 3.5, 18);
-    const pl = new THREE.PointLight(kelvinColor(c.K), c.lm * LAMP.lk, range, 2);
-    pl.position.copy(c.pos);
-    pl.userData.la = c.mask.a;
-    pl.userData.lb = c.mask.b;
-    if (i < cap[1]) {
+  for (let i = 0; i < n; i++) {
+    const c = list[i];
+    const range = c ? clamp(Math.sqrt(c.lm) * 0.32, 3.5, 18) : 1;
+    const pl = new THREE.PointLight(c ? kelvinColor(c.K) : 0x000000, c ? c.lm * LAMP.lk : 0, range, 2);
+    if (c) {
+      pl.position.copy(c.pos);
+      pl.userData.la = c.mask.a;
+      pl.userData.lb = c.mask.b;
+    }
+    if (i < ns) {
       pl.castShadow = true;
       pl.shadow.mapSize.set(256, 256);
       pl.shadow.camera.near = 0.06;
@@ -203,11 +215,11 @@ function lampsFinish() {
       pl.shadow.bias = -0.004;
       pl.shadow.normalBias = 0.02;
       pl.shadow.autoUpdate = false;
-      pl.shadow.needsUpdate = true;
+      pl.shadow.needsUpdate = !!c;
     }
-    c.parent.add(pl);
-    if (!V.walk || c.prio < 2) lampHalo(c.parent, c.pos, c.lm, c.K);
-  });
+    (c ? c.parent : V.root).add(pl);
+    if (c && (!V.walk || c.prio < 2)) lampHalo(c.parent, c.pos, c.lm, c.K);
+  }
   LAMP.cands = [];
   LAMP.ver++;
 }
@@ -215,7 +227,7 @@ function lampsFinish() {
 function lampShadowsDirty() {
   if (!V.root) return;
   V.root.traverse(o => {
-    if (o.isPointLight && o.castShadow) o.shadow.needsUpdate = true;
+    if (o.isPointLight && o.castShadow && o.intensity > 0) o.shadow.needsUpdate = true;
   });
 }
 

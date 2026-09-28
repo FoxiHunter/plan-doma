@@ -281,10 +281,17 @@ function startWalk() {
   CAM.pitch = -0.06;
   V.walk = {t: 0};
   document.body.classList.add("walking");
-  $("#walkhint").hidden = false;
+  walkHint(true);
   document.querySelectorAll("#cams [data-cam]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cam === "walk")));
   applyCam();
   schedule3D();
+}
+
+function walkHint(on) {
+  const h = $("#walkhint");
+  clearTimeout(IN.hintT);
+  h.classList.toggle("show", on);
+  if (on) IN.hintT = setTimeout(() => walkHint(false), 5000);
 }
 
 function windowView(w) {
@@ -313,7 +320,7 @@ function exitWalk(keepPose) {
   V.walk = null;
   IN.keys.clear();
   document.body.classList.remove("walking");
-  $("#walkhint").hidden = true;
+  walkHint(false);
   document.querySelectorAll("#cams [data-cam]").forEach(b => b.setAttribute("aria-pressed", "false"));
   if (!keepPose && IN.prevPose) setPose(IN.prevPose);
   schedule3D();
@@ -1494,6 +1501,7 @@ function attach3D() {
         IN.keys.add(e.code);
         e.preventDefault();
         V.need = true;
+        if (e.code !== "ShiftLeft" && e.code !== "ShiftRight") walkHint(false);
       }
       return;
     }

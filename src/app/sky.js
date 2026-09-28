@@ -305,7 +305,7 @@ function applySky(force) {
   if (V.sun) {
     V.sun.color.copy(st.sunc);
     V.sun.intensity = st.sunI;
-    V.sun.castShadow = st.sunI > 0.02;
+    V.sun.shadow.autoUpdate = st.sunI > 0.02;
     fitSun();
   }
   const bright = typeof ltplBright === "function" && ltplBright();

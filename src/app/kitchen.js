@@ -83,8 +83,8 @@ MB.kitchen = (g, P, m) => {
       B(g, cx - sw, cx + sw, ct, ct + 0.04, s1, d / 2 + 0.01, top);
       const sk = m("steel", "sink");
       B(g, cx - sw, cx + sw, sb, sb + 0.01, s0, s1, sk);
-      B(g, cx - sw, cx - sw + 0.008, sb, ct + 0.04, s0, s1, sk);
-      B(g, cx + sw - 0.008, cx + sw, sb, ct + 0.04, s0, s1, sk);
+      B(g, cx - sw, cx - sw + 0.008, sb, ct + 0.04, s0 + 0.008, s1 - 0.008, sk);
+      B(g, cx + sw - 0.008, cx + sw, sb, ct + 0.04, s0 + 0.008, s1 - 0.008, sk);
       B(g, cx - sw, cx + sw, sb, ct + 0.04, s0, s0 + 0.008, sk);
       B(g, cx - sw, cx + sw, sb, ct + 0.04, s1 - 0.008, s1, sk);
       Cy(g, 0.03, sb + 0.01, sb + 0.013, cx, (s0 + s1) / 2, m("darkmetal", "sink"), 16);

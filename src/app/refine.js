@@ -61,10 +61,11 @@ function refineInit() {
   sl.shadow.mapSize.set(2048, 2048);
   sl.shadow.bias = -0.0008;
   sl.shadow.normalBias = 0.06;
-  sl.visible = false;
+  sl.shadow.autoUpdate = false;
   V.scene.add(sl);
   V.scene.add(sl.target);
   RF.skyL = sl;
+  SHU.uSkyIdx.value = dirLightIndex(sl);
 }
 
 function refineTargets(W, H) {
@@ -122,7 +123,8 @@ function dirLightIndex(light) {
 
 function rfBegin() {
   RF.saved = {sun: V.sun.position.clone()};
-  RF.skyL.visible = true;
+  RF.skyL.shadow.autoUpdate = true;
+  SHU.uSkyOn.value = 1;
   SHU.uEnvDiff.value = 0.35;
   SHU.uSkyIdx.value = dirLightIndex(RF.skyL);
   const P = S.plot;
@@ -143,8 +145,8 @@ function rfEnd() {
   if (!RF.saved) return;
   V.sun.position.copy(RF.saved.sun);
   SHU.uEnvDiff.value = 1;
-  SHU.uSkyIdx.value = -1;
-  RF.skyL.visible = false;
+  SHU.uSkyOn.value = 0;
+  RF.skyL.shadow.autoUpdate = false;
   RF.skyL.intensity = 0;
   RF.saved = null;
 }
@@ -247,6 +249,5 @@ function setQuality(q) {
     }
   }
   refineReset();
-  if (LAMP.lit) schedule3D();
-  V.need = true;
+  schedule3D();
 }
