@@ -55,7 +55,7 @@ function grassKey(base) {
   const s = WX.season || seasonKey();
   if (s === "bare" || s === "late") return base + "_w";
   if (s === "spring") return base + "_s";
-  if (s === "autumn" || s === "fall") return base + "_a";
+  if (s === "fall") return base + "_a";
   return base;
 }
 
