@@ -26,8 +26,10 @@ const WEATHER = {
   few: {n: "Малооблачно", cov: 0.32, sun: 1, gray: 0, fog: 800},
   cloudy: {n: "Облачно", cov: 0.64, sun: 0.72, gray: 0.25, fog: 650},
   overcast: {n: "Пасмурно", cov: 1, sun: 0.06, gray: 0.62, fog: 420},
-  rain: {n: "Дождь", cov: 1, sun: 0.03, gray: 0.42, fog: 200, rain: true},
-  snow: {n: "Снег", cov: 1, sun: 0.05, gray: 0.72, fog: 240, snow: true},
+  rain: {n: "Дождь", cov: 1, sun: 0.03, gray: 0.42, fog: 200, rain: true, wind: 4},
+  storm: {n: "Гроза", cov: 1, sun: 0.02, gray: 0.3, fog: 170, rain: true, heavy: true, bolt: true, wind: 12},
+  snow: {n: "Снег", cov: 1, sun: 0.05, gray: 0.72, fog: 240, snow: true, wind: 3},
+  hail: {n: "Град", cov: 1, sun: 0.04, gray: 0.45, fog: 230, hail: true, wind: 7},
   fog: {n: "Туман", cov: 0.85, sun: 0.22, gray: 0.7, fog: 70}
 };
 const SKYK = [
@@ -140,7 +142,7 @@ function skyCompute() {
   const cloud = lin(0xffffff).multiplyScalar(K.k * (W.gray ? 0.55 + 0.4 * W.gray : 0.95)).lerp(K.sunc.clone().multiplyScalar(K.k * 1.1), W.gray ? 0.08 : 0.35);
   const avg = (zen.r + zen.g + zen.b + 2 * (hor.r + hor.g + hor.b)) / 9;
   const expo = 0.72 * Math.pow(clamp(0.42 / Math.max(0.004, avg + sunI * 0.08), 1, 14), 0.62);
-  return {alt, az: s.az, dir, sunI, sunc, zen, hor, glow, cloud, cov: W.cov, gray: W.gray, fog: W.fog, rain: !!W.rain, snow: !!W.snow, night, expo, stars: clamp((-alt - 6) / 8, 0, 1) * (1 - W.cov)};
+  return {alt, az: s.az, dir, sunI, sunc, zen, hor, glow, cloud, cov: W.cov, gray: W.gray, fog: W.fog, rain: !!W.rain, snow: !!W.snow, hail: !!W.hail, heavy: !!W.heavy, night, expo, stars: clamp((-alt - 6) / 8, 0, 1) * (1 - W.cov)};
 }
 
 function skyRad(d, st) {
@@ -164,6 +166,8 @@ uniform float uCov;
 uniform float uGray;
 uniform float uTime;
 uniform float uStars;
+uniform vec2 uWindV;
+uniform float uFlash;
 varying vec3 vDir;
 float h21(vec2 p) {
   vec3 q = fract(vec3(p.xyx) * 0.1031);
@@ -199,11 +203,11 @@ void main() {
   if (h > 0.0) {
     if (uStars > 0.0) {
       vec2 sp = floor(d.xz / (h + 0.3) * 260.0);
-      float st = step(0.9965, h21(sp)) * h21(sp + 3.1);
-      col += vec3(st * uStars * 0.9);
+      float st = step(0.998, h21(sp)) * h21(sp + 3.1);
+      col += vec3(st * uStars * 0.75);
     }
     if (uCov > 0.001) {
-      vec2 cp = d.xz / (h + 0.12) * 1.3 + vec2(uTime * 0.004, uTime * 0.0015);
+      vec2 cp = d.xz / (h + 0.12) * 1.3 + uTime * (vec2(0.0015, 0.0006) + uWindV * 0.0011);
       float n = fbm(cp);
       float cv = smoothstep(1.02 - uCov * 0.78, 1.18 - uCov * 0.58, n + 0.25 * uCov);
       float fade = smoothstep(0.0, 0.1, h);
@@ -212,6 +216,7 @@ void main() {
       cover = cv * fade;
       col = mix(col, cc, cover);
     }
+    col += vec3(0.55, 0.6, 0.78) * uFlash * (0.2 + cover * 1.4);
   }
   col += uSunCol * smoothstep(0.99955, 0.9998, cs) * 30.0 * uDisc * (1.0 - cover) * step(0.0, h);
   gl_FragColor = vec4(col, 1.0);
@@ -233,7 +238,9 @@ function skyMaterial(disc) {
       uCov: {value: 0},
       uGray: {value: 0},
       uTime: {value: 0},
-      uStars: {value: 0}
+      uStars: {value: 0},
+      uWindV: {value: new THREE.Vector2()},
+      uFlash: {value: 0}
     },
     side: THREE.BackSide,
     depthWrite: false,
@@ -274,7 +281,7 @@ function makeEnv() {
     const st = SKY.st || skyCompute();
     skyUniforms(SKY.envSky.material, st);
     const gl = Math.max(0, st.sunI * Math.max(0, st.dir.y)) + (st.hor.r + st.hor.g + st.hor.b) / 3;
-    SKY.envGround.material.color.copy(lin(SKY.snowOn ? 0xe8ecef : 0x8a8a78)).multiplyScalar(clamp(gl * 0.24, 0.002, 1.2));
+    SKY.envGround.material.color.copy(lin(0x8a8a78).lerp(lin(0xe8ecef), WX.snow)).multiplyScalar(clamp(gl * 0.24, 0.002, 1.2));
     const rt = SKY.pm.fromScene(SKY.envScene, 0.02, 0.1, 1000);
     if (SKY.envRT) SKY.envRT.dispose();
     SKY.envRT = rt;
@@ -286,7 +293,7 @@ function makeEnv() {
 }
 
 function skySig(st) {
-  return [Math.round(st.alt * 2), Math.round(st.az * 90), SKY.weather, (S.site || siteDefault()).north].join("|");
+  return [Math.round(st.alt * 2), Math.round(st.az * 90), SKY.weather, (S.site || siteDefault()).north, Math.round(WX.snow * 5)].join("|");
 }
 
 function applySky(force) {
@@ -301,23 +308,19 @@ function applySky(force) {
     V.sun.castShadow = st.sunI > 0.02;
     fitSun();
   }
+  const bright = typeof ltplBright === "function" && ltplBright();
   if (V.hemi) {
     const lum = (st.hor.r + st.hor.g + st.hor.b) / 3;
     V.hemi.color.copy(st.hor).lerp(new THREE.Color(lum, lum, lum), 0.6);
     V.hemi.groundColor.copy(lin(0xb3a48c)).multiplyScalar(clamp(0.3 * lum + 0.12 * st.sunI * Math.max(0, st.dir.y), 0, 1.5));
-    V.hemi.intensity = 0.3;
+    V.hemi.intensity = bright ? 0.45 : 0.3;
   }
-  if (V.renderer) V.renderer.toneMappingExposure = st.expo;
+  if (V.renderer) V.renderer.toneMappingExposure = st.expo * (bright ? 1.3 : 1);
   const fc = new THREE.Color().copy(st.hor).convertLinearToSRGB();
   if (V.scene.fog) {
     V.scene.fog.color.copy(fc).multiplyScalar(Math.min(1, st.expo * 0.9));
     V.scene.fog.near = st.fog < 200 ? 4 : 120;
     V.scene.fog.far = st.fog;
-  }
-  const snow = st.snow;
-  if (snow !== !!SKY.snowOn) {
-    SKY.snowOn = snow;
-    schedule3D();
   }
   const sig = skySig(st);
   const now = performance.now();
@@ -329,6 +332,8 @@ function applySky(force) {
     clearTimeout(SKY.envTimer);
     SKY.envTimer = setTimeout(() => applySky(true), 200);
   }
+  lampSkyCheck(st);
+  wxSky();
   skyFx(st);
   sunPath();
   syncSkyUI();
@@ -337,7 +342,7 @@ function applySky(force) {
 }
 
 function skyFx(st) {
-  const kind = st.rain ? "rain" : st.snow ? "snow" : "";
+  const kind = st.rain ? (st.heavy ? "storm" : "rain") : st.snow ? "snow" : st.hail ? "hail" : "";
   if (kind === SKY.fxKind) return;
   if (SKY.fx) {
     V.scene.remove(SKY.fx);
@@ -347,25 +352,26 @@ function skyFx(st) {
   }
   SKY.fxKind = kind;
   if (!kind) return;
-  const n = kind === "rain" ? 7000 : 6000;
+  const lines = kind === "rain" || kind === "storm";
+  const n = kind === "storm" ? 12000 : kind === "rain" ? 7000 : kind === "hail" ? 5000 : 6000;
   const rnd = srng(77);
-  const pos = new Float32Array(kind === "rain" ? n * 6 : n * 3);
+  const pos = new Float32Array(lines ? n * 6 : n * 3);
   const box = [36, 22, 36];
   for (let i = 0; i < n; i++) {
     const x = (rnd() - 0.5) * box[0];
     const y = rnd() * box[1];
     const z = (rnd() - 0.5) * box[2];
-    if (kind === "rain") pos.set([x, y, z, x + 0.01, y + 0.38, z + 0.004], i * 6);
+    if (lines) pos.set([x, y, z, x + 0.01, y + 0.38, z + 0.004], i * 6);
     else pos.set([x, y, z], i * 3);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.userData.base = pos.slice();
   let fx;
-  if (kind === "rain") {
-    fx = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color: 0xc9d4de, transparent: true, opacity: 0.38, depthWrite: false}));
+  if (lines) {
+    fx = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color: 0xc9d4de, transparent: true, opacity: kind === "storm" ? 0.3 : 0.38, depthWrite: false}));
   } else {
-    fx = new THREE.Points(g, new THREE.PointsMaterial({color: 0xffffff, size: 0.045, transparent: true, opacity: 0.92, depthWrite: false, map: snowSprite(), alphaTest: 0.05}));
+    fx = new THREE.Points(g, new THREE.PointsMaterial({color: kind === "hail" ? 0xe9eef2 : 0xffffff, size: kind === "hail" ? 0.028 : 0.045, transparent: true, opacity: 0.92, depthWrite: false, map: snowSprite(), alphaTest: 0.05}));
   }
   fx.frustumCulled = false;
   fx.userData.noPick = true;
@@ -406,34 +412,41 @@ function skyTick(dt) {
   }
   const fx = SKY.fx;
   if (fx && V.camera) {
-    const rain = SKY.fxKind === "rain";
+    const kind = SKY.fxKind;
+    const rain = kind === "rain" || kind === "storm";
     fx.userData.t += dt;
     const p = fx.geometry.attributes.position;
     const base = fx.geometry.userData.base;
     const [bx, by, bz] = fx.userData.box;
     const t = fx.userData.t;
     const c = V.camera.position;
-    const fall = rain ? 9 : 0.9;
+    const fall = kind === "storm" ? 11 : rain ? 9 : kind === "hail" ? 12 : 0.9;
+    const wv = windVec();
+    const drift = rain || kind === "hail" ? 0.55 : 0.8;
+    const dx = wv.x * drift;
+    const dz = wv.z * drift;
+    const sl = kind === "storm" ? 0.5 : 0.38;
+    const tl = sl / fall;
     const stride = rain ? 6 : 3;
     const arr = p.array;
     for (let i = 0; i < base.length; i += stride) {
-      const sw = rain ? 0 : Math.sin(t * 0.8 + i * 0.013) * 0.35;
-      const x = ((base[i] + sw - c.x) % bx + bx * 1.5) % bx - bx / 2 + c.x;
+      const sw = kind === "snow" ? Math.sin(t * 0.8 + i * 0.013) * 0.35 : 0;
+      const x = ((base[i] + sw + t * dx - c.x) % bx + bx * 1.5) % bx - bx / 2 + c.x;
       const y = ((base[i + 1] - t * fall - c.y + 4) % by + by) % by + c.y - 6;
-      const z = ((base[i + 2] + t * (rain ? 0.4 : 0.2) - c.z) % bz + bz * 1.5) % bz - bz / 2 + c.z;
+      const z = ((base[i + 2] + t * (dz + (rain ? 0.4 : 0.2)) - c.z) % bz + bz * 1.5) % bz - bz / 2 + c.z;
       arr[i] = x;
       arr[i + 1] = y;
       arr[i + 2] = z;
       if (rain) {
-        arr[i + 3] = x + 0.01;
-        arr[i + 4] = y + 0.38;
-        arr[i + 5] = z + 0.004;
+        arr[i + 3] = x - dx * tl + 0.01;
+        arr[i + 4] = y + sl;
+        arr[i + 5] = z - dz * tl + 0.004;
       }
     }
     p.needsUpdate = true;
     moved = true;
   }
-  return moved;
+  return wxTick(dt, moved);
 }
 
 function sunPath() {
@@ -584,18 +597,51 @@ function syncSkyUI() {
   if (mm && document.activeElement !== mm) mm.value = String(SKY.m);
   const wt = $("#skw");
   if (wt) wt.value = SKY.weather;
+  const lt = $("#skl");
+  if (lt) lt.value = LAMP.mode;
+  wxSync();
   const pb = $("#skplay");
   if (pb) pb.setAttribute("aria-pressed", String(SKY.play));
   const pp = $("#skpath");
   if (pp) pp.setAttribute("aria-pressed", String(SKY.path));
   if (tl && st) tl.dataset.tip = st.alt > -0.833 ? `Солнце ${Math.round(st.alt)}° над горизонтом, ${compassName(st.az * 180 / Math.PI)}` : "Солнце за горизонтом";
+  dayStrip();
+}
+
+function dayStrip() {
+  const site = S.site || siteDefault();
+  const key = [SKY.m, SKY.d, site.lat, site.lon, site.tz].join("|");
+  if (SKY.stripKey === key) return;
+  SKY.stripKey = key;
+  const dy = daySun(SKY.m, SKY.d);
+  const sl = $("#skt");
+  const lb = $("#skday");
+  const N = "#1b2440";
+  const pc = t => (clamp(t, 0, 1440) / 14.4).toFixed(2) + "%";
+  let g;
+  if (dy.rise === null && dy.set === null) g = dy.top > 0 ? "linear-gradient(90deg, #8fd0ff, #8fd0ff)" : `linear-gradient(90deg, ${N}, ${N})`;
+  else {
+    const r = dy.rise === null ? 0 : dy.rise;
+    const e = dy.set === null ? 1440 : dy.set;
+    g = `linear-gradient(90deg, ${N} ${pc(r - 50)}, #f59e0b ${pc(r)}, #8fd0ff ${pc(r + 110)}, #8fd0ff ${pc(e - 110)}, #f97316 ${pc(e)}, ${N} ${pc(e + 50)})`;
+  }
+  if (sl) sl.style.setProperty("--daygrad", g);
+  if (lb) lb.textContent = dy.rise === null && dy.set === null ? (dy.top > 0 ? "полярный день" : "полярная ночь") : `↑${dy.rise === null ? "нет" : hm(dy.rise)} ↓${dy.set === null ? "нет" : hm(dy.set)}`;
 }
 
 function skySet(p) {
+  const m0 = SKY.m;
+  const w0 = SKY.weather;
   Object.assign(SKY, p);
+  if (p.m !== undefined && p.m !== m0) Object.assign(WX, {snow: seasonSnow(), wet: 0, pud: 0});
+  if (p.weather !== undefined && p.weather !== w0) wxWeather(p.weather);
   SKY.d = clamp(Math.round(SKY.d), 1, new Date(Date.UTC(skyYear(), SKY.m, 0)).getUTCDate());
   applySky();
   saveUI();
+  if (SMAP.on) {
+    smapPlaced();
+    smapUI();
+  }
   if (UIP.ptab === "proj" && tab === "plot") renderPanel();
 }
 
@@ -606,7 +652,7 @@ function sunSec() {
     `<label class="f">Город рядом<select data-b="site.city"><option value="">Свои координаты</option>${cities}</select></label>` +
     row(num("Широта, °", "site.lat", site.lat, "in-lat", 0.01), num("Долгота, °", "site.lon", site.lon, "in-lon", 0.01)) +
     row(num("Часовой пояс, UTC+", "site.tz", site.tz, "in-tz", 1), num("Север от верха плана, °", "site.north", site.north, "in-north", 5)) +
-    `<div class="btns">${btn("north-l", "Север ↺ 15°")}${btn("north-r", "Север ↻ 15°")}${btn("sky-path", SKY.path ? "Спрятать путь солнца" : "Показать путь солнца")}</div>` +
+    `<div class="btns">${btn("north-l", "Север ↺ 15°")}${btn("north-r", "Север ↻ 15°")}${btn("sky-path", SKY.path ? "Спрятать путь солнца" : "Показать путь солнца")}${btn("sun-map", SMAP.on ? "Спрятать карту солнца" : "Карта солнца на участке")}</div>` +
     `<p class="hint">Север 0° значит, что верх плана смотрит на север, а улица на юг. Стрелка «С» на плане участка показывает север.</p>`);
   const day = daySun(SKY.m, SKY.d);
   const md = `${SKY.d} ${MONTHS[SKY.m - 1]}`;
@@ -652,4 +698,13 @@ function skyUIInit() {
   });
   const pp = $("#skpath");
   if (pp) pp.addEventListener("click", () => skySet({path: !SKY.path}));
+  const sm = $("#skmap");
+  if (sm) sm.addEventListener("click", () => smapToggle());
+  const lt = $("#skl");
+  if (lt) {
+    lt.innerHTML = Object.entries(LAMP_MODES).map(([key, v]) => `<option value="${key}">${v}</option>`).join("");
+    lt.addEventListener("change", () => setLampMode(lt.value));
+  }
+  wxUIInit();
+  ltplInit();
 }

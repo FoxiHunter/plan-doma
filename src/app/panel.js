@@ -1,10 +1,12 @@
 "use strict";
 const HINT = {
   plot: "Тяни дом и объекты. Колесо или щипок меняют масштаб, пустое место двигает план. R поворачивает, стрелки двигают, Delete удаляет.",
-  house: "Тяни комнаты, двери, окна и мебель. Комнаты липнут к соседним стенам, Alt отключает привязку. R поворачивает, Delete удаляет.",
+  house: "Тяни комнаты, двери, окна и мебель. Комнаты липнут к соседним стенам, мебель к стенам и соседней мебели и встаёт к стене спиной. Alt отключает привязку. Shift+клик и Shift+рамка выбирают несколько. R поворачивает, Delete удаляет.",
   room: "Зажми и протяни на плане дома или по полу в 3D, получится комната. Esc отменяет.",
   open: "Кликни по стене, проём встанет в эту точку. Shift ставит несколько подряд, Esc отменяет.",
-  thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет."
+  thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет.",
+  wall: "Кликни по стене между двумя комнатами, и её не станет вместе с дверями на ней. Клик по пунктиру возвращает стену. Esc отменяет.",
+  meas: "Кликни начало и конец. Точка липнет к углам и стенам, Shift держит прямую, Alt отключает привязку. Esc сбрасывает замер."
 };
 const TOOLNAMES = {door: "Дверь", open: "Проём", arch: "Арка", win: "Окно"};
 
@@ -36,7 +38,19 @@ function sideOptions(it) {
   return [[1, nm(at(1))], [-1, nm(at(-1))]];
 }
 
+function wallsList(r) {
+  const nb = neighbors(r);
+  if (!nb.length) return "";
+  const rows = nb.map(({r: q, e}) => {
+    const gone = wallGone(r, q);
+    const act = r.open && q.open ? `<span class="a">открытые зоны</span>` : btn("wall-toggle", gone ? "Вернуть стену" : "Убрать стену", "", ` data-id="${esc(q.id)}"`);
+    return `<div class="wrow"><span class="sw" style="background:${FILL[grp(q)]}"></span><span class="nm">${esc(q.name)}<small>${gone ? "без стены" : "стена"}, ${fm(e.b - e.a)} м</small></span>${act}</div>`;
+  }).join("");
+  return `<h3 class="sub">Соседние комнаты</h3><div class="wlist">${rows}</div>`;
+}
+
 function secSelected() {
+  if (selIds()) return multiSec();
   if (sel && sel.t === "house") {
     const f = footprint();
     if (!f) return "";
@@ -59,7 +73,7 @@ function secSelected() {
       pos +
       row(num("Поворот, °", "sel.rot", it.rot || 0, "in-rot", 15), num("Над полом, м", "sel.z", it.z || 0, "in-z")) +
       `<div class="btns">${btn("rot-15", "↺ 15°")}${btn("rot", "↻ 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
+      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (it.kind === "kitchen" && sel.t === "item" ? kitSec(it) : "") + (md.lamp ? lampSec(it) : "") + (md.fs ? fenceSecSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
   }
   if (sel.t === "room") {
     const types = Object.keys(TYPES).map(t => `<option${t === it.type ? " selected" : ""}>${t}</option>`).join("");
@@ -68,9 +82,10 @@ function secSelected() {
       row(num("Ширина, м", "sel.w", it.w, "in-w"), num("Глубина, м", "sel.d", it.d, "in-d")) +
       row(num("От левого края, м", "sel.x", it.x, "in-x"), num("От верхнего края, м", "sel.y", it.y, "in-y")) +
       `<label class="check"><input type="checkbox" data-b="sel.open"${it.open ? " checked" : ""}>Открытая зона, между открытыми нет стен</label>` +
-      `<div class="btns">${btn("add-door", "Дверь в комнату")}${btn("add-win", "Окно")}</div>` +
+      wallsList(it) +
+      `<div class="btns">${btn("furnish", itemsIn(it).length ? "Заменить мебель набором" : "Обставить комнату", "primary")}${btn("add-door", "Дверь в комнату")}${btn("add-win", "Окно")}</div>` +
       `<div class="btns">${btn("rot", "Повернуть на 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Двери, окна и мебель в комнате ездят и крутятся вместе с ней.</p>`) + matsSec("room", it);
+      `<p class="hint">Двери, окна и мебель в комнате ездят и крутятся вместе с ней. «Обставить комнату» ставит набор мебели по типу комнаты и не загораживает двери и окна, Ctrl+Z вернёт как было.</p>`) + matsSec("room", it);
   }
   if (sel.t === "door") {
     const kinds = Object.entries(DOOR_KINDS).map(([key, v]) => `<option value="${key}"${key === it.kind ? " selected" : ""}>${v}</option>`).join("");
@@ -83,9 +98,10 @@ function secSelected() {
     const ops = Object.entries(DOOR_OPS).map(([key, v]) => `<option value="${key}"${key === it.op ? " selected" : ""}>${v}</option>`).join("");
     const lfs = Object.entries(LEAFS).map(([key, v]) => `<option value="${key}"${key === it.leaf ? " selected" : ""}>${v}</option>`).join("");
     const mech = real ? row(`<label class="f">Как открывается<select data-b="sel.op">${ops}</select></label>`, `<label class="f">Полотно<select data-b="sel.leaf">${lfs}</select></label>`) + openRow(it.open, "toggle-open") : "";
+    const full = !real ? `<div class="btns">${btn("door-full", "На всю стену")}</div><p class="hint">Проём оставляет стену над собой. Чтобы убрать стену целиком, выбери комнату и нажми «Убрать стену» у соседа или возьми инструмент «Убрать стену» слева.</p>` : "";
     return sec(esc(doorLabel(it)),
       row(`<label class="f">Что это<select data-b="sel.kind">${kinds}</select></label>`, num("Ширина, м", "sel.w", it.w, "in-w")) +
-      swing + mech +
+      swing + mech + full +
       `<div class="btns">${btn("rot", "Следующий вариант (R)")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
       `<p class="hint">Высота всех проёмов задаётся в параметрах дома, сейчас ${fm(S.house.doorH)} м. Арка круглая, её верх на этой высоте.</p>`) + matsSec("door", it);
   }
@@ -99,8 +115,8 @@ function secSelected() {
       row(`<label class="f">Как открывается<select data-b="sel.op">${ops}</select></label>`) + how +
       (it.op !== "fixed" ? openRow(it.open, "toggle-open") : "") +
       `<div class="btns">${btn("wp-std", "1,5 × 1,4")}${btn("wp-pan", "В пол 1,8 × 2,1")}${btn("wp-lift", "Панорама с дверью 3 × 2,4")}${btn("wp-nar", "Узкое 0,6 × 1,4")}${btn("wp-wet", "Санузел 0,8 × 0,6")}</div>` +
-      `<div class="btns">${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Окна ставятся только на наружные стены.</p>`) + matsSec("win", it);
+      `<div class="btns">${btn("win-view", "Вид из окна", "primary")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
+      `<p class="hint">Окна ставятся только на наружные стены. «Вид из окна» ставит тебя в комнату перед окном, Esc возвращает прежний вид.</p>`) + matsSec("win", it);
   }
   return "";
 }
@@ -146,6 +162,7 @@ function projectHTML() {
   if (tab === "plot") {
     h += sec("Участок", row(num("Ширина вдоль улицы, м", "plot.w", S.plot.w), num("Глубина, м", "plot.d", S.plot.d)));
     h += sec("Отступы от границ", row3(num("От улицы, м", "plot.street", S.plot.street), num("Сбоку, м", "plot.side", S.plot.side), num("Сзади, м", "plot.back", S.plot.back)) + `<p class="hint">Дом должен стоять внутри штриховки.</p>`);
+    h += plotFenceSec();
     h += sunSec();
   } else {
     const Hs = S.house;
@@ -154,9 +171,11 @@ function projectHTML() {
       row(num("Высота потолка, м", "house.h", Hs.h), num("Цоколь, м", "house.base", Hs.base)) +
       row(num("Высота проёмов, м", "house.doorH", Hs.doorH)));
     h += roofSec();
+    h += sec("Свет в доме", `<label class="check"><input type="checkbox" data-b="house.autoLights"${Hs.autoLights ? " checked" : ""}>Потолочный свет в каждой комнате сам</label>` +
+      `<p class="hint">В сумерках и ночью в комнатах загорается потолочный свет по площади и типу комнаты. Если поставить в комнату свою люстру или подвес из каталога, её свет заменит автоматический. Общий выключатель внизу 3D-вида.</p>`);
     h += matsSec("house", S.house, "Отделка дома");
   }
-  return h;
+  return h + boqHTML();
 }
 
 function roofSec() {
@@ -289,20 +308,31 @@ function syncTools() {
   document.querySelectorAll("#rail [data-g], #gmodes [data-g]").forEach(b => b.setAttribute("aria-pressed", String(!tool && b.dataset.g === gmode)));
   document.body.classList.toggle("placing", !!tool);
   const ht = $("#hint");
-  if (ht) ht.textContent = hintText();
+  const txt = hintText();
+  if (ht && ht.textContent !== txt) {
+    ht.textContent = txt;
+    ht.classList.add("show");
+    clearTimeout(ht.hideT);
+    ht.hideT = setTimeout(() => ht.classList.remove("show"), 8000);
+  }
   const t3 = $("#toolchip");
   if (t3) {
-    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
+    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "wall" ? "Убрать или вернуть стену" : tool.t === "meas" ? "Рулетка" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
     t3.hidden = !tool;
     t3.querySelector("span").textContent = nm;
   }
 }
 
 function setTool(t) {
+  if (!(t && t.t === "meas")) {
+    MEAS.a = null;
+    MEAS.b = null;
+    MEAS.cur = null;
+  }
   tool = t;
   ghost2 = null;
   if (typeof clearGhost === "function" && GH.root) clearGhost();
-  if (t && (t.t === "room" || t.t === "open") && tab !== "house") {
+  if (t && (t.t === "room" || t.t === "open" || t.t === "wall") && tab !== "house") {
     tab = "house";
     sel = null;
     frozen = null;
@@ -312,6 +342,7 @@ function setTool(t) {
   syncTools();
   render2D();
   if (UIP.ptab === "cat") renderPanel();
+  if (typeof measSync3 === "function") measSync3();
   V.need = true;
 }
 
@@ -343,7 +374,7 @@ function updUndo() {
 function applyBind(el) {
   const b = el.dataset.b;
   const it = selItem();
-  if (b === "sel.open") {
+  if (b === "sel.open" && el.type === "checkbox") {
     if (!it) return false;
     it.open = el.checked;
     return true;
@@ -390,9 +421,16 @@ function applyBind(el) {
   if (b === "sel.open") {
     if (!it) return false;
     it.open = clamp((parseFloat(el.value) || 0) / 100, 0, 1);
-    animTo(animKey(sel.t, it.id), it.open);
+    animTo(sel.t === "obj" ? animKey("obj", it.id, "gate") : animKey(sel.t, it.id), it.open);
     return true;
   }
+  if (b === "fence.fs") {
+    if (!it || !has(FENCES, el.value)) return false;
+    it.fs = el.value;
+    return true;
+  }
+  if (b.indexOf("pf.") === 0) return fenceBind(b, el);
+  if (b.indexOf("km.") === 0) return kitBind(b, el, it);
   if (b.indexOf("op.") === 0) {
     if (!it || sel.t !== "obj") return false;
     const [, oid, f] = b.split(".");
@@ -427,6 +465,26 @@ function applyBind(el) {
     const lim = {c: [-50, 50], w: [0.3, 20], h: [0.3, 10], sill: [0, 5]};
     if (!has(lim, f)) return false;
     op[f] = clamp(r2(v), lim[f][0], lim[f][1]);
+    return true;
+  }
+  if (b === "lamp.on") {
+    if (!it) return false;
+    if (el.checked) delete it.on;
+    else it.on = false;
+    return true;
+  }
+  if (b === "lamp.k") {
+    if (!it) return false;
+    it.k = clamp(Math.round((Number(el.value) || 3000) / 100) * 100, 1800, 7000);
+    return true;
+  }
+  if (b === "lamp.lm") {
+    if (!it) return false;
+    it.lm = clamp(Math.round(Number(el.value) || 800), 20, 20000);
+    return true;
+  }
+  if (b === "house.autoLights") {
+    S.house.autoLights = el.checked;
     return true;
   }
   if (b === "sel.side") {
@@ -539,7 +597,8 @@ function applyBind(el) {
   }
   if (f === "w" || f === "d") {
     const min = sel.t === "door" ? 0.5 : isThing ? 0.05 : 0.3;
-    const nv = clamp(r2(v), min, sel.t === "door" ? 4 : sel.t === "win" ? 6 : 100);
+    const sp = sel.t === "door" ? openingSpan(it) : null;
+    const nv = clamp(r2(v), min, sel.t === "door" ? (sp ? Math.max(0.5, r2(sp.b - sp.a)) : 4) : sel.t === "win" ? 6 : 100);
     if (isThing) {
       const c = f === "w" ? it.x + it.w / 2 : it.y + it.d / 2;
       it[f] = nv;
@@ -567,6 +626,15 @@ panel.addEventListener("input", e => {
     return;
   }
   if (!el.dataset || !el.dataset.b || el.tagName === "SELECT") return;
+  if (el.type === "range" && el.dataset.b === "lamp.lm") {
+    if (applyBind(el)) {
+      const sp = el.closest(".f") && el.closest(".f").querySelector("b");
+      if (sp) sp.textContent = el.value + " лм";
+      schedule3D();
+      save();
+    }
+    return;
+  }
   if (el.type === "range" && /\.open$/.test(el.dataset.b)) {
     if (applyBind(el)) {
       const lb = el.closest(".f");
@@ -590,6 +658,20 @@ panel.addEventListener("change", e => {
   applyBind(el);
   changed();
 });
+
+function lampSec(it) {
+  const L = lampDef(it);
+  const K = lampTemp(it);
+  const lm = lampLm(it);
+  const tl = Object.assign({}, LAMP_TEMPS);
+  if (!has(tl, String(K))) tl[K] = K + " K";
+  const temps = Object.entries(tl).map(([key, v]) => `<option value="${key}"${Number(key) === K ? " selected" : ""}>${v}</option>`).join("");
+  const top = Math.max(L.lm * 4, lm);
+  const why = LAMP.lit ? "" : LAMP.mode === "off" ? "Сейчас весь свет выключен внизу 3D-вида. " : "Сейчас светло, лампы включатся в сумерках или кнопкой «Свет вкл.» внизу 3D-вида. ";
+  return sec("Свет", `<label class="check"><input type="checkbox" data-b="lamp.on"${it.on !== false ? " checked" : ""}>Лампа включена</label>` +
+    row(`<label class="f">Цвет света<select data-b="lamp.k">${temps}</select></label>`, `<label class="f">Яркость <b>${lm} лм</b><input type="range" min="50" max="${top}" step="50" data-b="lamp.lm" value="${lm}"></label>`) +
+    `<p class="hint">${why}Двойной клик по лампе в 3D или клик в прогулке щёлкает выключателем.</p>`);
+}
 
 function openRow(v, act) {
   const pc = Math.round((v || 0) * 100);
@@ -662,6 +744,17 @@ panel.addEventListener("click", e => {
       it.rot = normDeg((it.rot || 0) - 15);
       ch = true;
     }
+  } else if (a === "boq-csv") {
+    boqCSV();
+  } else if (a === "furnish") {
+    if (it && sel.t === "room") furnishRoom(it);
+  } else if (a === "win-view") {
+    if (view === "2d") {
+      view = "3d";
+      applyView();
+    }
+    const w = it;
+    setTimeout(() => windowView(w), 30);
   } else if (a === "focus") {
     if (view === "2d") {
       view = "split";
@@ -693,6 +786,27 @@ panel.addEventListener("click", e => {
   } else if (a === "toggle-open") {
     if (sel) toggleOpen({t: sel.t, id: sel.id});
     return;
+  } else if (a === "wall-toggle") {
+    const q = S.rooms.find(x => x.id === b.dataset.id);
+    if (it && q && sel.t === "room") {
+      setNoWall(it, q, !wallGone(it, q));
+      ch = true;
+    }
+  } else if (a === "door-full") {
+    const sp = it && sel.t === "door" ? openingSpan(it) : null;
+    if (sp) {
+      it.w = r2(sp.b - sp.a);
+      if (it.o === "h") it.x = r2((sp.a + sp.b) / 2);
+      else it.y = r2((sp.a + sp.b) / 2);
+      ch = true;
+    }
+  } else if (a === "gate-toggle") {
+    if (sel && sel.t === "obj") toggleOpen({t: "obj", id: sel.id, gate: true});
+    return;
+  } else if (a === "pf-gate" || a === "pf-wicket") {
+    toggleFence({t: "fence", part: a === "pf-gate" ? "gate" : "wicket"});
+    renderPanel();
+    return;
   } else if (a === "op-toggle") {
     if (sel && sel.t === "obj") toggleOpen({t: "obj", id: sel.id, open: b.dataset.id});
     return;
@@ -720,6 +834,14 @@ panel.addEventListener("click", e => {
     ch = true;
   } else if (a === "sky-path") {
     skySet({path: !SKY.path});
+  } else if (a === "sun-map") {
+    smapToggle();
+  } else if (a.indexOf("al-") === 0) {
+    ch = groupAlign(a.slice(3));
+  } else if (a === "desel") {
+    sel = null;
+  } else if (a.indexOf("km-") === 0) {
+    ch = kitAction(a, Number(b.dataset.i), it);
   } else if (a === "dup") {
     ch = dupSel();
   } else if (a === "del") {
@@ -787,10 +909,18 @@ function menuAction(a, el) {
     exportPlanPNG();
   } else if (a === "plan-svg") {
     exportPlanSVG();
+  } else if (a === "boq-csv") {
+    boqCSV();
   } else if (a === "shot") {
     snapshotHQ();
   } else if (a === "zip") {
     exportZip();
+  } else if (a === "pano") {
+    panoRender();
+  } else if (a === "video-orbit") {
+    recordVideo("orbit");
+  } else if (a === "video-day") {
+    recordVideo("day");
   } else if (a === "print") {
     printSheet();
   }
@@ -830,7 +960,10 @@ document.addEventListener("keydown", e => {
   if (isTyping || mod) return;
   if (e.key === "Escape") {
     closeMenus();
-    if (tool) setTool(null);
+    if (tool && tool.t === "meas" && MEAS.a) {
+      measClear();
+      render2D();
+    } else if (tool) setTool(null);
     else if (sel) {
       sel = null;
       renderAll();
@@ -851,6 +984,10 @@ document.addEventListener("keydown", e => {
   }
   if (e.code === "KeyV") {
     setTool(null);
+    return;
+  }
+  if (e.code === "KeyM") {
+    setTool(tool && tool.t === "meas" ? null : {t: "meas"});
     return;
   }
   if (e.code === "KeyF") {
@@ -881,7 +1018,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click
   tab = b.dataset.tab;
   sel = null;
   frozen = null;
-  if (tool && (tool.t === "room" || tool.t === "open") && tab !== "house") tool = null;
+  if (tool && (tool.t === "room" || tool.t === "open" || tool.t === "wall") && tab !== "house") tool = null;
   renderAll();
 }));
 
@@ -910,10 +1047,12 @@ document.querySelectorAll("#rail [data-tool]").forEach(b => b.addEventListener("
   else if (t === "room") setTool(tool && tool.t === "room" ? null : {t: "room"});
   else if (t === "catalog") {
     UIP.ptab = "cat";
+    if (!UIP.side) setSide(true);
     saveUI();
     renderPanel();
-    if (window.innerWidth < 1150) $(".side").scrollIntoView({behavior: "smooth", block: "start"});
   } else if (t === "person") setTool(tool && tool.t === "thing" && tool.kind === "person" ? null : {t: "thing", kind: "person"});
+  else if (t === "wall") setTool(tool && tool.t === "wall" ? null : {t: "wall"});
+  else if (t === "meas") setTool(tool && tool.t === "meas" ? null : {t: "meas"});
   else setTool(tool && tool.t === "open" && tool.kind === t ? null : {t: "open", kind: t});
 }));
 
@@ -937,6 +1076,17 @@ $("#qual").addEventListener("change", e => {
 
 $("#wheel").addEventListener("change", e => {
   UIP.wheel = ["auto", "mouse", "pad"].includes(e.target.value) ? e.target.value : "auto";
+  saveUI();
+});
+
+$("#pad2").addEventListener("change", e => {
+  UIP.pad2 = e.target.value === "pan" ? "pan" : "orbit";
+  saveUI();
+});
+
+$("#padk").addEventListener("change", e => {
+  const v = Number(e.target.value);
+  UIP.padk = [0.5, 0.75, 1, 1.5, 2].includes(v) ? v : 1;
   saveUI();
 });
 
@@ -983,6 +1133,10 @@ function sync3DButtons() {
   if (cp) cp.value = String(V.cut.t);
   const wh = $("#wheel");
   if (wh) wh.value = UIP.wheel;
+  const p2 = $("#pad2");
+  if (p2) p2.value = UIP.pad2;
+  const pk = $("#padk");
+  if (pk) pk.value = String(UIP.padk);
   const sb = $("#sunbar");
   if (sb) sb.hidden = !V.sunbar;
   const q = $("#qual");
@@ -1029,7 +1183,6 @@ document.querySelectorAll("#cams [data-cam]").forEach(b => b.addEventListener("c
   else camPreset(b.dataset.cam);
 }));
 
-$("#shot").addEventListener("click", () => snapshotHQ());
 
 $("#help").addEventListener("click", () => {
   const h = $("#help3");
@@ -1054,7 +1207,7 @@ function tipShow(t) {
   const r = t.getBoundingClientRect();
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  const side = t.closest("#rail") && window.innerWidth > 640;
+  const side = t.closest("#rail") && window.innerWidth > 700;
   let x;
   let y;
   if (side) {
@@ -1096,6 +1249,61 @@ function tipsInit() {
   document.addEventListener("keydown", tipHide, true);
   document.addEventListener("wheel", tipHide, {passive: true, capture: true});
   window.addEventListener("blur", tipHide);
+}
+
+const ICON_MOON = `<svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
+const ICON_SUN = `<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>`;
+
+function themeNow() {
+  if (UIP.theme === "light" || UIP.theme === "dark") return UIP.theme;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  if (UIP.theme === "light" || UIP.theme === "dark") root.dataset.theme = UIP.theme;
+  else delete root.dataset.theme;
+  const ts = $("#themesel");
+  if (ts) ts.value = UIP.theme;
+  const tb = $("#theme");
+  if (tb) {
+    const dark = themeNow() === "dark";
+    tb.innerHTML = dark ? ICON_SUN : ICON_MOON;
+    tb.dataset.tip = dark ? "Светлая тема" : "Тёмная тема";
+  }
+}
+
+function setSide(on, quiet) {
+  UIP.side = !!on;
+  const app = $("#app");
+  if (app) app.classList.toggle("side-off", !UIP.side);
+  const b = $("#sidebtn");
+  if (b) b.setAttribute("aria-pressed", String(UIP.side));
+  if (!quiet) saveUI();
+  setTimeout(() => {
+    frozen = null;
+    render2D();
+    size3D();
+  }, 280);
+}
+
+$("#theme").addEventListener("click", () => {
+  UIP.theme = themeNow() === "dark" ? "light" : "dark";
+  applyTheme();
+  saveUI();
+});
+
+$("#themesel").addEventListener("change", e => {
+  UIP.theme = ["light", "dark"].includes(e.target.value) ? e.target.value : "auto";
+  applyTheme();
+  saveUI();
+});
+
+$("#sidebtn").addEventListener("click", () => setSide(!UIP.side));
+
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", applyTheme);
 }
 
 tipsInit();

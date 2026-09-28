@@ -24,7 +24,7 @@ const OP_SIDES = {f: "Спереди", b: "Сзади", l: "Слева", r: "С�
 const FILL = {sleep: "var(--f-sleep)", day: "var(--f-day)", wet: "var(--f-wet)", pass: "var(--f-pass)", other: "var(--f-other)"};
 const INK = {sleep: "var(--t-sleep)", day: "var(--t-day)", wet: "var(--t-wet)", pass: "var(--t-pass)", other: "var(--t-other)"};
 const LISTS = {room: "rooms", door: "doors", win: "windows", item: "items", obj: "objects"};
-const UIP = {wheel: "auto", ptab: "props", cat: "all", recent: []};
+const UIP = {wheel: "auto", ptab: "props", cat: "all", recent: [], theme: "auto", side: window.innerWidth > 1000, pad2: "orbit", padk: 1, lt: ""};
 
 const WEB = window.PLAN_WEB === true;
 const $ = s => document.querySelector(s);
@@ -57,11 +57,16 @@ function win(x, y, o, w, sill, h) {
 
 function thing(kind, x, y, over) {
   const K = MODELS[kind] || MODELS.other;
-  return Object.assign({id: uid(), kind, name: K.name, x, y, w: K.w, d: K.d, h: K.h, z: K.z || 0, rot: 0}, over || {});
+  return Object.assign({id: uid(), kind, name: K.name, x, y, w: K.w, d: K.d, h: K.h, z: modelZ(K), rot: 0}, over || {});
+}
+
+function modelZ(K) {
+  if (K.z === "ceil") return Math.max(0, r2(S.house.h - K.h));
+  return typeof K.z === "number" ? K.z : 0;
 }
 
 function baseHouse(cx, cy) {
-  return {cx, cy, rot: 0, wall: 0.4, inner: 0.12, h: 2.8, base: 0.5, doorH: 2.1, roof: "gable", pitch: 30, over: 0.5, ridge: "long", pitch2: 25, overG: 0.4, hipCut: 0.35, low: "b", gutters: true, chim: false, chx: 0, chy: 0, chh: 0.6};
+  return {cx, cy, rot: 0, wall: 0.4, inner: 0.12, h: 2.8, base: 0.5, doorH: 2.1, roof: "gable", pitch: 30, over: 0.5, ridge: "long", pitch2: 25, overG: 0.4, hipCut: 0.35, low: "b", gutters: true, chim: false, chx: 0, chy: 0, chh: 0.6, autoLights: true};
 }
 
 function plotDefault() {
@@ -285,11 +290,116 @@ function roomAt(px, py) {
   return null;
 }
 
+function pairKey(a, b) {
+  return a < b ? a + "|" + b : b + "|" + a;
+}
+
+function noWallSet() {
+  return new Set((S.nowall || []).map(p => pairKey(p[0], p[1])));
+}
+
+function sharedEdge(A, B) {
+  if (near(A.x + A.w, B.x) || near(B.x + B.w, A.x)) {
+    const c = near(A.x + A.w, B.x) ? B.x : A.x;
+    const a = Math.max(A.y, B.y);
+    const b = Math.min(A.y + A.d, B.y + B.d);
+    if (b - a > 0.05) return {o: "v", c: r2(c), a: r2(a), b: r2(b)};
+  }
+  if (near(A.y + A.d, B.y) || near(B.y + B.d, A.y)) {
+    const c = near(A.y + A.d, B.y) ? B.y : A.y;
+    const a = Math.max(A.x, B.x);
+    const b = Math.min(A.x + A.w, B.x + B.w);
+    if (b - a > 0.05) return {o: "h", c: r2(c), a: r2(a), b: r2(b)};
+  }
+  return null;
+}
+
+function neighbors(r) {
+  const out = [];
+  for (const q of S.rooms) {
+    if (q === r) continue;
+    const e = sharedEdge(r, q);
+    if (e) out.push({r: q, e});
+  }
+  return out;
+}
+
+function wallGone(A, B) {
+  return (A.open && B.open) || noWallSet().has(pairKey(A.id, B.id));
+}
+
+function setNoWall(A, B, off) {
+  const key = pairKey(A.id, B.id);
+  S.nowall = (S.nowall || []).filter(p => pairKey(p[0], p[1]) !== key);
+  if (off) {
+    S.nowall.push([A.id, B.id]);
+    const sh = sharedEdge(A, B);
+    if (sh) S.doors = S.doors.filter(d => !(d.o === sh.o && near(across(d), sh.c) && along(d) > sh.a - 0.01 && along(d) < sh.b + 0.01));
+  }
+  if (!S.nowall.length) delete S.nowall;
+}
+
+function wallPairAt(p, maxDist) {
+  const ws = wallSegs();
+  const e = ext();
+  if (!e) return null;
+  let best = null;
+  for (const L of ws.walls.concat(ws.soft, extSides(e))) {
+    const al = L.o === "h" ? p.x : p.y;
+    const ac = L.o === "h" ? p.y : p.x;
+    const pos = clamp(al, L.a + 0.02, L.b - 0.02);
+    const d = Math.hypot(al - pos, ac - L.c);
+    if (!best || d < best.d) best = {L, pos, d};
+  }
+  if (!best || best.d > (maxDist || 0.6)) return null;
+  const {L, pos} = best;
+  const A = L.o === "h" ? roomAt(pos, L.c - 0.05) : roomAt(L.c - 0.05, pos);
+  const B = L.o === "h" ? roomAt(pos, L.c + 0.05) : roomAt(L.c + 0.05, pos);
+  if (!A || !B || A === B) return {L, ext: true};
+  return {L, A, B, e: sharedEdge(A, B)};
+}
+
+function toggleWallAt(p, maxDist) {
+  const h = wallPairAt(p, maxDist);
+  if (!h) {
+    setStatus("Здесь нет стены, кликни ближе к стене");
+    return false;
+  }
+  if (h.ext) {
+    setStatus("Наружную стену убрать нельзя, можно поставить в ней проём");
+    return false;
+  }
+  if (h.A.open && h.B.open) {
+    setStatus("Между двумя открытыми зонами стены и так нет. Сними галочку «Открытая зона» у одной из комнат");
+    return false;
+  }
+  const off = !noWallSet().has(pairKey(h.A.id, h.B.id));
+  setNoWall(h.A, h.B, off);
+  setStatus(off ? `Стены между «${h.A.name}» и «${h.B.name}» больше нет` : `Стена между «${h.A.name}» и «${h.B.name}» вернулась`);
+  changed();
+  return true;
+}
+
+function openingSpan(it) {
+  const al = along(it);
+  const ac = across(it);
+  const A = it.o === "h" ? roomAt(al, ac - 0.05) : roomAt(ac - 0.05, al);
+  const B = it.o === "h" ? roomAt(al, ac + 0.05) : roomAt(ac + 0.05, al);
+  if (A && B && A !== B) {
+    const sh = sharedEdge(A, B);
+    return sh ? {a: sh.a, b: sh.b} : null;
+  }
+  const r = A || B;
+  if (!r) return null;
+  return it.o === "h" ? {a: r.x, b: r.x + r.w} : {a: r.y, b: r.y + r.d};
+}
+
 function wallSegs() {
   const e = ext();
   const walls = [];
   const soft = [];
   if (!e) return {walls, soft};
+  const NW = noWallSet();
   const xs = new Set();
   const ys = new Set();
   for (const r of S.rooms) {
@@ -313,7 +423,7 @@ function wallSegs() {
         const m = (a + b) / 2;
         const A = o === "h" ? roomAt(m, c - 0.01) : roomAt(c - 0.01, m);
         const B2 = o === "h" ? roomAt(m, c + 0.01) : roomAt(c + 0.01, m);
-        const isSoft = !!(A && B2 && A !== B2 && A.open && B2.open);
+        const isSoft = !!(A && B2 && A !== B2 && ((A.open && B2.open) || NW.has(pairKey(A.id, B2.id))));
         const isWall = !!((A || B2) && A !== B2 && !isSoft);
         if (isWall) {
           if (cw && near(cw.b, a)) cw.b = b;
@@ -623,6 +733,10 @@ function rotItemAround(it, cx, cy) {
 
 function rotateSel() {
   if (!sel) return false;
+  if (selIds()) {
+    groupRotate();
+    return true;
+  }
   if (sel.t === "house") {
     S.house.rot = (S.house.rot + 90) % 360;
     return true;
@@ -658,6 +772,10 @@ function rotateSel() {
 
 function delSel() {
   if (!sel) return;
+  if (selIds()) {
+    groupDel();
+    return;
+  }
   if (sel.t === "room") {
     const r = selItem();
     if (r) {
@@ -677,6 +795,10 @@ function delSel() {
 }
 
 function dupSel() {
+  if (selIds()) {
+    groupDup();
+    return true;
+  }
   const it = selItem();
   if (!it) return false;
   const c = Object.assign({}, it, {id: uid()});
@@ -729,6 +851,10 @@ function addOpening(kind) {
 }
 
 function moveSel(mx, my, step) {
+  if (selIds()) {
+    groupMove(mx * step, my * step);
+    return true;
+  }
   if (sel.t === "house") {
     S.house.cx = r2(S.house.cx + mx * step);
     S.house.cy = r2(S.house.cy + my * step);
@@ -925,7 +1051,7 @@ function save() {
 
 function saveUI() {
   try {
-    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path}}));
+    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, theme: UIP.theme, side: UIP.side, pad2: UIP.pad2, padk: UIP.padk, lt: UIP.lt, rsize: typeof RND === "undefined" ? "screen" : RND.size, rdof: typeof RND === "undefined" ? "0" : RND.dof, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
   } catch (err) {
     return;
   }
@@ -1039,22 +1165,37 @@ function sanitize(d) {
       w,
       d: dd,
       h: clamp(n(o.h, K.h), 0.01, 20),
-      z: clamp(n(o.z, K.z || 0), 0, 20),
+      z: clamp(n(o.z, typeof K.z === "number" ? K.z : 0), 0, 20),
       rot: normDeg(rot)
     }, o);
     if (K.ops && Array.isArray(o.opens)) res.opens = opens(o.opens);
+    if (K.fs && typeof o.fs === "string" && has(FENCES, o.fs)) res.fs = o.fs;
+    if (kind === "kitchen") {
+      const km = kitSanitize(o);
+      if (km) {
+        res.mods = km;
+        res.w = r2(km.reduce((s, m) => s + m.w, 0));
+      }
+      if (o.up === false) res.up = false;
+    }
+    if (K.gate && typeof o.open === "number" && isFinite(o.open)) res.open = clamp(o.open, 0, 1);
+    if (K.lamp) {
+      if (o.on === false) res.on = false;
+      if (typeof o.k === "number" && isFinite(o.k)) res.k = clamp(Math.round(o.k / 100) * 100, 1800, 7000);
+      if (typeof o.lm === "number" && isFinite(o.lm)) res.lm = clamp(Math.round(o.lm), 20, 20000);
+    }
     return res;
   });
-  return {
+  const out = {
     v: 3,
     snap: [0.05, 0.1, 0.5].includes(d.snap) ? d.snap : 0.1,
-    plot: {
+    plot: Object.assign({
       w: clamp(n(d.plot.w, P0.w), 5, 300),
       d: clamp(n(d.plot.d, P0.d), 5, 300),
       street: clamp(n(d.plot.street, P0.street), 0, 300),
       side: clamp(n(d.plot.side, P0.side), 0, 300),
       back: clamp(n(d.plot.back, P0.back), 0, 300)
-    },
+    }, d.plot.fence ? {fence: fenceSanitize(d.plot.fence, d.plot)} : {}),
     site: {
       lat: clamp(n(ds.lat, D0.lat), -89, 89),
       lon: clamp(n(ds.lon, D0.lon), -180, 180),
@@ -1083,7 +1224,8 @@ function sanitize(d) {
       chim: !!d.house.chim,
       chx: n(d.house.chx, 0),
       chy: n(d.house.chy, 0),
-      chh: clamp(n(d.house.chh, H0.chh), 0.2, 3)
+      chh: clamp(n(d.house.chh, H0.chh), 0.2, 3),
+      autoLights: d.house.autoLights !== false
     }, d.house),
     rooms: arr(d.rooms).map(r => wm({
       id: sid(r.id),
@@ -1102,7 +1244,7 @@ function sanitize(d) {
         x: n(x.x, 0),
         y: n(x.y, 0),
         o: x.o === "v" ? "v" : "h",
-        w: clamp(n(x.w, 0.9), 0.5, 4),
+        w: clamp(n(x.w, 0.9), 0.5, 20),
         side: x.side === -1 ? -1 : 1,
         hinge: x.hinge === 1 ? 1 : 0,
         kind,
@@ -1127,6 +1269,10 @@ function sanitize(d) {
     items: things(d.items),
     objects: things(d.objects)
   };
+  const ids = new Set(out.rooms.map(r => r.id));
+  const nw = (Array.isArray(d.nowall) ? d.nowall : []).filter(p => Array.isArray(p) && p.length === 2).map(p => [sid(p[0]), sid(p[1])]).filter(p => p[0] !== p[1] && ids.has(p[0]) && ids.has(p[1])).slice(0, 300);
+  if (nw.length) out.nowall = nw;
+  return out;
 }
 
 function loadLocal() {

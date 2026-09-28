@@ -153,14 +153,15 @@ function thingGroup(o, parent, mfn, y0, pick) {
   g.rotation.y = -(o.rot || 0) * Math.PI / 180;
   g.userData.pick = pick;
   g.userData.dims = o.w + "|" + o.d + "|" + o.h + "|" + o.kind;
-  buildModel(g, o, mfn, false);
+  const P = buildModel(g, o, mfn, false);
+  if (modelOf(o).lamp) lampThing(g, P, o, pick.t === "item");
   parent.add(g);
-  if (!V.hq && sel && sel.t === pick.t && sel.id === pick.id) edges(g, o.w + 0.04, o.h + 0.04, o.d + 0.04, 0, o.h / 2, 0, selColor());
+  if (!V.hq && sel && sel.t === pick.t && (sel.id === pick.id || (sel.ids && sel.ids.includes(pick.id)))) edges(g, o.w + 0.04, o.h + 0.04, o.d + 0.04, 0, o.h / 2, 0, selColor());
   return g;
 }
 
 function syncThing3D() {
-  if (!sel || (sel.t !== "item" && sel.t !== "obj") || V.rebuild || !V.root) return false;
+  if (!sel || (sel.t !== "item" && sel.t !== "obj") || selIds() || V.rebuild || !V.root) return false;
   const it = selItem();
   const parent = sel.t === "item" ? V.hgi : V.root;
   if (!it || !parent) return false;
@@ -169,6 +170,7 @@ function syncThing3D() {
   const y0 = sel.t === "item" ? S.house.base + 0.02 : 0;
   g.position.set(it.x + it.w / 2, y0 + (it.z || 0), it.y + it.d / 2);
   g.rotation.y = -(it.rot || 0) * Math.PI / 180;
+  if (LAMP.lit) lampShadowsDirty();
   V.need = true;
   return true;
 }
@@ -232,6 +234,18 @@ function baseboards(g, ws, sides, base, m) {
   }
 }
 
+function wallBoxes(ws, sides, t, y0, y1) {
+  const joint = (s, at) => ws.walls.some(q => q.o !== s.o && near(q.c, at) && s.c > q.a - 0.02 && s.c < q.b + 0.02) || sides.some(q => q.o !== s.o && near(q.c, at));
+  const out = [];
+  for (const s of ws.walls) {
+    const a = s.a - (joint(s, s.a) ? t / 2 : 0);
+    const b = s.b + (joint(s, s.b) ? t / 2 : 0);
+    if (s.o === "h") out.push([a, b, y0, y1, s.c - t / 2, s.c + t / 2]);
+    else out.push([s.c - t / 2, s.c + t / 2, y0, y1, a, b]);
+  }
+  return out;
+}
+
 function buildHouse3D() {
   const e = ext();
   if (!e) return;
@@ -280,12 +294,7 @@ function buildHouse3D() {
   const holes = [];
   const y0 = base;
   const y1 = base + H;
-  for (const s of ws.walls) {
-    const a = s.a - t / 2;
-    const b = s.b + t / 2;
-    if (s.o === "h") boxes.push([a, b, y0, y1, s.c - t / 2, s.c + t / 2]);
-    else boxes.push([s.c - t / 2, s.c + t / 2, y0, y1, a, b]);
-  }
+  for (const bx of wallBoxes(ws, sides, t, y0, y1)) boxes.push(bx);
   boxes.push([e.minX - wl, e.maxX + wl, y0, y1, e.minY - wl, e.minY]);
   boxes.push([e.minX - wl, e.maxX + wl, y0, y1, e.maxY, e.maxY + wl]);
   boxes.push([e.minX - wl, e.minX, y0, y1, e.minY, e.maxY]);
@@ -341,6 +350,7 @@ function buildHouse3D() {
   for (const [w, L] of winLines) win3D(g, w, L, base, m);
   baseboards(g, ws, sides, base, m);
   for (const it of S.items) thingGroup(it, g, m, base + 0.02, {t: "item", id: it.id});
+  autoLights(g, base, H, m);
   if (V.mode === "roof") {
     const c = B(g, e.minX, e.maxX, base + H - 0.02, base + H - 0.001, e.minY, e.maxY, m(hk("ceiling", "plaster")));
     if (c) c.userData.pick = hp;
@@ -373,64 +383,22 @@ function buildHouse3D() {
   }
   if (!V.hq && sel && sel.t === "house") edges(g, e.maxX - e.minX + 2 * wl + 0.1, base + H + 0.1, e.maxY - e.minY + 2 * wl + 0.1, bcx, (base + H) / 2, bcy, selColor());
   setClip(cutc);
-}
-
-function buildFence(R, P) {
-  const H = 1.6;
-  const post = matPlot("post");
-  const mesh = matPlot("fence");
-  const posts = (x0, z0, x1, z1) => {
-    const L = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.max(1, Math.ceil(L / 2.5));
-    for (let i = 0; i <= n; i++) {
-      const x = x0 + (x1 - x0) * i / n;
-      const z = z0 + (z1 - z0) * i / n;
-      B(R, x - 0.03, x + 0.03, 0, H + 0.08, z - 0.03, z + 0.03, post);
-    }
-  };
-  const panel = (x0, z0, x1, z1) => {
-    const pm = Math.abs(z1 - z0) < 0.001
-      ? B(R, Math.min(x0, x1), Math.max(x0, x1), 0.05, H, z0 - 0.004, z0 + 0.004, mesh)
-      : B(R, x0 - 0.004, x0 + 0.004, 0.05, H, Math.min(z0, z1), Math.max(z0, z1), mesh);
-    if (pm) pm.castShadow = false;
-  };
-  const seg = (x0, z0, x1, z1) => {
-    if (Math.hypot(x1 - x0, z1 - z0) < 0.05) return;
-    posts(x0, z0, x1, z1);
-    panel(x0, z0, x1, z1);
-  };
-  seg(0, 0, P.w, 0);
-  seg(0, 0, 0, P.d);
-  seg(P.w, 0, P.w, P.d);
-  const gw = Math.min(4, P.w * 0.4);
-  const gx0 = P.w / 2 - gw / 2;
-  const gx1 = P.w / 2 + gw / 2;
-  const wk = gx1 + 1.1 < P.w - 0.3;
-  seg(0, P.d, gx0, P.d);
-  seg(wk ? gx1 + 1.2 : gx1, P.d, P.w, P.d);
-  panel(gx0 + 0.05, P.d, gx1 - 0.05, P.d);
-  for (const [a, b] of [[gx0, gx1]].concat(wk ? [[gx1 + 0.1, gx1 + 1.1]] : [])) {
-    B(R, a, b, 0.05, 0.1, P.d - 0.02, P.d + 0.02, post);
-    B(R, a, b, H - 0.05, H, P.d - 0.02, P.d + 0.02, post);
-    B(R, a, a + 0.05, 0.05, H, P.d - 0.02, P.d + 0.02, post);
-    B(R, b - 0.05, b, 0.05, H, P.d - 0.02, P.d + 0.02, post);
-  }
-  if (wk) {
-    panel(gx1 + 0.15, P.d, gx1 + 1.05, P.d);
-    B(R, gx1 + 1.1, gx1 + 1.2, 0, H + 0.08, P.d - 0.05, P.d + 0.05, post);
-  }
+  const c0 = houseToWorld(e.minX, e.minY);
+  const c1 = houseToWorld(e.maxX, e.maxY);
+  shadeInterior({x0: Math.min(c0.x, c1.x), z0: Math.min(c0.z, c1.z), x1: Math.max(c0.x, c1.x), z1: Math.max(c0.z, c1.z)}, base, base + H - 0.005, inAmbK());
 }
 
 function build3D() {
   if (!V.scene) return;
   clear3D();
   animClear();
+  lampsBegin();
   setClip(null);
   const P = S.plot;
   const R = V.root;
   const far = 450;
-  ground(R, -far, P.w + far, -far, P.d + far, -0.02, matPlot(SKY.snowOn ? "snow" : "meadow"));
-  ground(R, 0, P.w, 0, P.d, 0, matPlot(SKY.snowOn ? "snow" : "grass"));
+  ground(R, -far, P.w + far, -far, P.d + far, -0.05, matPlot(grassKey("meadow")));
+  ground(R, 0, P.w, 0, P.d, 0, matPlot(grassKey("grass"))).layers.enable(1);
   const X0 = -far;
   const X1 = P.w + far;
   B(R, X0, X1, -0.02, 0.03, P.d, P.d + 1.8, matPlot("sidewalk"));
@@ -455,8 +423,10 @@ function build3D() {
     }
   }
   if (V.fence) buildFence(R, P);
+  shadeInterior(null);
   for (const o of S.objects) {
     const g = thingGroup(o, R, matPlot, 0, {t: "obj", id: o.id});
+    smapTag(g, o);
     const md = modelOf(o);
     if (V.labels && !V.hq && !V.walk && (md.cat === "build" || o.name !== md.name)) {
       const sp = label(o.name);
@@ -467,8 +437,12 @@ function build3D() {
     }
   }
   buildHouse3D();
+  lampsFinish();
   fitSun();
+  alphaShadows(V.scene);
   pruneMats(V.scene);
+  smapPlaced();
+  measSync3();
 }
 
 function fitSun() {
@@ -513,6 +487,7 @@ function size3D() {
 function render3D() {
   if (V.sky) V.sky.position.copy(V.camera.position);
   V.renderer.render(V.scene, V.camera);
+  if (RF.max) rfGrab();
 }
 
 function loop(ts) {
@@ -533,6 +508,7 @@ function loop(ts) {
     updateGizmo();
     render3D();
     refineReset();
+    gaps3Sync();
   } else {
     refineTick(ts);
   }
@@ -543,6 +519,7 @@ function init3D() {
   V.camera = new THREE.PerspectiveCamera(50, 1.6, 0.05, 3000);
   V.root = new THREE.Group();
   V.scene.add(V.root);
+  V.scene.onBeforeRender = lampSync;
   V.scene.fog = new THREE.Fog(new THREE.Color(0xdce6ec), 160, 900);
   V.hemi = new THREE.HemisphereLight(lin(0xdfe9f5), lin(0x8d8a82), 0.12);
   V.scene.add(V.hemi);
@@ -580,6 +557,7 @@ function init3D() {
   if (!V.ok) return;
   applySky(true);
   attach3D();
+  navInit();
   size3D();
   if (window.ResizeObserver) new ResizeObserver(size3D).observe($("#gl"));
   else window.addEventListener("resize", size3D);

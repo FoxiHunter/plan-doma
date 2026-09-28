@@ -124,28 +124,6 @@ function thingHandles(o) {
   return h + "</g>";
 }
 
-function dimLine(x1, y1, x2, y2, lbl, halo) {
-  if (Math.hypot(x2 - x1, y2 - y1) < 0.05) return "";
-  const vertical = Math.abs(x2 - x1) < Math.abs(y2 - y1);
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  let h = L2(x1, y1, x2, y2, "var(--sel)", 1, [4, 3]);
-  h += `<circle cx="${x1}" cy="${y1}" r="${2.5 / k}" fill="var(--sel)"/><circle cx="${x2}" cy="${y2}" r="${2.5 / k}" fill="var(--sel)"/>`;
-  h += T2(vertical ? mx + 5 / k : mx, vertical ? my : my - 9 / k, lbl, {fill: "var(--sel)", size: 11, weight: 500, anchor: vertical ? "start" : "middle", halo});
-  return h;
-}
-
-function plotDims(r) {
-  const P = S.plot;
-  const cx = r.x + r.w / 2;
-  const cy = r.y + r.d / 2;
-  let h = dimLine(0, cy, r.x, cy, fm(r.x) + " м", "var(--land)");
-  h += dimLine(r.x + r.w, cy, P.w, cy, fm(P.w - r.x - r.w) + " м", "var(--land)");
-  h += dimLine(cx, 0, cx, r.y, fm(r.y) + " м", "var(--land)");
-  h += dimLine(cx, r.y + r.d, cx, P.d, fm(P.d - r.y - r.d) + " м", "var(--land)");
-  return h;
-}
-
 function fitLabel(x, y, w, d, name, sub, fill, third) {
   const W = w * k;
   const H = d * k;
@@ -213,10 +191,12 @@ function drawPlot() {
   let h = R2(0, 0, P.w, P.d, "var(--land)");
   for (let i = 1; i < P.w; i++) h += L2(i, 0, i, P.d, i % 5 ? "var(--line)" : "var(--line-2)", i % 5 ? 0.5 : 1);
   for (let j = 1; j < P.d; j++) h += L2(0, j, P.w, j, j % 5 ? "var(--line)" : "var(--line-2)", j % 5 ? 0.5 : 1);
+  if (typeof SMAP !== "undefined") h += smap2D();
   const z = zone();
-  if (z.w > 0 && z.d > 0) h += R2(z.x, z.y, z.w, z.d, "url(#hz)", "var(--ink-2)", 1, [5, 4]);
+  if (z.w > 0 && z.d > 0) h += R2(z.x, z.y, z.w, z.d, typeof SMAP !== "undefined" && SMAP.on ? "none" : "url(#hz)", "var(--ink-2)", 1, [5, 4]);
   h += R2(0, 0, P.w, P.d, "none", "var(--ink)", 1.5);
   h += L2(0, P.d, P.w, P.d, "var(--red)", 3);
+  if (typeof V === "undefined" || V.fence) h += fence2D();
   h += T2(P.w / 2, P.d + 1.5, "красная линия, улица", {fill: "var(--red)", weight: 500});
   h += T2(P.w / 2, -1.5, fm(P.w) + " м", {fill: "var(--ink-2)"});
   h += T2(-1.5, P.d / 2, fm(P.d) + " м", {fill: "var(--ink-2)", rot: -90});
@@ -234,14 +214,16 @@ function drawPlot() {
   for (const o of rest) h += drawThing(o, "obj", !EXP);
   if (EXP) return h;
   let r = null;
-  if (sel && sel.t === "obj") r = selItem();
+  h += multiSVG("obj");
+  if (sel && sel.t === "obj" && !selIds()) r = selItem();
   if (sel && sel.t === "house") r = footprint();
   if (r) {
     const b = sel.t === "obj" ? thingBox(r) : r;
-    h += `<g pointer-events="none">${plotDims(b)}${sel.t === "house" ? R2(b.x, b.y, b.w, b.d, "none", "var(--sel)", 2.5) : ""}</g>`;
+    h += gapsSVG(sel.t, sel.t === "obj" ? r : null);
+    if (sel.t === "house") h += `<g pointer-events="none">${R2(b.x, b.y, b.w, b.d, "none", "var(--sel)", 2.5)}</g>`;
   }
   if (sel && sel.t === "obj" && r) h += thingHandles(r);
-  h += ghostSVG();
+  h += ghostSVG() + measSVG();
   return h;
 }
 
@@ -409,7 +391,7 @@ function drawHouse() {
     for (let y = Math.ceil(b.y0); y <= b.y1; y++) h += L2(b.x0, y, b.x1, y, "var(--line)", 0.5);
   }
   const e = ext();
-  if (!e) return h + T2((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, "Нарисуй первую комнату инструментом «Комната»", {fill: "var(--ink-2)", size: 13}) + ghostSVG();
+  if (!e) return h + T2((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, "Нарисуй первую комнату инструментом «Комната»", {fill: "var(--ink-2)", size: 13}) + ghostSVG() + measSVG();
   const wl = S.house.wall;
   const t = S.house.inner;
   const W = e.maxX - e.minX;
@@ -476,19 +458,50 @@ function drawHouse() {
     h += "</g>";
     h += handles(s);
   }
-  const it = sel && sel.t === "item" ? selItem() : null;
+  h += multiSVG("item");
+  const it = sel && sel.t === "item" && !selIds() ? selItem() : null;
   if (it) {
     const bx = thingBox(it);
+    h += gapsSVG("item", it);
     h += `<g pointer-events="none">${T2(bx.x + bx.w / 2, bx.y - 12 / k, it.name + ", " + fm(it.w) + " × " + fm(it.d) + " м", {fill: "var(--sel)", size: 11, weight: 500, halo: "var(--paper)"})}</g>`;
     h += thingHandles(it);
   }
-  h += ghostSVG();
+  h += ghostSVG() + measSVG();
   return h;
+}
+
+function measSVG() {
+  if (!tool || tool.t !== "meas") return "";
+  let h = "";
+  const col = "var(--red)";
+  if (MEAS.cur && !(MEAS.b && MEAS.cur === MEAS.b)) {
+    const c = measToTab(MEAS.cur);
+    h += `<circle cx="${c.x}" cy="${c.y}" r="${(MEAS.cur.snap ? 5 : 3.5) / k}" fill="${MEAS.cur.snap ? col : "none"}" stroke="${col}" stroke-width="${1.5 / k}"/>`;
+  }
+  const end = MEAS.b || MEAS.cur;
+  if (MEAS.a && end) {
+    const a = measToTab(MEAS.a);
+    const b = measToTab(end);
+    const L = Math.hypot(b.x - a.x, b.y - a.y);
+    h += L2(a.x, a.y, b.x, b.y, col, 2);
+    const nx = L > 1e-6 ? -(b.y - a.y) / L : 0;
+    const ny = L > 1e-6 ? (b.x - a.x) / L : 1;
+    const tk = 7 / k;
+    for (const q of [a, b]) h += L2(q.x - nx * tk, q.y - ny * tk, q.x + nx * tk, q.y + ny * tk, col, 2);
+    const t = measText(MEAS.a, end);
+    const off = 16 / k;
+    const mx = (a.x + b.x) / 2 + nx * off;
+    const my = (a.y + b.y) / 2 + ny * off;
+    h += T2(mx, my, t.main, {fill: col, weight: 700, size: 14, halo: "var(--paper)"});
+    if (t.sub) h += T2(mx, my + 15 / k, t.sub, {fill: col, size: 11, halo: "var(--paper)"});
+  }
+  return h ? `<g pointer-events="none">${h}</g>` : "";
 }
 
 function ghostSVG() {
   if (!ghost2) return "";
   const g = ghost2;
+  if (g.t === "box") return `<g pointer-events="none">${R2(g.x, g.y, g.w, g.d, "var(--sel)", "var(--sel)", 1.2, [4, 3], 0.1)}</g>`;
   if (g.t === "rect") return `<g pointer-events="none">${R2(g.x, g.y, g.w, g.d, "var(--sel)", "var(--sel)", 1.5, [5, 3], 0.18)}${T2(g.x + g.w / 2, g.y + g.d / 2, fm(g.w) + " × " + fm(g.d) + " м", {fill: "var(--sel)", weight: 600, halo: "var(--paper)"})}</g>`;
   if (g.t === "open" && tab === "house") {
     const e = ext();
@@ -496,6 +509,17 @@ function ghostSVG() {
     const ws = wallSegs();
     const sides = extSides(e);
     return "kind" in g.it ? drawDoor(g.it, lineOf(g.it, ws, sides, false), false, true) : drawWin(g.it, lineOf(g.it, ws, sides, true), false, true);
+  }
+  if (g.t === "wall" && tab === "house") {
+    const h = g.hit;
+    if (!h) return "";
+    const E = h.ext ? h.L : h.e || h.L;
+    const col = h.ext ? "var(--red)" : "var(--sel)";
+    const ln = E.o === "h" ? L2(E.a, E.c, E.b, E.c, col, 7) : L2(E.c, E.a, E.c, E.b, col, 7);
+    const gone = !h.ext && wallGone(h.A, h.B);
+    const mx = E.o === "h" ? (E.a + E.b) / 2 : E.c;
+    const my = E.o === "h" ? E.c : (E.a + E.b) / 2;
+    return `<g pointer-events="none" opacity="0.75">${ln}${T2(mx, my - 0.45, h.ext ? "наружную нельзя" : gone ? "вернуть стену" : "убрать стену", {fill: col, weight: 600, halo: "var(--paper)"})}</g>`;
   }
   if (g.t === "thing") {
     const K = MODELS[g.kind] || MODELS.other;
@@ -595,9 +619,12 @@ function toolPoint2(p) {
   return {inHouse: inside, wx: p.x, wz: p.y, hp};
 }
 
-function toolHover2(p) {
+function toolHover2(p, e) {
   if (!tool) return;
-  if (tool.t === "open") {
+  if (tool.t === "meas") {
+    MEAS.cur = measAt2(p, e);
+    measSync3();
+  } else if (tool.t === "open") {
     if (tab !== "house") {
       ghost2 = null;
       return;
@@ -610,6 +637,8 @@ function toolHover2(p) {
     else ghost2 = {t: "thing", kind: tool.kind, x: p.x, y: p.y, rot: tp.inHouse ? S.house.rot : 0};
   } else if (tool.t === "room" && !drag) {
     ghost2 = null;
+  } else if (tool.t === "wall") {
+    ghost2 = tab === "house" ? {t: "wall", hit: wallPairAt(p, 0.6)} : null;
   }
   render2D();
 }
@@ -649,9 +678,20 @@ svg.addEventListener("pointerdown", e => {
     return;
   }
   const t = e.target.closest("[data-t]");
+  if (e.shiftKey && (!t || t.dataset.t === "room" || t.dataset.t === "house")) {
+    drag = {type: "box", p0: p, moved: false};
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
   if (!t) {
     drag = {type: "pan", lx: e.clientX, ly: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, click: true};
     svg.setPointerCapture(e.pointerId);
+    return;
+  }
+  if (t.dataset.t === "gap") {
+    e.preventDefault();
+    gapEdit(t.dataset.dir, e.clientX, e.clientY);
     return;
   }
   bounds();
@@ -669,11 +709,19 @@ svg.addEventListener("pointerdown", e => {
     if (!it) return;
     drag = {type: "trot", it, start: Object.assign({}, it), p0: p, moved: false};
   } else if (kind === "room" || kind === "obj" || kind === "item") {
-    sel = {t: kind, id: t.dataset.id};
-    const it = selItem();
+    const id = t.dataset.id;
+    if (e.shiftKey && kind !== "room") {
+      selToggle(kind, id);
+      e.preventDefault();
+      renderAll();
+      return;
+    }
+    const inGroup = !!(selIds() && sel.t === kind && sel.ids.includes(id));
+    if (!inGroup) sel = {t: kind, id};
+    const it = (listOf(kind) || []).find(x => x.id === id);
     if (!it) return;
     const att = kind === "room" ? attachedTo(it).concat(itemsIn(it)).map(a => ({a, x: a.x, y: a.y})) : [];
-    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, att, p0: p, moved: false};
+    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, rot0: it.rot || 0, att, p0: p, moved: false, group: inGroup ? selThings().map(a => ({a, x: a.x, y: a.y})) : null};
   } else if (kind === "door" || kind === "win") {
     sel = {t: kind, id: t.dataset.id};
     const it = selItem();
@@ -691,7 +739,11 @@ svg.addEventListener("pointerdown", e => {
 svg.addEventListener("pointermove", e => {
   if (P2.ptrs.has(e.pointerId)) P2.ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if (!drag) {
-    if (tool) toolHover2(pt(e));
+    if (tool) toolHover2(pt(e), e);
+    else if (SMAP.on && tab === "plot") {
+      const p = pt(e);
+      smapCur(smapAt(p.x, p.y));
+    }
     return;
   }
   if (drag.type === "pinch") {
@@ -701,6 +753,13 @@ svg.addEventListener("pointermove", e => {
     pan2D(ps.mx - P2.pinch.mx, ps.my - P2.pinch.my);
     zoom2D(ps.d / P2.pinch.d, ps.mx, ps.my);
     P2.pinch = ps;
+    return;
+  }
+  if (drag.type === "box") {
+    const q = pt(e);
+    drag.moved = true;
+    ghost2 = {t: "box", x: Math.min(drag.p0.x, q.x), y: Math.min(drag.p0.y, q.y), w: Math.abs(q.x - drag.p0.x), d: Math.abs(q.y - drag.p0.y)};
+    render2D();
     return;
   }
   if (drag.type === "pan") {
@@ -716,7 +775,7 @@ svg.addEventListener("pointermove", e => {
   const p = pt(e);
   if (drag.type === "place") {
     if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) drag.moved = true;
-    toolHover2(p);
+    toolHover2(p, e);
     return;
   }
   if (drag.type === "newroom") {
@@ -733,6 +792,18 @@ svg.addEventListener("pointermove", e => {
   drag.moved = true;
   const fine = e.altKey;
   const sn = v => (fine ? r2(v) : snapv(v));
+  if (drag.type === "move" && drag.group) {
+    const mx = sn(drag.start.x + dx) - drag.start.x;
+    const my = sn(drag.start.y + dy) - drag.start.y;
+    for (const g of drag.group) {
+      g.a.x = r2(g.x + mx);
+      g.a.y = r2(g.y + my);
+    }
+    render2D();
+    updateLive();
+    schedule3D();
+    return;
+  }
   if (drag.type === "move") {
     let nx = sn(drag.start.x + dx);
     let ny = sn(drag.start.y + dy);
@@ -743,6 +814,7 @@ svg.addEventListener("pointermove", e => {
     }
     drag.it.x = nx;
     drag.it.y = ny;
+    if (sel && sel.t === "item" && !fine) snapThing(drag.it, drag.rot0);
     const mx = drag.it.x - drag.start.x;
     const my = drag.it.y - drag.start.y;
     for (const a of drag.att) {
@@ -778,6 +850,19 @@ function endDrag(e) {
     frozen = null;
     return;
   }
+  if (d.type === "box") {
+    const g = ghost2;
+    ghost2 = null;
+    const tt = tab === "house" ? "item" : "obj";
+    if (g && d.moved && g.w * k > 4) {
+      const prev = sel && sel.t === tt ? (sel.ids || [sel.id]) : [];
+      selSet(tt, prev.concat(boxPick(tt, g)));
+      frozen = null;
+      renderAll();
+      schedule3D();
+    } else render2D();
+    return;
+  }
   if (d.type === "pan") {
     if (d.click && !d.moved && sel) {
       sel = null;
@@ -809,10 +894,21 @@ function endDrag(e) {
       const tp = toolPoint2(p);
       ghost2 = null;
       dropThing(tool.kind, tp.wx, tp.wz, tp.inHouse, e.shiftKey);
+    } else if (tool && tool.t === "meas") {
+      measClick(measAt2(p, e));
+    } else if (tool && tool.t === "wall") {
+      if (tab !== "house") {
+        tab = "house";
+        renderAll();
+        return;
+      }
+      ghost2 = null;
+      toggleWallAt(p, 0.6);
     }
     return;
   }
   frozen = null;
+  if (!d.moved && d.group && sel) sel = {t: sel.t, id: d.it.id};
   if (d.moved) changed();
   else renderAll();
 }

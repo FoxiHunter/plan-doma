@@ -44,6 +44,9 @@ const TEXDEF = {
   bark: {s: [0.8, 0.8], px: 512, nrm: 512, dep: 0.012},
   ribs: {s: [0.5, 0.5], px: 512, nrm: 512, dep: 0.006},
   fence: {s: [1, 1], px: 512},
+  chain: {s: [0.5, 0.5], px: 512},
+  prof: {s: [1, 1], px: 512, nrm: 512, dep: 0.02},
+  solar: {s: [1, 1], px: 512},
   snow: {s: [3, 3], px: 1024, nrm: 512, dep: 0.015}
 };
 
@@ -698,6 +701,29 @@ const GLSL_K = {
   float wire = 1.0 - smoothstep(0.0016, 0.0026, min(e.x, e.y));
   c = vec3(1.0);
   a = wire;
+`,
+  chain: `
+  vec2 q = vec2(p.x + p.y, p.x - p.y) / 0.05;
+  vec2 f = fract(q);
+  vec2 e = min(f, 1.0 - f) * 0.0354;
+  float wire = 1.0 - smoothstep(0.0011, 0.002, min(e.x, e.y));
+  c = vec3(1.0);
+  a = wire;
+`,
+  prof: `
+  float fx = fract(p.x / 0.2);
+  float tr = smoothstep(0.08, 0.15, fx) - smoothstep(0.5, 0.57, fx);
+  float n = fbm(p / uSize, vec2(20.0), 3, 0.5);
+  c = vec3(0.86 + 0.06 * tr + 0.02 * n);
+  h = tr;
+`,
+  solar: `
+  vec2 f = fract(p / vec2(0.166, 0.166));
+  vec2 e = min(f, 1.0 - f) * 0.166;
+  float line = 1.0 - smoothstep(0.002, 0.004, min(e.x, e.y));
+  float bus = 1.0 - smoothstep(0.0008, 0.0016, abs(fract(p.x / 0.0415) - 0.5) * 0.0415);
+  float n = fbm(p / uSize, vec2(40.0), 3, 0.5);
+  c = mix(vec3(0.8 + 0.05 * n), vec3(1.9), max(line, bus * 0.5));
 `,
   snow: `
   vec2 uv = p / uSize;

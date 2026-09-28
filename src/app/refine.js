@@ -1,5 +1,5 @@
 "use strict";
-const RF = {q: "nice", n: 0, max: 96, last: 0, frame: null, acc: [null, null], cur: 0, scene: null, cam: null, quad: null, accMat: null, outMat: null, skyL: null, w: 0, h: 0, saved: null};
+const RF = {q: "nice", n: 0, max: 96, last: 0, frame: null, raw: null, acc: [null, null], cur: 0, scene: null, cam: null, quad: null, accMat: null, outMat: null, skyL: null, w: 0, h: 0, saved: null, k: 2, tickAt: 0, show: 8, full: 40};
 const QUALITY = {fast: ["Быстро", 0, 2048], nice: ["Красиво", 96, 2048], max: ["Максимум", 256, 4096]};
 
 const RFV = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = vec4(position.xy, 0.0, 1.0);\n}";
@@ -16,12 +16,19 @@ void main() {
   gl_FragColor = vec4(mix(a, b, uW), 1.0);
 }`;
 const RFO = `uniform sampler2D tAcc;
+uniform sampler2D tRaw;
+uniform float uFade;
 varying vec2 vUv;
+vec3 s2l(vec3 c) {
+  return mix(pow(c * 0.9478672986 + 0.0521327014, vec3(2.4)), c * 0.0773993808, vec3(lessThanEqual(c, vec3(0.04045))));
+}
 vec3 l2s(vec3 c) {
   return mix(pow(max(c, vec3(0.0)), vec3(0.41666)) * 1.055 - vec3(0.055), c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308))));
 }
 void main() {
-  gl_FragColor = vec4(l2s(texture2D(tAcc, vUv).rgb), 1.0);
+  vec3 a = texture2D(tAcc, vUv).rgb;
+  vec3 r = s2l(texture2D(tRaw, vUv).rgb);
+  gl_FragColor = vec4(l2s(mix(r, a, uFade)), 1.0);
 }`;
 
 function halton(i, b) {
@@ -48,7 +55,7 @@ function refineInit() {
   RF.quad.frustumCulled = false;
   RF.scene.add(RF.quad);
   RF.accMat = new THREE.ShaderMaterial({uniforms: {tPrev: {value: null}, tNew: {value: null}, uW: {value: 1}}, vertexShader: RFV, fragmentShader: RFA, depthTest: false, depthWrite: false, toneMapped: false});
-  RF.outMat = new THREE.ShaderMaterial({uniforms: {tAcc: {value: null}}, vertexShader: RFV, fragmentShader: RFO, depthTest: false, depthWrite: false, toneMapped: false});
+  RF.outMat = new THREE.ShaderMaterial({uniforms: {tAcc: {value: null}, tRaw: {value: null}, uFade: {value: 1}}, vertexShader: RFV, fragmentShader: RFO, depthTest: false, depthWrite: false, toneMapped: false});
   const sl = new THREE.DirectionalLight(0xffffff, 0);
   sl.castShadow = true;
   sl.shadow.mapSize.set(2048, 2048);
@@ -62,16 +69,41 @@ function refineInit() {
 
 function refineTargets(W, H) {
   if (RF.frame && RF.w === W && RF.h === H) return true;
-  for (const t of [RF.frame, RF.acc[0], RF.acc[1]]) if (t) t.dispose();
+  for (const t of [RF.frame, RF.raw, RF.acc[0], RF.acc[1]]) if (t) t.dispose();
   const R = V.renderer;
   const half = R.capabilities.isWebGL2 || R.extensions.has("OES_texture_half_float");
   const o = {minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, depthBuffer: false, stencilBuffer: false, type: half ? THREE.HalfFloatType : THREE.UnsignedByteType};
   RF.acc = [new THREE.WebGLRenderTarget(W, H, o), new THREE.WebGLRenderTarget(W, H, o)];
-  RF.frame = new THREE.WebGLRenderTarget(W, H, {minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType, encoding: THREE.sRGBEncoding});
+  const o8 = {minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType, encoding: THREE.sRGBEncoding};
+  RF.frame = new THREE.WebGLRenderTarget(W, H, o8);
+  RF.raw = new THREE.WebGLRenderTarget(W, H, o8);
   RF.w = W;
   RF.h = H;
   RF.n = 0;
   return true;
+}
+
+function rfGrab() {
+  const R = V.renderer;
+  const sz = R.getDrawingBufferSize(new THREE.Vector2());
+  const W = Math.max(1, Math.floor(sz.x));
+  const H = Math.max(1, Math.floor(sz.y));
+  try {
+    let fresh = false;
+    if (!RF.grab || RF.grab.image.width !== W || RF.grab.image.height !== H) {
+      if (RF.grab) RF.grab.dispose();
+      RF.grab = new THREE.DataTexture(null, W, H, R.getContext().getContextAttributes().alpha ? THREE.RGBAFormat : THREE.RGBFormat);
+      RF.grab.needsUpdate = true;
+      fresh = true;
+    }
+    if (fresh || RF.grabOk) {
+      const gl = R.getContext();
+      R.copyFramebufferToTexture(new THREE.Vector2(0, 0), RF.grab);
+      if (fresh) RF.grabOk = gl.getError() === gl.NO_ERROR;
+    }
+  } catch (err) {
+    RF.grabOk = false;
+  }
 }
 
 function sunCone() {
@@ -79,17 +111,20 @@ function sunCone() {
   return (w === "clear" ? 0.7 : w === "few" ? 0.9 : w === "cloudy" ? 2.5 : w === "fog" ? 4 : 8) * Math.PI / 180;
 }
 
-function rfBegin() {
-  const envs = [];
-  V.scene.traverse(o => {
-    if (!o.isMesh) return;
-    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-      if (m && m.isMeshStandardMaterial && !envs.includes(m)) envs.push(m);
-    }
+function dirLightIndex(light) {
+  const list = [];
+  V.scene.traverseVisible(o => {
+    if (o.isDirectionalLight) list.push(o);
   });
-  RF.saved = {sun: V.sun.position.clone(), envs};
-  for (const m of envs) m.envMapIntensity = (m.userData.env || 1) * 0.35;
+  const sorted = list.filter(l => l.castShadow).concat(list.filter(l => !l.castShadow));
+  return sorted.indexOf(light);
+}
+
+function rfBegin() {
+  RF.saved = {sun: V.sun.position.clone()};
   RF.skyL.visible = true;
+  SHU.uEnvDiff.value = 0.35;
+  SHU.uSkyIdx.value = dirLightIndex(RF.skyL);
   const P = S.plot;
   const sz = Math.max(P.w, P.d) * 0.62 + 10;
   const sc = RF.skyL.shadow.camera;
@@ -107,7 +142,8 @@ function rfBegin() {
 function rfEnd() {
   if (!RF.saved) return;
   V.sun.position.copy(RF.saved.sun);
-  for (const m of RF.saved.envs) m.envMapIntensity = m.userData.env || 1;
+  SHU.uEnvDiff.value = 1;
+  SHU.uSkyIdx.value = -1;
   RF.skyL.visible = false;
   RF.skyL.intensity = 0;
   RF.saved = null;
@@ -146,8 +182,13 @@ function refineStep(k) {
   const H = Math.max(1, Math.floor(sz.y));
   refineInit();
   refineTargets(W, H);
-  rfBegin();
   const cam = V.camera;
+  const grab = RF.grabOk && RF.grab && RF.grab.image.width === W && RF.grab.image.height === H;
+  if (RF.n === 0 && !grab) {
+    R.setRenderTarget(RF.raw);
+    R.render(V.scene, cam);
+  }
+  rfBegin();
   try {
     for (let j = 0; j < k && RF.n < RF.max; j++) {
       const i = RF.n;
@@ -172,15 +213,25 @@ function refineStep(k) {
     cam.clearViewOffset();
     rfEnd();
   }
-  RF.outMat.uniforms.tAcc.value = RF.acc[RF.cur].texture;
-  RF.quad.material = RF.outMat;
   R.setRenderTarget(null);
+  if (RF.n < Math.min(RF.show, RF.max)) return;
+  const t = RF.n >= RF.max ? 1 : clamp((RF.n - RF.show) / Math.max(1, Math.min(RF.full, RF.max) - RF.show), 0, 1);
+  RF.outMat.uniforms.tAcc.value = RF.acc[RF.cur].texture;
+  RF.outMat.uniforms.tRaw.value = grab ? RF.grab : RF.raw.texture;
+  RF.outMat.uniforms.uFade.value = t * t * (3 - 2 * t);
+  RF.quad.material = RF.outMat;
   R.render(RF.scene, RF.cam);
 }
 
 function refineTick(now) {
   if (!RF.max || !V.ok || V.busy || RF.n >= RF.max || now - RF.last < 160) return false;
-  refineStep(RF.n === 0 ? 4 : 1);
+  if (RF.n > 0) {
+    const dt = now - RF.tickAt;
+    if (dt < 20) RF.k = Math.min(8, RF.k + 1);
+    else if (dt > 32) RF.k = Math.max(1, RF.k - 1);
+  }
+  RF.tickAt = now;
+  refineStep(RF.k);
   return true;
 }
 
@@ -196,5 +247,6 @@ function setQuality(q) {
     }
   }
   refineReset();
+  if (LAMP.lit) schedule3D();
   V.need = true;
 }

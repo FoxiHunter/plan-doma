@@ -3,6 +3,7 @@ const CATS = [
   ["build", "Постройки"],
   ["yard", "Сад и двор"],
   ["people", "Люди и машины"],
+  ["light", "Свет"],
   ["living", "Гостиная"],
   ["bed", "Спальня"],
   ["kitchen", "Кухня и столовая"],
@@ -33,7 +34,17 @@ const MODELS = {
   bench: {cat: "yard", name: "Скамейка", w: 1.5, d: 0.55, h: 0.85, g: "other", sym: "chair"},
   swing: {cat: "yard", name: "Качели", w: 2.6, d: 1.6, h: 2.2, g: "other"},
   gardenset: {cat: "yard", name: "Садовый стол и 4 стула", w: 1.9, d: 1.9, h: 0.9, g: "other", sym: "dining4"},
-  lamp: {cat: "yard", name: "Фонарь", w: 0.3, d: 0.3, h: 2.4, g: "other", sym: "round"},
+  lamp: {cat: "light", name: "Садовый фонарь", w: 0.3, d: 0.3, h: 2.4, g: "other", sym: "lamp", lamp: {lm: 1500, k: 3000}},
+  streetlamp: {cat: "light", name: "Уличный фонарь на столбе", w: 0.4, d: 1.5, h: 6, g: "other", sym: "lamp", lamp: {lm: 8000, k: 4000}},
+  bollard: {cat: "light", name: "Светильник-столбик", w: 0.18, d: 0.18, h: 0.6, g: "other", sym: "lamp", lamp: {lm: 250, k: 3000}},
+  walllamp: {cat: "light", name: "Настенный уличный фонарь", w: 0.22, d: 0.26, h: 0.38, z: 2, g: "other", sym: "lamp", lamp: {lm: 600, k: 3000}},
+  garland: {cat: "light", name: "Гирлянда на столбиках", w: 5, d: 0.12, h: 2.6, g: "other", sym: "garland", lamp: {lm: 600, k: 2200}},
+  ceil: {cat: "light", name: "Потолочный светильник", w: 0.5, d: 0.5, h: 0.12, z: "ceil", sym: "lamp", lamp: {lm: 1800, k: 3000, ceil: true}},
+  chandelier: {cat: "light", name: "Люстра", w: 0.8, d: 0.8, h: 0.75, z: "ceil", sym: "lamp", lamp: {lm: 3000, k: 2700, ceil: true}},
+  pendant: {cat: "light", name: "Подвесной светильник", w: 0.36, d: 0.36, h: 0.9, z: "ceil", sym: "lamp", lamp: {lm: 800, k: 2700, ceil: true}},
+  floorlamp: {cat: "light", name: "Торшер", w: 0.45, d: 0.45, h: 1.65, sym: "lamp", lamp: {lm: 1200, k: 2700}},
+  tablelamp: {cat: "light", name: "Настольная лампа", w: 0.3, d: 0.3, h: 0.5, z: 0.75, sym: "lamp", lamp: {lm: 450, k: 2700}},
+  sconce: {cat: "light", name: "Бра", w: 0.26, d: 0.2, h: 0.32, z: 1.7, sym: "lamp", lamp: {lm: 450, k: 2700}},
   person: {cat: "people", name: "Человек 175 см", w: 0.5, d: 0.3, h: 1.75, g: "other", sym: "person"},
   car: {cat: "people", name: "Легковой автомобиль", w: 1.85, d: 4.6, h: 1.5, g: "pass", sym: "car"},
   sofa: {cat: "living", name: "Диван трёхместный", w: 2.2, d: 0.95, h: 0.85, sym: "sofa"},
@@ -87,17 +98,22 @@ function fronts(g, x0, x1, y0, y1, zf, sgn, cols, rows, fm, hm, vertical) {
       const e = y0 + (j + 1) * rh - 0.002;
       B(g, a, b, c, e, z0, z1, fm);
       if (!hm) continue;
-      const hz0 = sgn > 0 ? z1 : z0 - 0.025;
-      const hz1 = sgn > 0 ? z1 + 0.025 : z0;
+      const zs0 = sgn > 0 ? z1 : z0 - 0.02;
+      const zs1 = sgn > 0 ? z1 + 0.02 : z0;
+      const zb0 = sgn > 0 ? z1 + 0.012 : z0 - 0.026;
+      const zb1 = sgn > 0 ? z1 + 0.026 : z0 - 0.012;
       if (vertical) {
         const hx = cols > 1 ? (i % 2 ? a + 0.045 : b - 0.045) : b - 0.045;
         const hy = rows === 1 ? Math.min(c + 1.05, (c + e) / 2) : (c + e) / 2;
-        const hl = Math.min(0.18, (e - c) * 0.4);
-        B(g, hx - 0.007, hx + 0.007, hy - hl / 2, hy + hl / 2, hz0, hz1, hm);
+        const hl = Math.min(0.2, (e - c) * 0.4);
+        for (const q of [-1, 1]) B(g, hx - 0.004, hx + 0.004, hy + q * (hl / 2 - 0.02) - 0.004, hy + q * (hl / 2 - 0.02) + 0.004, zs0, zs1, hm);
+        RB(g, hx - 0.007, hx + 0.007, hy - hl / 2, hy + hl / 2, zb0, zb1, 0.006, hm);
       } else {
-        const hw = Math.min(0.16, (b - a) * 0.4);
+        const hw = Math.min(0.18, (b - a) * 0.4);
         const hy = e - Math.min(0.05, (e - c) * 0.25);
-        B(g, (a + b) / 2 - hw / 2, (a + b) / 2 + hw / 2, hy - 0.007, hy + 0.007, hz0, hz1, hm);
+        const hx = (a + b) / 2;
+        for (const q of [-1, 1]) B(g, hx + q * (hw / 2 - 0.02) - 0.004, hx + q * (hw / 2 - 0.02) + 0.004, hy - 0.004, hy + 0.004, zs0, zs1, hm);
+        RB(g, hx - hw / 2, hx + hw / 2, hy - 0.007, hy + 0.007, zb0, zb1, 0.006, hm);
       }
     }
   }
@@ -327,6 +343,8 @@ MB.beds = (g, P, m) => {
   B(g, -w / 2, -w / 2 + 0.04, 0, h, -d / 2 + 0.04, d / 2 - 0.04, wood);
   B(g, w / 2 - 0.04, w / 2, 0, h, -d / 2 + 0.04, d / 2 - 0.04, wood);
   B(g, -w / 2 + 0.04, w / 2 - 0.04, 0, h - 0.04, -d / 2 + 0.04, d / 2 - 0.04, m("soil", "soil"));
+  const ss = WX.season || "summer";
+  if (ss === "bare" || ss === "late") return;
   const rows = Math.max(1, Math.floor((w - 0.2) / 0.35));
   const cols = Math.max(1, Math.floor((d - 0.2) / 0.3));
   for (let i = 0; i < rows; i++) {
@@ -338,27 +356,59 @@ MB.beds = (g, P, m) => {
   }
 };
 
+function leafSet(m) {
+  const s = WX.season || "summer";
+  if (s === "spring") return {k: 0.78, n: 1, mats: [m("leaf_spring", "crown"), m("leaf_light", "crown2")]};
+  if (s === "autumn") return {k: 0.95, n: 1, mats: [m("leaf", "crown"), m("leaf_y", "crown2"), m("leaf_light", "crown2"), m("leaf_o", "crown2")]};
+  if (s === "fall") return {k: 0.8, n: 0.75, mats: [m("leaf_y", "crown"), m("leaf_o", "crown2"), m("leaf_r", "crown2"), m("leaf_y", "crown")]};
+  if (s === "late") return {k: 0.45, n: 0.4, mats: [m("leaf_brown", "crown"), m("leaf_o", "crown2")]};
+  if (s === "bare") return {k: 0, n: 0, mats: []};
+  return {k: 1, n: 1, mats: [m("leaf", "crown"), m("leaf", "crown"), m("leaf_light", "crown2")]};
+}
+
+function bareBranches(g, x, y0, y1, R, tr, bark, rnd, n) {
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2 + rnd() * 0.7;
+    const ys = y0 + (y1 - y0) * (0.15 + rnd() * 0.45);
+    const len = R * (0.55 + rnd() * 0.4);
+    const end = [x + Math.cos(a) * len, ys + (y1 - ys) * (0.45 + rnd() * 0.5), Math.sin(a) * len];
+    Lb(g, [x, ys, 0], end, tr * 0.42, tr * 0.1, bark, 5);
+    for (let j = 0; j < 3; j++) {
+      const f = 0.35 + j * 0.22;
+      const st = [x + (end[0] - x) * f, ys + (end[1] - ys) * f, end[2] * f];
+      const b = a + (rnd() - 0.5) * 1.6;
+      const l2 = len * (0.25 + rnd() * 0.25);
+      Lb(g, st, [st[0] + Math.cos(b) * l2, st[1] + l2 * (0.4 + rnd() * 0.6), st[2] + Math.sin(b) * l2], tr * 0.12, tr * 0.03, bark, 4);
+    }
+  }
+}
+
 MB.tree = (g, P, m, rnd) => {
   const {w, d, h} = P;
   const R = Math.min(w, d) / 2;
   const trunkH = h * 0.42;
   const crownH = h - trunkH;
   const tr = Math.max(0.06, R * 0.07);
-  Cy(g, tr, 0, trunkH + crownH * 0.35, 0, 0, m("bark", "trunk"), 10, tr * 0.6);
+  const bark = m("bark", "trunk");
+  const L = leafSet(m);
+  Cy(g, tr, 0, trunkH + crownH * (L.k ? 0.35 : 0.6), 0, 0, bark, 10, tr * 0.6);
   for (let i = 0; i < 3; i++) {
     const a = rnd() * Math.PI * 2;
-    Lb(g, [0, trunkH * (0.8 + i * 0.15), 0], [Math.cos(a) * R * 0.5, trunkH + crownH * 0.35, Math.sin(a) * R * 0.5], tr * 0.5, tr * 0.25, m("bark", "trunk"), 6);
+    Lb(g, [0, trunkH * (0.8 + i * 0.15), 0], [Math.cos(a) * R * 0.5, trunkH + crownH * 0.35, Math.sin(a) * R * 0.5], tr * 0.5, tr * 0.25, bark, 6);
   }
+  if (L.k < 0.6) bareBranches(g, 0, trunkH * 0.85, h * 0.98, R, tr, bark, rnd, 9);
+  if (!L.k) return;
   const cy = trunkH + crownH * 0.5;
   const r0 = Math.min(R * 0.72, crownH * 0.45);
-  Lump(g, r0, 0, cy, 0, m("leaf", "crown"), rnd, 1);
-  const n = 5 + Math.floor(rnd() * 3);
+  if (L.n > 0.5) Lump(g, r0 * L.k, 0, cy, 0, L.mats[0], rnd, 1);
+  const n = Math.round((5 + Math.floor(rnd() * 3)) * (L.n > 0.5 ? 1 : 1.6));
   for (let i = 0; i < n; i++) {
     const a = rnd() * Math.PI * 2;
     const rr = R * (0.2 + rnd() * 0.25);
     const s = Math.min(R * (0.36 + rnd() * 0.16), crownH * 0.32);
     const y = trunkH + s + rnd() * Math.max(0.01, crownH - 2 * s);
-    Lump(g, s, Math.cos(a) * rr, y, Math.sin(a) * rr, i % 3 === 0 ? m("leaf_light", "crown2") : m("leaf", "crown"), rnd, 0.9);
+    if (rnd() > L.n + 0.05) continue;
+    Lump(g, s * L.k, Math.cos(a) * rr, y, Math.sin(a) * rr, L.mats[i % L.mats.length], rnd, 0.9);
   }
 };
 
@@ -380,10 +430,21 @@ MB.bush = (g, P, m, rnd) => {
   const {w, d, h} = P;
   const R = Math.min(w, d) / 2;
   const s = Math.min(R * 0.55, h * 0.45);
-  Lump(g, s, 0, h - s, 0, m("leaf", "crown"), rnd, 0.95);
+  const L = leafSet(m);
+  if (L.k < 0.6) {
+    const bark = m("bark", "twigs");
+    for (let i = 0; i < 11; i++) {
+      const a = i / 11 * Math.PI * 2 + rnd() * 0.5;
+      const r = R * (0.6 + rnd() * 0.4);
+      Lb(g, [0, 0, 0], [Math.cos(a) * r, h * (0.7 + rnd() * 0.3), Math.sin(a) * r], 0.018, 0.005, bark, 4);
+    }
+  }
+  if (!L.k) return;
+  if (L.n > 0.5) Lump(g, s * L.k, 0, h - s, 0, L.mats[0], rnd, 0.95);
   for (let i = 0; i < 4; i++) {
     const a = i * Math.PI / 2 + rnd() * 0.8;
-    Lump(g, s * 0.85, Math.cos(a) * (R - s * 0.85), s * 0.85, Math.sin(a) * (R - s * 0.85), i % 2 ? m("leaf", "crown") : m("leaf_light", "crown2"), rnd, 0.9);
+    if (rnd() > L.n + 0.1) continue;
+    Lump(g, s * 0.85 * L.k, Math.cos(a) * (R - s * 0.85), s * 0.85, Math.sin(a) * (R - s * 0.85), L.mats[(i + 1) % L.mats.length], rnd, 0.9);
   }
 };
 
@@ -400,7 +461,9 @@ MB.flowers = (g, P, m, rnd) => {
   B(g, w / 2 - 0.08, w / 2, 0, 0.15, -d / 2 + 0.08, d / 2 - 0.08, st);
   B(g, -w / 2 + 0.08, w / 2 - 0.08, 0, 0.12, -d / 2 + 0.08, d / 2 - 0.08, m("soil", "soil"));
   const cols = ["flower_r", "flower_y", "flower_v", "flower_w"];
-  const n = Math.min(80, Math.round(w * d * 14));
+  const ss = WX.season || "summer";
+  if (ss === "bare" || ss === "late") return;
+  const n = Math.min(80, Math.round(w * d * 14 * (ss === "spring" || ss === "fall" ? 0.5 : 1)));
   for (let i = 0; i < n; i++) {
     const x = -w / 2 + 0.14 + rnd() * (w - 0.28);
     const z = -d / 2 + 0.14 + rnd() * (d - 0.28);
@@ -478,17 +541,19 @@ MB.chair = (g, P, m) => {
   const {w, d, h} = P;
   const sy = Math.min(0.46, h * 0.52);
   const wood = m("wood_mid", "chair");
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.03);
-    const z = sz * (d / 2 - 0.03);
-    B(g, x - 0.018, x + 0.018, 0, sy - 0.03, z - 0.018, z + 0.018, wood);
-  }
-  RB(g, -w / 2, w / 2, sy - 0.045, sy, -d / 2, d / 2, 0.012, m("fabric_grey", "seat"));
   for (const sx of [-1, 1]) {
-    const x = sx * (w / 2 - 0.03);
-    B(g, x - 0.018, x + 0.018, sy, h, -d / 2 + 0.012, -d / 2 + 0.048, wood);
+    const x = sx * (w / 2 - 0.035);
+    TLeg(g, x, d / 2 - 0.04, 0, sy - 0.03, 0.013, 0.019, wood);
+    Lb(g, [x, 0, -d / 2 + 0.035], [x, h - 0.05, -d / 2 + 0.01], 0.014, 0.019, wood, 10);
   }
-  RB(g, -w / 2 + 0.01, w / 2 - 0.01, h - 0.24, h, -d / 2 + 0.01, -d / 2 + 0.04, 0.01, wood);
+  RB(g, -w / 2 + 0.01, w / 2 - 0.01, sy - 0.055, sy - 0.03, -d / 2 + 0.02, d / 2 - 0.01, 0.008, wood);
+  Cushion(g, -w / 2, w / 2, sy - 0.035, sy + 0.01, -d / 2 + 0.03, d / 2, 0.018, 0.012, m("fabric_grey", "seat"));
+  const bk = new THREE.Group();
+  bk.position.set(0, h - 0.16, -d / 2 + 0.03);
+  bk.rotation.x = Math.PI / 2 - 0.13;
+  g.add(bk);
+  Cushion(bk, -w / 2 + 0.02, w / 2 - 0.02, -0.02, 0.02, -0.11, 0.11, 0.015, 0.008, m("fabric_grey", "seat"));
+  CyX(g, 0.012, -w / 2 + 0.035, w / 2 - 0.035, sy * 0.45, d / 2 - 0.04, wood, 8);
 };
 
 MB.gardenset = (g, P, m) => {
@@ -507,13 +572,169 @@ MB.gardenset = (g, P, m) => {
   }
 };
 
+function ns(mesh) {
+  if (mesh) mesh.castShadow = false;
+  return mesh;
+}
+
+function bulbMat(P, m, soft) {
+  return P.lit ? m(glowKey(P.K, soft ? "soft" : "glow"), "bulb") : m(soft ? "opal" : "bulb_off", "bulb");
+}
+
+function shadeMat(P, m) {
+  return P.lit ? m(glowKey(P.K, "shadeon"), "shade") : m("lampshade", "shade");
+}
+
+function Shell(p, rTop, rBot, y0, y1, x, z, mt, seg) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, y1 - y0, seg || 24, 1, true);
+  uvScale(g, 2 * Math.PI * Math.max(rTop, rBot), y1 - y0);
+  const mesh = addMesh(p, g, mt);
+  mesh.position.set(x, (y0 + y1) / 2, z);
+  return mesh;
+}
+
+function lightAt(P, x, y, z) {
+  if (P.lights) P.lights.push([x, y, z]);
+}
+
 MB.lamp = (g, P, m) => {
   const h = P.h;
   Cy(g, 0.1, 0, 0.1, 0, 0, m("darkmetal", "body"), 12);
   Cy(g, 0.035, 0.1, h - 0.3, 0, 0, m("darkmetal", "body"), 10);
-  B(g, -0.1, 0.1, h - 0.3, h - 0.08, -0.1, 0.1, m("lamp", "lamp"));
-  const cap = Cone(g, 0.17, h - 0.08, h, 0, 0, m("darkmetal", "body"), 4);
+  ns(B(g, -0.1, 0.1, h - 0.3, h - 0.08, -0.1, 0.1, bulbMat(P, m, true)));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * 0.1 - 0.012, sx * 0.1 + 0.012, h - 0.3, h - 0.08, sz * 0.1 - 0.012, sz * 0.1 + 0.012, m("darkmetal", "body")));
+  const cap = ns(Cone(g, 0.17, h - 0.08, h, 0, 0, m("darkmetal", "body"), 4));
   cap.rotation.y = Math.PI / 4;
+  lightAt(P, 0, h - 0.19, 0);
+};
+
+MB.streetlamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const pz = -d / 2 + 0.15;
+  Cy(g, 0.14, 0, 0.5, 0, pz, m("concrete", "base"), 16);
+  Cy(g, 0.075, 0.5, h - 0.25, 0, pz, m("graphite", "body"), 16, 0.05);
+  const hz = d / 2 - 0.25;
+  Lb(g, [0, h - 0.3, pz], [0, h - 0.12, hz - 0.1], 0.04, 0.035, m("graphite", "body"), 10);
+  ns(RB(g, -Math.min(0.2, w / 2), Math.min(0.2, w / 2), h - 0.2, h - 0.08, hz - 0.3, hz + 0.22, 0.03, m("graphite", "body")));
+  ns(B(g, -Math.min(0.17, w / 2 - 0.03), Math.min(0.17, w / 2 - 0.03), h - 0.215, h - 0.2, hz - 0.26, hz + 0.18, bulbMat(P, m, true)));
+  lightAt(P, 0, h - 0.4, hz);
+};
+
+MB.bollard = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Cy(g, r, 0, h - 0.14, 0, 0, m("graphite", "body"), 20);
+  ns(Cy(g, r * 0.92, h - 0.14, h - 0.04, 0, 0, bulbMat(P, m, true), 20));
+  ns(Cy(g, r * 1.05, h - 0.04, h, 0, 0, m("graphite", "body"), 20));
+  lightAt(P, 0, h - 0.09, 0);
+};
+
+MB.walllamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const zb = -d / 2;
+  B(g, -0.05, 0.05, h * 0.2, h * 0.8, zb, zb + 0.02, m("graphite", "body"));
+  Lb(g, [0, h * 0.5, zb + 0.02], [0, h * 0.5, zb + 0.08], 0.012, 0.012, m("graphite", "body"), 8);
+  const bw = Math.min(w, d - 0.08) / 2;
+  const zc = zb + 0.08 + bw;
+  ns(B(g, -bw, bw, 0.02, h - 0.08, zc - bw, zc + bw, m("glass_frost", "glass")));
+  ns(Sp(g, 0.035, 0, h * 0.45, zc, bulbMat(P, m), 1, 1.4, 1, 12));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * bw - 0.01, sx * bw + 0.01, 0.02, h - 0.08, zc + sz * bw - 0.01, zc + sz * bw + 0.01, m("graphite", "body")));
+  ns(B(g, -bw - 0.02, bw + 0.02, 0, 0.025, zc - bw - 0.02, zc + bw + 0.02, m("graphite", "body")));
+  const cap = ns(Cone(g, bw * 1.6, h - 0.08, h, 0, zc, m("graphite", "body"), 4));
+  cap.rotation.y = Math.PI / 4;
+  lightAt(P, 0, h * 0.45, zc);
+};
+
+MB.garland = (g, P, m) => {
+  const {w, h} = P;
+  const x0 = -w / 2 + 0.05;
+  const x1 = w / 2 - 0.05;
+  for (const x of [x0, x1]) Cy(g, 0.04, 0, h, x, 0, m("wood_dark", "body"), 10);
+  const sag = Math.min(0.5, w * 0.08);
+  const yAt = t => h - 0.08 - sag * 4 * t * (1 - t);
+  const pts = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = i / 16;
+    pts.push([x0 + (x1 - x0) * t, yAt(t), 0]);
+  }
+  ns(Tube(g, pts, 0.004, m("black", "wire"), 32));
+  const n = Math.max(2, Math.round((x1 - x0) / 0.45));
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    ns(Sp(g, 0.03, x0 + (x1 - x0) * t, yAt(t) - 0.05, 0, bulbMat(P, m), 1, 1.25, 1, 10));
+  }
+  for (const t of [0.25, 0.75]) lightAt(P, x0 + (x1 - x0) * t, yAt(t) - 0.1, 0);
+};
+
+MB.ceil = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  ns(Cy(g, r * 0.96, h - 0.02, h, 0, 0, m("white", "body"), 32));
+  ns(Cy(g, r, 0, h - 0.02, 0, 0, bulbMat(P, m, true), 32, r * 0.96));
+  lightAt(P, 0, -0.06, 0);
+};
+
+MB.chandelier = (g, P, m) => {
+  const {w, d, h} = P;
+  const R = Math.min(w, d) / 2 * 0.82;
+  const met = m("brass", "body");
+  ns(Cy(g, 0.07, h - 0.03, h, 0, 0, met, 20));
+  ns(Cy(g, 0.008, 0.3, h - 0.03, 0, 0, met, 8));
+  ns(Sp(g, 0.05, 0, 0.3, 0, met, 1, 0.8, 1, 16));
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2;
+    const x = Math.cos(a) * R;
+    const z = Math.sin(a) * R;
+    ns(Tube(g, [[0, 0.3, 0], [x * 0.5, 0.2, z * 0.5], [x * 0.95, 0.24, z * 0.95], [x, 0.33, z]], 0.008, met, 12));
+    ns(Cy(g, 0.022, 0.33, 0.36, x, z, met, 10));
+    ns(Shell(g, 0.05, 0.075, 0.36, 0.5, x, z, shadeMat(P, m), 16));
+    ns(Sp(g, 0.022, x, 0.41, z, bulbMat(P, m), 1, 1.3, 1, 10));
+  }
+  lightAt(P, 0, 0.4, 0);
+};
+
+MB.pendant = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  ns(Cy(g, 0.05, h - 0.02, h, 0, 0, m("shade_metal", "body"), 16));
+  ns(Cy(g, 0.004, 0.24, h - 0.02, 0, 0, m("black", "wire"), 6));
+  ns(Shell(g, 0.05, r, 0.02, 0.24, 0, 0, m("shade_metal", "body"), 28));
+  ns(Cy(g, 0.05, 0.24, 0.25, 0, 0, m("shade_metal", "body"), 16));
+  ns(Sp(g, 0.04, 0, 0.08, 0, bulbMat(P, m), 1, 1.2, 1, 12));
+  lightAt(P, 0, 0.0, 0);
+};
+
+MB.floorlamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Cy(g, r * 0.62, 0, 0.03, 0, 0, m("graphite", "body"), 24);
+  Cy(g, 0.012, 0.03, h - 0.3, 0, 0, m("graphite", "body"), 8);
+  ns(Shell(g, r * 0.78, r, h - 0.34, h, 0, 0, shadeMat(P, m), 28));
+  ns(Sp(g, 0.035, 0, h - 0.18, 0, bulbMat(P, m), 1, 1.3, 1, 12));
+  lightAt(P, 0, h - 0.17, 0);
+};
+
+MB.tablelamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Sp(g, 1, 0, h * 0.2, 0, m("ceramic", "body"), r * 0.42, h * 0.2, r * 0.42, 20);
+  Cy(g, 0.01, h * 0.35, h - 0.16, 0, 0, m("brass", "stem"), 8);
+  ns(Shell(g, r * 0.72, r, h - 0.22, h, 0, 0, shadeMat(P, m), 24));
+  ns(Sp(g, 0.025, 0, h - 0.12, 0, bulbMat(P, m), 1, 1.3, 1, 10));
+  lightAt(P, 0, h - 0.11, 0);
+};
+
+MB.sconce = (g, P, m) => {
+  const {w, d, h} = P;
+  const zb = -d / 2;
+  B(g, -0.05, 0.05, h * 0.25, h * 0.6, zb, zb + 0.015, m("brass", "body"));
+  Lb(g, [0, h * 0.42, zb + 0.015], [0, h * 0.4, zb + d * 0.55], 0.008, 0.008, m("brass", "body"), 8);
+  const r = Math.min(w / 2, d * 0.45);
+  const zc = zb + d * 0.55;
+  ns(Shell(g, r, r * 0.7, h * 0.4, h, 0, zc, shadeMat(P, m), 20));
+  ns(Sp(g, 0.022, 0, h * 0.55, zc, bulbMat(P, m), 1, 1.3, 1, 10));
+  lightAt(P, 0, h * 0.62, zc);
 };
 
 MB.person = (g, P, m) => {
@@ -549,34 +770,44 @@ MB.sofa = (g, P, m, rnd, opt) => {
   const fab = m(o.fab || "fabric_grey", "uph");
   const armL = o.armL !== false;
   const armR = o.armR !== false;
-  const arm = Math.min(0.2, w * 0.14);
-  const back = Math.min(0.22, d * 0.25);
-  const seatY = Math.min(0.44, h * 0.52);
-  legs4(g, w, d, 0.08, 0.08, 0.02, m("wood_dark", "legs"));
+  const arm = Math.min(0.19, w * 0.13);
+  const bf = Math.min(0.13, d * 0.14);
+  const bc = Math.min(0.19, d * 0.2);
+  const seatY = Math.min(0.45, h * 0.53);
+  const legs = m("wood_dark", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.07), sz * (d / 2 - 0.07), 0, 0.1, 0.014, 0.022, legs);
   const xl = -w / 2 + (armL ? arm : 0);
   const xr = w / 2 - (armR ? arm : 0);
-  RB(g, xl - 0.01, xr + 0.01, 0.08, seatY - 0.1, -d / 2 + back - 0.02, d / 2, 0.03, fab);
-  RB(g, -w / 2, w / 2, 0.08, h, -d / 2, -d / 2 + back, 0.05, fab);
-  if (armL) RB(g, -w / 2, -w / 2 + arm, 0.08, Math.min(h, seatY + 0.2), -d / 2, d / 2, 0.05, fab);
-  if (armR) RB(g, w / 2 - arm, w / 2, 0.08, Math.min(h, seatY + 0.2), -d / 2, d / 2, 0.05, fab);
+  Cushion(g, xl - 0.01, xr + 0.01, 0.1, seatY - 0.13, -d / 2 + bf - 0.02, d / 2, 0.03, 0, fab);
+  Cushion(g, -w / 2, w / 2, 0.1, h - 0.07, -d / 2, -d / 2 + bf, 0.045, 0, fab);
+  const armTop = Math.min(h - 0.05, seatY + 0.2);
+  if (armL) Cushion(g, -w / 2, -w / 2 + arm, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
+  if (armR) Cushion(g, w / 2 - arm, w / 2, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
   const inner = xr - xl;
   const n = inner > 1.5 ? 3 : inner > 0.95 ? 2 : 1;
   const cw = inner / n;
+  const zb = -d / 2 + bf;
+  const ch = h - seatY + 0.02;
   for (let i = 0; i < n; i++) {
     const x0 = xl + i * cw;
-    RB(g, x0 + 0.005, x0 + cw - 0.005, seatY - 0.12, seatY, -d / 2 + back, d / 2 - 0.02, 0.05, fab);
-    RB(g, x0 + 0.01, x0 + cw - 0.01, seatY - 0.02, h - 0.02, -d / 2 + back - 0.02, -d / 2 + back + 0.16, 0.06, fab);
+    Cushion(g, x0 + 0.004, x0 + cw - 0.004, seatY - 0.135, seatY, zb + bc - 0.03, d / 2 - 0.005, 0.045, 0.028, fab);
+    const bg = new THREE.Group();
+    bg.position.set(x0 + cw / 2, seatY + ch / 2 - 0.03, zb + bc / 2);
+    bg.rotation.x = Math.PI / 2 - 0.16;
+    g.add(bg);
+    Cushion(bg, -cw / 2 + 0.006, cw / 2 - 0.006, -bc / 2, bc / 2, -ch / 2, ch / 2, 0.06, 0.035, fab);
   }
-  if (inner > 1.3) {
+  if (inner > 1.1) {
+    const cm = m(o.pill || "fabric_terra", "cushions");
     for (const sx of [-1, 1]) {
       if ((sx < 0 && !armL) || (sx > 0 && !armR)) continue;
-      const x = sx < 0 ? xl + 0.05 : xr - 0.45;
-      RB(g, x, x + 0.4, seatY, seatY + 0.38, -d / 2 + back + 0.14, -d / 2 + back + 0.27, 0.05, m("fabric_terra", "cushions"));
+      const x = sx < 0 ? xl + 0.25 : xr - 0.25;
+      Pillow(g, x, seatY + 0.2, zb + bc + 0.07, 0.42, 0.42, 0.15, cm, -0.32, sx * -0.18);
     }
   }
 };
 
-MB.armchair = (g, P, m, rnd) => MB.sofa(g, P, m, rnd, {fab: "fabric_green"});
+MB.armchair = (g, P, m, rnd) => MB.sofa(g, P, m, rnd, {fab: "fabric_green", pill: "fabric_beige"});
 
 MB.sofaL = (g, P, m, rnd) => {
   const {w, d, h} = P;
@@ -587,21 +818,19 @@ MB.sofaL = (g, P, m, rnd) => {
   MB.sofa(main, {w, d: sd, h}, m, rnd, {armR: false});
   const cw = Math.min(0.95, w * 0.4);
   const fab = m("fabric_grey", "uph");
-  RB(g, w / 2 - cw, w / 2, 0.08, 0.34, -d / 2 + sd - 0.05, d / 2, 0.03, fab);
-  RB(g, w / 2 - cw + 0.005, w / 2 - 0.005, 0.32, 0.44, -d / 2 + sd, d / 2 - 0.02, 0.05, fab);
-  Cy(g, 0.02, 0, 0.08, w / 2 - 0.08, d / 2 - 0.08, m("wood_dark", "legs"), 8);
-  Cy(g, 0.02, 0, 0.08, w / 2 - cw + 0.08, d / 2 - 0.08, m("wood_dark", "legs"), 8);
+  const seatY = Math.min(0.45, h * 0.53);
+  Cushion(g, w / 2 - cw, w / 2, 0.1, seatY - 0.13, -d / 2 + sd - 0.05, d / 2, 0.03, 0, fab);
+  Cushion(g, w / 2 - cw + 0.004, w / 2 - 0.004, seatY - 0.135, seatY, -d / 2 + sd - 0.02, d / 2 - 0.005, 0.045, 0.028, fab);
+  const legs = m("wood_dark", "legs");
+  TLeg(g, w / 2 - 0.07, d / 2 - 0.07, 0, 0.1, 0.014, 0.022, legs);
+  TLeg(g, w / 2 - cw + 0.07, d / 2 - 0.07, 0, 0.1, 0.014, 0.022, legs);
 };
 
 MB.coffee = (g, P, m) => {
   const {w, d, h} = P;
-  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.012, m("wood_mid", "top"));
-  B(g, -w / 2 + 0.06, w / 2 - 0.06, 0.1, 0.12, -d / 2 + 0.06, d / 2 - 0.06, m("wood_mid", "shelf"));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.05);
-    const z = sz * (d / 2 - 0.05);
-    B(g, x - 0.018, x + 0.018, 0, h - 0.04, z - 0.018, z + 0.018, m("black", "legs"));
-  }
+  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.016, m("wood_mid", "top"));
+  RB(g, -w / 2 + 0.06, w / 2 - 0.06, 0.1, 0.12, -d / 2 + 0.06, d / 2 - 0.06, 0.006, m("wood_mid", "shelf"));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.06), sz * (d / 2 - 0.06), 0, h - 0.04, 0.011, 0.018, m("black", "legs"));
 };
 
 MB.tv = (g, P, m) => {
@@ -672,16 +901,35 @@ MB.plant = (g, P, m, rnd) => {
 MB.bed = (g, P, m) => {
   const {w, d, h} = P;
   const fab = m("fabric_beige", "bed");
-  const hb = 0.08;
-  legs4(g, w, d, 0.1, 0.07, 0.025, m("wood_dark", "legs"));
-  RB(g, -w / 2, w / 2, 0.1, 0.34, -d / 2 + hb, d / 2, 0.03, fab);
-  RB(g, -w / 2 + 0.03, w / 2 - 0.03, 0.32, 0.55, -d / 2 + hb + 0.02, d / 2 - 0.03, 0.06, m("fabric_white", "mattress"));
-  RB(g, -w / 2, w / 2, 0.1, h, -d / 2, -d / 2 + hb, 0.03, fab);
+  const hb = 0.09;
+  const legs = m("wood_dark", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.08), sz * (d / 2 - 0.08), 0, 0.09, 0.016, 0.022, legs);
+  Cushion(g, -w / 2, w / 2, 0.09, 0.36, -d / 2 + hb - 0.01, d / 2, 0.035, 0, fab);
+  Cushion(g, -w / 2 + 0.03, w / 2 - 0.03, 0.34, 0.56, -d / 2 + hb + 0.02, d / 2 - 0.03, 0.06, 0.012, m("fabric_white", "mattress"));
+  Cushion(g, -w / 2, w / 2, 0.09, 0.4, -d / 2, -d / 2 + hb, 0.03, 0, fab);
+  const hbTop = Math.max(0.8, h);
+  const nc = Math.max(3, Math.round(w / 0.2));
+  const cw = w / nc;
+  const hm = m("fabric_beige", "headboard");
+  for (let i = 0; i < nc; i++) {
+    const hg = new THREE.Group();
+    hg.position.set(-w / 2 + (i + 0.5) * cw, (0.36 + hbTop) / 2, -d / 2 + hb / 2 + 0.01);
+    hg.rotation.x = Math.PI / 2;
+    g.add(hg);
+    Cushion(hg, -cw / 2 + 0.003, cw / 2 - 0.003, -hb / 2, hb / 2, -(hbTop - 0.36) / 2, (hbTop - 0.36) / 2, 0.035, 0.018, hm);
+  }
+  const zd = -d / 2 + hb + 0.52;
+  Cushion(g, -w / 2 - 0.02, w / 2 + 0.02, 0.4, 0.63, zd, d / 2 + 0.03, 0.08, 0.03, m("fabric_blue", "blanket"));
+  CyX(g, 0.045, -w / 2 - 0.015, w / 2 + 0.015, 0.6, zd + 0.02, m("fabric_white", "blanket"), 14);
   const np = w > 1.3 ? 2 : 1;
-  const pw = (w - 0.1) / np;
-  for (let i = 0; i < np; i++) RB(g, -w / 2 + 0.05 + i * pw + 0.02, -w / 2 + 0.05 + (i + 1) * pw - 0.02, 0.53, 0.67, -d / 2 + hb + 0.06, -d / 2 + hb + 0.44, 0.06, m("fabric_white", "pillows"));
-  RB(g, -w / 2 + 0.01, w / 2 - 0.01, 0.5, 0.6, -d / 2 + hb + 0.55, d / 2 - 0.01, 0.04, m("fabric_blue", "blanket"));
-  RB(g, -w / 2 + 0.005, w / 2 - 0.005, 0.56, 0.62, d / 2 - 0.45, d / 2, 0.03, m("fabric_grey", "throw"));
+  const pw = Math.min(0.68, (w - 0.12) / np - 0.03);
+  const pm = m("fabric_white", "pillows");
+  for (let i = 0; i < np; i++) {
+    const x = np === 1 ? 0 : (i ? 1 : -1) * (w / 4);
+    Pillow(g, x, 0.66, -d / 2 + hb + 0.2, pw, 0.44, 0.17, pm, -1.2, 0);
+  }
+  if (w > 1.3) Pillow(g, 0, 0.72, -d / 2 + hb + 0.36, 0.45, 0.32, 0.13, m("fabric_terra", "cushions"), -0.55, 0);
+  Cushion(g, -w / 2 - 0.03, w / 2 + 0.03, 0.5, 0.645, d / 2 - 0.5, d / 2 + 0.035, 0.05, 0.012, m("fabric_grey", "throw"));
 };
 
 MB.bed2 = MB.bed;
@@ -720,51 +968,6 @@ MB.desk = (g, P, m) => {
   }
 };
 
-MB.kitchen = (g, P, m) => {
-  const {w, d, h} = P;
-  const body = m("white", "body");
-  const front = m("white_gloss", "fronts");
-  const top = m("graphite", "top");
-  const ct = Math.min(0.86, h - 0.04);
-  B(g, -w / 2, w / 2, 0, 0.1, -d / 2, d / 2 - 0.07, m("graphite", "plinth"));
-  B(g, -w / 2, w / 2, 0.1, ct, -d / 2, d / 2 - 0.02, body);
-  const n = Math.max(1, Math.round(w / 0.6));
-  const mw = w / n;
-  const sinkI = Math.min(n - 1, Math.floor(n * 0.3));
-  let hobI = n > 1 ? Math.min(n - 1, Math.floor(n * 0.7)) : -1;
-  if (hobI === sinkI) hobI = -1;
-  for (let i = 0; i < n; i++) {
-    const x0 = -w / 2 + i * mw;
-    if (i === hobI) {
-      B(g, x0 + 0.003, x0 + mw - 0.003, 0.12, ct - 0.16, d / 2 - 0.02, d / 2 - 0.002, m("screen", "oven"));
-      B(g, x0 + 0.08, x0 + mw - 0.08, ct - 0.2, ct - 0.185, d / 2 - 0.002, d / 2 + 0.02, m("steel", "handles"));
-      fronts(g, x0, x0 + mw, ct - 0.15, ct, d / 2 - 0.02, 1, 1, 1, front, m("steel", "handles"), false);
-    } else {
-      fronts(g, x0, x0 + mw, 0.1, ct, d / 2 - 0.02, 1, 1, i % 2 ? 3 : 1, front, m("steel", "handles"), i % 2 === 0);
-    }
-  }
-  B(g, -w / 2, w / 2, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
-  const sx = -w / 2 + (sinkI + 0.5) * mw;
-  B(g, sx - Math.min(0.24, mw / 2 - 0.05), sx + Math.min(0.24, mw / 2 - 0.05), ct + 0.04, ct + 0.043, -d / 2 + 0.14, d / 2 - 0.07, m("steel", "sink"));
-  Cy(g, 0.018, ct + 0.04, ct + 0.32, sx, -d / 2 + 0.08, m("chrome", "faucet"), 10);
-  Lb(g, [sx, ct + 0.31, -d / 2 + 0.08], [sx, ct + 0.3, -d / 2 + 0.28], 0.012, 0.012, m("chrome", "faucet"), 8);
-  let hx = null;
-  if (hobI >= 0) {
-    hx = -w / 2 + (hobI + 0.5) * mw;
-    B(g, hx - 0.29, hx + 0.29, ct + 0.04, ct + 0.046, -d / 2 + 0.06, d / 2 - 0.04, m("screen", "hob"));
-    for (const ox of [-0.13, 0.13]) for (const oz of [-0.11, 0.11]) Cy(g, 0.085, ct + 0.046, ct + 0.048, hx + ox, (d / 2 - 0.04 + -d / 2 + 0.06) / 2 + oz, m("darkmetal", "hob"), 24);
-  }
-  if (h > 1.3) B(g, -w / 2, w / 2, ct + 0.04, Math.min(h, 1.45), -d / 2, -d / 2 + 0.012, m("tile", "splash"));
-  if (h > 1.9) {
-    const uy0 = 1.45;
-    B(g, -w / 2, w / 2, uy0, h, -d / 2, -d / 2 + 0.33, body);
-    fronts(g, -w / 2, w / 2, uy0, h, -d / 2 + 0.33, 1, n, 1, front, m("steel", "handles"), true);
-    if (hx !== null) {
-      B(g, hx - 0.3, hx + 0.3, uy0 - 0.09, uy0, -d / 2 + 0.33, -d / 2 + 0.52, m("steel", "hood"));
-    }
-  }
-};
-
 MB.fridge = (g, P, m) => {
   const {w, d, h} = P;
   RB(g, -w / 2, w / 2, 0.02, h, -d / 2, d / 2 - 0.05, 0.02, m("steel", "body"));
@@ -786,14 +989,14 @@ MB.island = (g, P, m) => {
 
 MB.table = (g, P, m) => {
   const {w, d, h} = P;
-    RB(g, -w / 2, w / 2, h - 0.035, h, -d / 2, d / 2, 0.01, m("wood_light", "top"));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.07);
-    const z = sz * (d / 2 - 0.07);
-    B(g, x - 0.025, x + 0.025, 0, h - 0.035, z - 0.025, z + 0.025, m("wood_light", "legs"));
-  }
-  B(g, -w / 2 + 0.09, w / 2 - 0.09, h - 0.11, h - 0.035, -d / 2 + 0.07, -d / 2 + 0.09, m("wood_light", "rails"));
-  B(g, -w / 2 + 0.09, w / 2 - 0.09, h - 0.11, h - 0.035, d / 2 - 0.09, d / 2 - 0.07, m("wood_light", "rails"));
+  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.014, m("wood_light", "top"));
+  const lg = m("wood_light", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.08), sz * (d / 2 - 0.08), 0, h - 0.04, 0.018, 0.028, lg);
+  const rl = m("wood_light", "rails");
+  RB(g, -w / 2 + 0.1, w / 2 - 0.1, h - 0.11, h - 0.04, -d / 2 + 0.07, -d / 2 + 0.09, 0.004, rl);
+  RB(g, -w / 2 + 0.1, w / 2 - 0.1, h - 0.11, h - 0.04, d / 2 - 0.09, d / 2 - 0.07, 0.004, rl);
+  RB(g, -w / 2 + 0.07, -w / 2 + 0.09, h - 0.11, h - 0.04, -d / 2 + 0.1, d / 2 - 0.1, 0.004, rl);
+  RB(g, w / 2 - 0.09, w / 2 - 0.07, h - 0.11, h - 0.04, -d / 2 + 0.1, d / 2 - 0.1, 0.004, rl);
 };
 
 MB.dining = (g, P, m) => {
@@ -947,7 +1150,7 @@ function modelOf(o) {
 
 const PARTN = {
   body: "Корпус", top: "Столешница", legs: "Ножки", rails: "Царги", fronts: "Фасады", handles: "Ручки", plinth: "Цоколь",
-  chair: "Каркас стульев", seat: "Сиденье", uph: "Обивка", cushions: "Декоративные подушки", bed: "Кровать", mattress: "Матрас",
+  chair: "Каркас стульев", seat: "Сиденье", uph: "Обивка", cushions: "Декоративные подушки", bed: "Кровать", headboard: "Изголовье", mattress: "Матрас",
   pillows: "Подушки", blanket: "Одеяло", throw: "Плед", shelf: "Полка", books: "Книги", tv: "Телевизор", screen: "Экран",
   rug: "Ковёр", center: "Середина ковра", pot: "Горшок", soil: "Земля", stems: "Стебли", leaves: "Листья", trunk: "Ствол",
   crown: "Крона", crown2: "Светлая листва", needles: "Хвоя", paving: "Покрытие", paint: "Кузов", glass: "Стекло", tires: "Шины",
@@ -961,7 +1164,7 @@ const PARTN = {
   splash: "Фартук", hood: "Вытяжка", ceramic: "Керамика", button: "Кнопка смыва", lid2: "Сиденье", mirror: "Зеркало",
   mirrorframe: "Рама зеркала", floor: "Пол", drain: "Трап", drum: "Люк и ручки", panel: "Панель", flue: "Дымоход",
   hooks: "Крючки", clothes: "Одежда", rails2: "Направляющие", inwalls: "Стены внутри", gatebox: "Короб и направляющие",
-  winframe: "Рамы окон", sill: "Отлив"
+  winframe: "Рамы окон", sill: "Отлив", twigs: "Ветки", bulb: "Лампа", shade: "Абажур", stem: "Ножка", wire: "Провод"
 };
 const SLOTC = new Map();
 let SLOTM = null;
@@ -982,7 +1185,7 @@ function slotMat(o, m) {
 }
 
 function modelSlots(o) {
-  const key = o.kind + "|" + o.w + "|" + o.d + "|" + o.h + "|" + (o.opens ? JSON.stringify(o.opens.map(x => x.kind + x.op)) : "");
+  const key = o.kind + "|" + o.w + "|" + o.d + "|" + o.h + "|" + (o.opens ? JSON.stringify(o.opens.map(x => x.kind + x.op)) : "") + (o.mods ? JSON.stringify(o.mods) + o.up : "");
   if (SLOTC.has(key)) return SLOTC.get(key);
   if (!SLOTM) SLOTM = new THREE.MeshBasicMaterial();
   const seen = new Map();
@@ -992,7 +1195,7 @@ function modelSlots(o) {
     if (!seen.has(s)) seen.set(s, name);
     return SLOTM;
   };
-  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: {kind: o.kind, opens: o.opens}};
+  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: {kind: o.kind, opens: o.opens, mods: o.mods, up: o.up}};
   (MB[o.kind] || MB.other)(g, P, rec, srng(hashStr(o.id || o.kind)));
   g.traverse(x => {
     if (x.geometry) x.geometry.dispose();
@@ -1004,11 +1207,16 @@ function modelSlots(o) {
 }
 
 function buildModel(g, o, m, ghost) {
-  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: o.id && !ghost && o.id !== "ghost" && o.id.indexOf("thumb-") !== 0 ? o : null};
+  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: o.id && !ghost && o.id !== "ghost" && o.id.indexOf("thumb-") !== 0 ? o : null, lights: []};
+  if (P.o && modelOf(o).lamp && typeof lampLit === "function") {
+    P.lit = lampLit(o);
+    P.K = lampTemp(o);
+  }
   const rnd = srng(hashStr(o.id || o.kind));
   const mm = ghost ? () => ghostMat() : slotMat(o, m);
   const fn = MB[o.kind] || MB.other;
   fn(g, P, mm, rnd);
+  return P;
 }
 
 function sym2D(o) {
@@ -1082,22 +1290,8 @@ function sym2D(o) {
       return R(x0, y0, w, d, f) + Ln(x0, y0, x0 + w, y0 + d) + Ln(x0 + w, y0, x0, y0 + d) + Ln(x0 + w - 0.01, y0, x0 + w - 0.01, y0 + d - 0.1) + R(x0 + 0.1, y0 + 0.06, w - 0.2, 0.06, "none");
     case "washer":
       return R(x0, y0, w, d, f, 0.03) + `<circle cx="0" cy="0" r="${Math.min(w, d) * 0.3}" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
-    case "kitchen": {
-      let s = R(x0, y0, w, d, f);
-      const n = Math.max(1, Math.round(w / 0.6));
-      const mw = w / n;
-      const sinkI = Math.min(n - 1, Math.floor(n * 0.3));
-      let hobI = n > 1 ? Math.min(n - 1, Math.floor(n * 0.7)) : -1;
-      if (hobI === sinkI) hobI = -1;
-      const sx = x0 + (sinkI + 0.5) * mw;
-      s += R(sx - Math.min(0.24, mw / 2 - 0.05), y0 + 0.14, Math.min(0.48, mw - 0.1), d - 0.22, "none", 0.04);
-      if (hobI >= 0) {
-        const hx = x0 + (hobI + 0.5) * mw;
-        for (const ox of [-0.13, 0.13]) for (const oy of [-0.11, 0.11]) s += `<circle cx="${hx + ox}" cy="${oy + 0.01}" r="0.085" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
-      }
-      if (o.h > 1.9) s += Ln(x0, y0 + 0.33, x0 + w, y0 + 0.33, true);
-      return s;
-    }
+    case "kitchen":
+      return kitSym(o, x0, y0, st, sw, R, Ln);
     case "fridge":
       return R(x0, y0, w, d, f, 0.02) + Ln(x0, y0 + d - 0.06, x0 + w, y0 + d - 0.06);
     case "wardrobe":
@@ -1138,6 +1332,37 @@ function sym2D(o) {
       const r = Math.min(w, d) * 0.18;
       return R(x0, y0, w, d, f, r) + R(x0 + 0.12, y0 + d * 0.2, w - 0.24, d * 0.52, "none", r * 0.6) + Ln(x0 + 0.12, y0 + d * 0.72 - 0.35, x0 + w - 0.12, y0 + d * 0.72 - 0.35);
     }
+    case "lamp": {
+      const r = Math.min(w, d) / 2;
+      const q = r * 0.7071;
+      return `<circle cx="0" cy="0" r="${r}" fill="${f}" stroke="${st}" stroke-width="${sw}"/>` + Ln(-q, -q, q, q) + Ln(-q, q, q, -q);
+    }
+    case "garland": {
+      let s = Ln(x0, 0, x0 + w, 0, true);
+      const n = Math.max(2, Math.round(w / 0.45));
+      for (let i = 1; i < n; i++) s += `<circle cx="${x0 + w * i / n}" cy="0" r="0.05" fill="#f5c542" stroke="${st}" stroke-width="${sw}"/>`;
+      return s + `<circle cx="${x0}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/><circle cx="${x0 + w}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`;
+    }
+    case "fence": {
+      const n = Math.max(1, Math.ceil(w / 2.5));
+      let s = Ln(x0, 0, x0 + w, 0);
+      for (let i = 0; i <= n; i++) s += `<rect x="${x0 + w * i / n - 0.05}" y="-0.05" width="0.1" height="0.1" fill="${st}"/>`;
+      return s;
+    }
+    case "gate": {
+      const r = w / 2;
+      return R(x0, -0.05, 0.1, 0.1, st) + R(x0 + w - 0.1, -0.05, 0.1, 0.1, st) + `<path d="M ${x0} 0 L ${x0} ${-r} A ${r} ${r} 0 0 1 ${x0 + r} 0" fill="none" stroke="${st}" stroke-width="${sw}"/><path d="M ${x0 + w} 0 L ${x0 + w} ${-r} A ${r} ${r} 0 0 0 ${x0 + w - r} 0" fill="none" stroke="${st}" stroke-width="${sw}" stroke-dasharray="${3 / k} ${2 / k}"/>`;
+    }
+    case "bike":
+      return El(0, y0 + d * 0.22, w * 0.18, d * 0.2, f) + El(0, y0 + d * 0.78, w * 0.18, d * 0.2, f) + Ln(0, y0 + d * 0.2, 0, y0 + d * 0.8) + Ln(-w / 2, y0 + d * 0.72, w / 2, y0 + d * 0.72);
+    case "curtain": {
+      let p = `M ${x0} ${y0 + d / 2}`;
+      const n = Math.max(4, Math.round(w / 0.12));
+      for (let i = 1; i <= n; i++) p += ` Q ${x0 + (i - 0.5) * w / n} ${y0 + (i % 2 ? 0 : d)} ${x0 + i * w / n} ${y0 + d / 2}`;
+      return `<path d="${p}" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
+    }
+    case "pond":
+      return El(0, 0, w / 2, d / 2, "var(--water)") + El(0, 0, w / 2 - 0.12, d / 2 - 0.12, "none");
     case "person":
       return El(0, 0, w / 2, d / 2, f) + `<circle cx="0" cy="0" r="${Math.min(w, d) * 0.33}" fill="${f}" stroke="${st}" stroke-width="${sw}"/>` + Ln(0, d * 0.3, 0, d / 2 + 0.08);
     default:

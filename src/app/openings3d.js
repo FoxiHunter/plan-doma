@@ -40,6 +40,7 @@ function animTick(dt) {
     for (const f of a.fns) f(a.cur);
     moved = true;
   }
+  if (moved && LAMP.lit) lampShadowsDirty();
   return moved;
 }
 
@@ -67,6 +68,19 @@ function openable(t, it) {
 
 function toggleOpen(pk) {
   if (!pk) return false;
+  if (toggleFence(pk)) return true;
+  if (pk.t === "obj" && pk.gate) {
+    const o = S.objects.find(x => x.id === pk.id);
+    if (!o) return false;
+    o.open = (o.open || 0) > 0.05 ? 0 : 1;
+    animTo(animKey("obj", o.id, "gate"), o.open);
+    commit();
+    save();
+    updUndo();
+    renderPanel();
+    return true;
+  }
+  if (!pk.open && toggleLamp(pk)) return true;
   let it = null;
   let key = "";
   if (pk.t === "door" || pk.t === "win") {

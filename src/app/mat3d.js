@@ -38,14 +38,20 @@ const MGROUPS = [
 ];
 
 const MDEF = {
-  grass: {n: "Газон", g: "ground", map: "grass", c: 0x71a04c, r: 1, anti: 0.0667},
-  meadow: {n: "Трава луговая", g: "ground", map: "grass", c: 0x7f9c55, r: 1, anti: 0.0667},
-  soil: {n: "Земля", g: "ground", map: "soil", c: 0x6a4c38, r: 1},
-  gravel: {n: "Гравий", g: "ground", map: "gravel", c: 0xafa89c, r: 1},
-  paving: {n: "Тротуарная плитка", g: "ground", map: "paving", c: 0xb2aa9f, c2: 0x7d776d, r: 0.88},
-  sidewalk: {n: "Плитка серая", g: "ground", map: "paving", c: 0xb9b8b4, c2: 0x85847f, r: 0.9},
-  asphalt: {n: "Асфальт", g: "ground", map: "asphalt", c: 0x55575b, r: 0.92, anti: 0.1},
-  deck: {n: "Террасная доска", g: "wood", map: "deck", c: 0xb5865c, r: 0.8},
+  grass: {n: "Газон", g: "ground", map: "grass", c: 0x71a04c, r: 1, anti: 0.0667, pud: 0.25},
+  meadow: {n: "Трава луговая", g: "ground", map: "grass", c: 0x7f9c55, r: 1, anti: 0.0667, pud: 0.25},
+  grass_s: {map: "grass", c: 0x86b852, r: 1, anti: 0.0667, pud: 0.25},
+  grass_a: {map: "grass", c: 0x8a9c4e, r: 1, anti: 0.0667, pud: 0.25},
+  grass_w: {map: "grass", c: 0x8a8660, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_s: {map: "grass", c: 0x8aa857, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_a: {map: "grass", c: 0x94985a, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_w: {map: "grass", c: 0x928a67, r: 1, anti: 0.0667, pud: 0.25},
+  soil: {n: "Земля", g: "ground", map: "soil", c: 0x6a4c38, r: 1, pud: 0.8},
+  gravel: {n: "Гравий", g: "ground", map: "gravel", c: 0xafa89c, r: 1, pud: 0.35},
+  paving: {n: "Тротуарная плитка", g: "ground", map: "paving", c: 0xb2aa9f, c2: 0x7d776d, r: 0.88, pud: 1},
+  sidewalk: {n: "Плитка серая", g: "ground", map: "paving", c: 0xb9b8b4, c2: 0x85847f, r: 0.9, pud: 1},
+  asphalt: {n: "Асфальт", g: "ground", map: "asphalt", c: 0x55575b, r: 0.92, anti: 0.1, pud: 1.1},
+  deck: {n: "Террасная доска", g: "wood", map: "deck", c: 0xb5865c, r: 0.8, pud: 0.4},
   facade: {n: "Штукатурка фасадная", g: "facade", map: "plaster", c: 0xf3ece0, r: 0.93},
   decor: {n: "Декоративная штукатурка", g: "facade", map: "decor", c: 0xeee6d8, r: 0.95},
   brick: {n: "Кирпич красный", g: "facade", map: "brick", c: 0xc27458, c2: 0xbdb7ad, r: 0.9},
@@ -73,18 +79,18 @@ const MDEF = {
   roofedge: {n: "Металл тёмный", g: "metal", c: 0x3b3f45, r: 0.5, m: 0.4},
   soffit: {n: "Подшив деревом", g: "wood", map: "wood", c: 0xdcc9a8, r: 0.8},
   gutter: {n: "Водосток", g: "metal", c: 0x6d737a, r: 0.35, m: 0.7, side: 2},
-  parquet: {n: "Паркет дуб", g: "floor", map: "parquet", c: 0xd7b089, r: 0.55},
-  parquet_dark: {n: "Паркет орех", g: "floor", map: "parquet", c: 0x8c5f40, r: 0.5},
-  herring: {n: "Ёлочка дуб", g: "floor", map: "herring", c: 0xcfa378, r: 0.55},
-  laminate: {n: "Ламинат серый дуб", g: "floor", map: "laminate", c: 0xb7ab9c, r: 0.6},
+  parquet: {n: "Паркет дуб", g: "floor", map: "parquet", c: 0xd7b089, r: 0.55, cc: 0.3, ccr: 0.14},
+  parquet_dark: {n: "Паркет орех", g: "floor", map: "parquet", c: 0x8c5f40, r: 0.5, cc: 0.3, ccr: 0.14},
+  herring: {n: "Ёлочка дуб", g: "floor", map: "herring", c: 0xcfa378, r: 0.55, cc: 0.3, ccr: 0.14},
+  laminate: {n: "Ламинат серый дуб", g: "floor", map: "laminate", c: 0xb7ab9c, r: 0.6, cc: 0.15, ccr: 0.22},
   tile: {n: "Плитка 30×30", g: "floor", map: "tile", c: 0xf4f2ee, c2: 0xbdb9b1, r: 0.9},
   porcelain: {n: "Керамогранит 60×60", g: "floor", map: "porcelain", c: 0xd3ccc0, c2: 0xa29c93, r: 0.9},
   microcement: {n: "Микроцемент", g: "floor", map: "concrete", c: 0xc3beb5, r: 0.7},
   carpet: {n: "Ковролин", g: "floor", map: "carpet", c: 0xa99f92, r: 1},
-  marble: {n: "Мрамор", g: "stone", map: "marble", c: 0xf3f1ed, c2: 0xd9d5cf, r: 0.9},
-  granite: {n: "Гранит", g: "stone", map: "granite", c: 0xa3a09d, r: 0.8},
-  concrete: {n: "Бетон", g: "stone", map: "concrete", c: 0xbdb9b2, r: 0.9},
-  ceramic: {n: "Санфаянс", g: "stone", c: 0xf9f9f7, r: 0.1},
+  marble: {n: "Мрамор", g: "stone", map: "marble", c: 0xf3f1ed, c2: 0xd9d5cf, r: 0.9, cc: 0.55, ccr: 0.05},
+  granite: {n: "Гранит", g: "stone", map: "granite", c: 0xa3a09d, r: 0.8, cc: 0.4, ccr: 0.06},
+  concrete: {n: "Бетон", g: "stone", map: "concrete", c: 0xbdb9b2, r: 0.9, pud: 0.9},
+  ceramic: {n: "Санфаянс", g: "stone", c: 0xf9f9f7, r: 0.3, cc: 1, ccr: 0.03},
   terracotta: {n: "Терракота", g: "stone", c: 0xb86a45, r: 0.8},
   wood_light: {n: "Дуб светлый", g: "wood", map: "wood", c: 0xe6cda6, r: 0.55},
   wood_mid: {n: "Дуб", g: "wood", map: "wood", c: 0xb98b5e, r: 0.55},
@@ -94,16 +100,16 @@ const MDEF = {
   wood_raw: {n: "Сосна некрашеная", g: "wood", map: "wood", c: 0xdcbb8d, r: 0.8},
   door_int: {n: "Шпон светлый", g: "wood", map: "wood", c: 0xf0e6d4, r: 0.5},
   white: {n: "Белый матовый", g: "paint", c: 0xf1f0ec, r: 0.6},
-  white_gloss: {n: "Белый глянец", g: "paint", c: 0xf6f6f4, r: 0.18},
+  white_gloss: {n: "Белый глянец", g: "paint", c: 0xf6f6f4, r: 0.3, cc: 0.6, ccr: 0.05},
   black: {n: "Чёрный", g: "paint", c: 0x1b1c1e, r: 0.4},
   graphite: {n: "Графит", g: "paint", c: 0x3a3d42, r: 0.5},
-  lacquer: {n: "Эмаль цветная", g: "paint", c: 0x5b7592, r: 0.3},
+  lacquer: {n: "Эмаль цветная", g: "paint", c: 0x5b7592, r: 0.35, cc: 0.9, ccr: 0.04},
   frame: {n: "ПВХ графит", g: "paint", c: 0x3b4047, r: 0.45},
   frame_white: {n: "ПВХ белый", g: "paint", c: 0xf2f2f0, r: 0.4},
   sill_in: {n: "Подоконник ПВХ", g: "paint", c: 0xf4f3f0, r: 0.3},
   plastic_green: {n: "Пластик", g: "paint", c: 0x3f6b3a, r: 0.6},
   rubber: {n: "Резина", g: "paint", c: 0x19191b, r: 0.9},
-  screen: {n: "Экран", g: "paint", c: 0x0c0d0f, r: 0.08, m: 0.3},
+  screen: {n: "Экран", g: "paint", c: 0x0c0d0f, r: 0.3, m: 0.2, cc: 1, ccr: 0.02},
   chrome: {n: "Хром", g: "metal", c: 0xeeeeee, r: 0.12, m: 1},
   steel: {n: "Сталь", g: "metal", c: 0xb9bcc0, r: 0.32, m: 0.85},
   darkmetal: {n: "Чёрный металл", g: "metal", c: 0x2e3135, r: 0.45, m: 0.6},
@@ -113,37 +119,60 @@ const MDEF = {
   door_entry: {n: "Металл входной двери", g: "metal", c: 0x2e3236, r: 0.45, m: 0.35},
   sill_out: {n: "Отлив металлический", g: "metal", c: 0x8f959c, r: 0.4, m: 0.6},
   post: {n: "Металл зелёный", g: "metal", c: 0x3c4a3f, r: 0.5, m: 0.4},
-  glass: {n: "Стекло прозрачное", g: "glass", c: 0xcfe4ee, r: 0.02, op: 0.2, env: 1.6},
+  glass: {n: "Стекло прозрачное", g: "glass", c: 0xcfe4ee, r: 0.02, op: 0.2, tr: 0.84, env: 1.3},
   glass_frost: {n: "Стекло матовое", g: "glass", c: 0xe8eff2, r: 0.35, op: 0.7, env: 1},
-  glass_tint: {n: "Стекло тонированное", g: "glass", c: 0x3d4a52, r: 0.02, op: 0.5, env: 1.6},
+  glass_tint: {n: "Стекло тонированное", g: "glass", c: 0x3d4a52, r: 0.02, op: 0.5, tr: 0.55, env: 1.3},
   mirror: {n: "Зеркало", g: "glass", c: 0xe4eaee, r: 0.02, m: 1},
   poly: {n: "Поликарбонат", g: "glass", c: 0xdff0f5, r: 0.15, op: 0.3, side: 2},
-  carglass: {c: 0x1b2127, r: 0.06, m: 0.3},
-  fabric_grey: {n: "Ткань серая", g: "fabric", map: "fabric", c: 0x9a9fa6, r: 1},
-  fabric_dark: {n: "Ткань тёмная", g: "fabric", map: "fabric", c: 0x5f636a, r: 1},
-  fabric_beige: {n: "Ткань бежевая", g: "fabric", map: "fabric", c: 0xddcfb8, r: 1},
-  fabric_blue: {n: "Ткань синяя", g: "fabric", map: "fabric", c: 0x5f7a9a, r: 1},
-  fabric_green: {n: "Ткань зелёная", g: "fabric", map: "fabric", c: 0x789472, r: 1},
-  fabric_white: {n: "Ткань белая", g: "fabric", map: "fabric", c: 0xf7f5f0, r: 1},
-  fabric_terra: {n: "Ткань терракотовая", g: "fabric", map: "fabric", c: 0xbd7355, r: 1},
-  velvet: {n: "Велюр", g: "fabric", map: "carpet", c: 0x51627a, r: 0.95},
-  leather: {n: "Кожа коричневая", g: "fabric", map: "leather", c: 0x7a5439, r: 0.55},
-  leather_black: {n: "Кожа чёрная", g: "fabric", map: "leather", c: 0x2c2c2d, r: 0.5},
-  rug: {n: "Ковёр", g: "fabric", map: "carpet", c: 0xc4b198, r: 1},
+  carglass: {c: 0x1b2127, r: 0.1, m: 0.2, cc: 1, ccr: 0.02},
+  fabric_grey: {n: "Ткань серая", g: "fabric", map: "fabric", c: 0x9a9fa6, r: 1, sheen: 1},
+  fabric_dark: {n: "Ткань тёмная", g: "fabric", map: "fabric", c: 0x5f636a, r: 1, sheen: 1},
+  fabric_beige: {n: "Ткань бежевая", g: "fabric", map: "fabric", c: 0xddcfb8, r: 1, sheen: 1},
+  fabric_blue: {n: "Ткань синяя", g: "fabric", map: "fabric", c: 0x5f7a9a, r: 1, sheen: 1},
+  fabric_green: {n: "Ткань зелёная", g: "fabric", map: "fabric", c: 0x789472, r: 1, sheen: 1},
+  fabric_white: {n: "Ткань белая", g: "fabric", map: "fabric", c: 0xf7f5f0, r: 1, sheen: 1},
+  fabric_terra: {n: "Ткань терракотовая", g: "fabric", map: "fabric", c: 0xbd7355, r: 1, sheen: 1},
+  velvet: {n: "Велюр", g: "fabric", map: "carpet", c: 0x51627a, r: 0.95, sheen: 1.2},
+  leather: {n: "Кожа коричневая", g: "fabric", map: "leather", c: 0x7a5439, r: 0.55, cc: 0.25, ccr: 0.35},
+  leather_black: {n: "Кожа чёрная", g: "fabric", map: "leather", c: 0x2c2c2d, r: 0.5, cc: 0.25, ccr: 0.35},
+  rug: {n: "Ковёр", g: "fabric", map: "carpet", c: 0xc4b198, r: 1, sheen: 0.6},
   leaf: {n: "Листва", g: "plant", map: "leaf", c: 0x8fb56d, r: 0.9},
   leaf_light: {n: "Листва светлая", g: "plant", map: "leaf", c: 0xb5d18a, r: 0.9},
   leaf_dark: {n: "Хвоя", g: "plant", map: "leaf", c: 0x5f8061, r: 0.9},
   bark: {n: "Кора", g: "plant", map: "bark", c: 0x7a6250, r: 1},
-  water: {n: "Вода", g: "glass", c: 0x3a8fb3, r: 0.03, m: 0.1, op: 0.82, env: 1.4},
+  leaf_spring: {n: "Листва весенняя", g: "plant", map: "leaf", c: 0xa7d06a, r: 0.9},
+  leaf_y: {n: "Листва жёлтая", g: "plant", map: "leaf", c: 0xd9ad3a, r: 0.9},
+  leaf_o: {n: "Листва оранжевая", g: "plant", map: "leaf", c: 0xcf7a30, r: 0.9},
+  leaf_r: {n: "Листва красная", g: "plant", map: "leaf", c: 0xa9452f, r: 0.9},
+  leaf_brown: {n: "Листва сухая", g: "plant", map: "leaf", c: 0x8a6a3e, r: 0.95},
+  water: {n: "Вода", g: "glass", c: 0x3a8fb3, r: 0.03, m: 0.1, op: 0.82, env: 1.4, wave: 1},
+  pondwater: {n: "Вода пруда", g: "glass", c: 0x2d4b3c, r: 0.04, op: 0.9, env: 1.3, wave: 1},
+  poolwall: {n: "Стенка бассейна", g: "paint", c: 0x3f6fa3, r: 0.5, side: 2},
+  canopy: {n: "Ткань тента", g: "fabric", map: "fabric", c: 0xe8e1d0, r: 1, side: 2, sheen: 0.5},
+  curtain: {n: "Ткань штор", g: "fabric", map: "fabric", c: 0xd9cdb8, r: 1, side: 2, sheen: 0.8},
+  birchbark: {n: "Кора берёзы", g: "plant", map: "bark", c: 0xe6e2d8, r: 0.9},
+  blossom: {c: 0xf6e3ea, r: 0.8},
+  rock: {n: "Камень природный", g: "stone", map: "granite", c: 0x8c877e, r: 0.9},
+  apple: {c: 0xb8231c, r: 0.45, cc: 0.5, ccr: 0.1},
   snow: {map: "snow", c: 0xf6f8fb, r: 0.75},
   lamp: {c: 0xfff4dc, r: 0.3, em: 0xfff0d0},
+  bulb_off: {c: 0xeeeae2, r: 0.25, op: 0.85},
+  lampshade: {n: "Абажур", g: "fabric", map: "fabric", c: 0xefe6d2, r: 1, sheen: 0.6, side: 2},
+  opal: {n: "Матовый плафон", g: "glass", c: 0xf4f2ee, r: 0.4, op: 0.92},
+  shade_metal: {n: "Металл плафона", g: "metal", c: 0x2e3135, r: 0.45, m: 0.6, side: 2},
   redlamp: {c: 0x9e1111, r: 0.3, em: 0x5a0000},
   skin: {c: 0xd6a588, r: 0.65},
   hair: {c: 0x3a2a1f, r: 0.85},
   shirt: {map: "fabric", c: 0x6680a0, r: 0.9},
   pants: {map: "fabric", c: 0x3a3d45, r: 0.9},
   shoes: {c: 0x2a2522, r: 0.6},
-  fence: {map: "fence", c: 0x3c4a3f, r: 0.55, m: 0.3, alpha: 0.5, side: 2},
+  fence: {n: "3D-сетка", g: "metal", map: "fence", c: 0x2f4d3a, r: 0.5, m: 0.35, alpha: 0.5, side: 2},
+  chain: {n: "Сетка рабица", g: "metal", map: "chain", c: 0x9aa39c, r: 0.45, m: 0.6, alpha: 0.5, side: 2},
+  prof: {n: "Профлист", g: "metal", map: "prof", c: 0x56695c, r: 0.42, m: 0.35},
+  euro: {n: "Евроштакетник", g: "metal", c: 0x6a4b38, r: 0.38, m: 0.35},
+  picket: {n: "Штакетник", g: "wood", map: "wood", c: 0xc9a77c, r: 0.8},
+  sand: {n: "Песок", g: "ground", map: "soil", c: 0xd8c298, r: 1, pud: 0.2},
+  solar: {n: "Солнечная панель", g: "glass", map: "solar", c: 0x1d2b45, r: 0.2, m: 0.3, cc: 1, ccr: 0.02},
   garagedoor: {n: "Секционные панели", g: "metal", map: "ribs", c: 0xdbdad6, r: 0.5, m: 0.2},
   redline: {c: 0xd23a2e, r: 0.8},
   zone: {c: 0xffffff, r: 1, op: 0.6},
@@ -180,8 +209,12 @@ function baseDef(base) {
   if (!def && base.indexOf("#") > 0) {
     const [kind, hx] = base.split("#");
     const c = parseInt(hx, 16);
-    if (kind === "paint") def = {c, r: 0.28, m: 0.55};
-    else if (kind === "fabric") def = {map: "fabric", c, r: 1};
+    if (kind === "paint") def = {c, r: 0.4, m: 0.45, cc: 1, ccr: 0.03};
+    else if (kind === "glow") def = {c, r: 0.35, em: c, emi: 5};
+    else if (kind === "lacq") def = {c, r: 0.3, cc: 1, ccr: 0.03};
+    else if (kind === "soft") def = {c: 0xf4f1ea, r: 0.6, em: c, emi: 1.4};
+    else if (kind === "shadeon") def = {map: "fabric", c: 0xefe6d2, r: 1, em: c, emi: 0.8, side: 2};
+    else if (kind === "fabric") def = {map: "fabric", c, r: 1, sheen: 1};
     else def = {c, r: 0.7};
   }
   return def || {c: 0xb0b4b8, r: 0.8};
@@ -212,20 +245,25 @@ function specKey(sp, def) {
 }
 
 function patchMat(mt, def, T) {
-  const macro = def.anti ? tex("macro") : null;
-  const c2 = def.c2 !== undefined && T.rough ? lin(def.c2) : null;
-  if (!(macro && macro.map) && !c2) return;
+  const macro = T && T.map && def.anti ? tex("macro") : null;
+  const mk = !!(macro && macro.map);
+  const c2 = T && T.map && def.c2 !== undefined && T.rough ? lin(def.c2) : null;
+  const wind = def.g === "plant";
+  const pud = def.pud !== undefined ? def.pud : 0.6;
+  const wave = def.wave ? 1 : 0;
   mt.onBeforeCompile = sh => {
+    shadePatch(sh, wind, pud, wave);
+    if (!mk && !c2) return;
     let code = "#ifdef USE_MAP\n\tvec4 texelColor = texture2D( map, vUv );\n";
     let pre = "";
-    if (macro && macro.map) {
+    if (mk) {
       sh.uniforms.uMacro = {value: macro.map};
       sh.uniforms.uMacroK = {value: def.anti};
       pre += "uniform sampler2D uMacro;\nuniform float uMacroK;\n";
       code += "\tfloat mk = texture2D( uMacro, vUv * uMacroK ).r;\n\tvec4 texB = texture2D( map, mat2( 0.8, -0.6, 0.6, 0.8 ) * vUv + vec2( 0.37, 0.61 ) );\n\ttexelColor = mix( texelColor, texB, smoothstep( 0.4, 0.6, mk ) );\n";
     }
     code += "\ttexelColor = mapTexelToLinear( texelColor );\n";
-    if (macro && macro.map) code += "\ttexelColor.rgb *= 0.8 + 0.4 * mk;\n";
+    if (mk) code += "\ttexelColor.rgb *= 0.8 + 0.4 * mk;\n";
     if (c2) {
       sh.uniforms.uC2 = {value: c2};
       pre += "uniform vec3 uC2;\n";
@@ -234,7 +272,7 @@ function patchMat(mt, def, T) {
     code += "\tdiffuseColor *= texelColor;\n#endif";
     sh.fragmentShader = pre + sh.fragmentShader.replace("#include <map_fragment>", code);
   };
-  mt.customProgramCacheKey = () => (macro && macro.map ? "macro" : "") + (c2 ? "joint" : "");
+  mt.customProgramCacheKey = () => "sh3" + (mk ? "macro" : "") + (c2 ? "joint" : "") + (wind ? "wind" : "");
 }
 
 function makeMat(name) {
@@ -258,11 +296,21 @@ function makeMat(name) {
   if (def.side === 2) o.side = THREE.DoubleSide;
   if (def.em) {
     o.emissive = lin(def.em);
-    o.emissiveIntensity = 1.2;
+    o.emissiveIntensity = def.emi || 1.2;
   }
   if (def.env) o.envMapIntensity = def.env;
-  const mt = new THREE.MeshStandardMaterial(o);
-  if (T && T.map) patchMat(mt, def, T);
+  const phys = def.cc || def.sheen || def.tr;
+  if (def.cc) {
+    o.clearcoat = def.cc;
+    o.clearcoatRoughness = def.ccr || 0.04;
+  }
+  if (def.sheen) o.sheen = lin(def.c).lerp(new THREE.Color(1, 1, 1), 0.25).multiplyScalar(def.sheen);
+  if (def.tr) {
+    o.transmission = def.tr;
+    o.opacity = 1;
+  }
+  const mt = phys ? new THREE.MeshPhysicalMaterial(o) : new THREE.MeshStandardMaterial(o);
+  patchMat(mt, def, T);
   return mt;
 }
 
@@ -290,6 +338,22 @@ function matHouse(name) {
   return mat(name, true);
 }
 
+const ADEP = new Map();
+
+function alphaShadows(root) {
+  root.traverse(o => {
+    const m = o.isMesh && !Array.isArray(o.material) ? o.material : null;
+    if (!m || !(m.alphaTest > 0) || !m.map) return;
+    let d = ADEP.get(m);
+    if (!d) {
+      d = [new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: m.map, alphaTest: m.alphaTest}), new THREE.MeshDistanceMaterial({map: m.map, alphaTest: m.alphaTest})];
+      ADEP.set(m, d);
+    }
+    o.customDepthMaterial = d[0];
+    o.customDistanceMaterial = d[1];
+  });
+}
+
 function pruneMats(root) {
   const used = new Set();
   root.traverse(o => {
@@ -298,6 +362,11 @@ function pruneMats(root) {
   });
   for (const [key, m] of MATC) {
     if (key.indexOf("@") < 0 || used.has(m)) continue;
+    const d = ADEP.get(m);
+    if (d) {
+      for (const x of d) x.dispose();
+      ADEP.delete(m);
+    }
     m.dispose();
     MATC.delete(key);
   }
@@ -374,6 +443,81 @@ function RB(p, x0, x1, y0, y1, z0, z1, rad, mt) {
   const m = addMesh(p, g, mt);
   m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   return m;
+}
+
+function Cushion(p, x0, x1, y0, y1, z0, z1, rad, bulge, mt) {
+  const w = x1 - x0;
+  const h = y1 - y0;
+  const d = z1 - z0;
+  if (w <= 0.01 || h <= 0.01 || d <= 0.01) return null;
+  const r = Math.max(0.004, Math.min(rad, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002));
+  const sg = (v, a, b) => Math.max(a, Math.min(b, Math.round(v / 0.045)));
+  const g = new THREE.BoxGeometry(w, h, d, sg(w, 6, 28), sg(h, 4, 14), sg(d, 6, 28));
+  const pos = g.attributes.position;
+  const nor = g.attributes.normal;
+  const uv = g.attributes.uv;
+  const hw = w / 2;
+  const hh = h / 2;
+  const hd = d / 2;
+  const bu = bulge || 0;
+  const v = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const n = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const ax = Math.abs(nor.getX(i));
+    const ay = Math.abs(nor.getY(i));
+    if (ay > 0.5) uv.setXY(i, v.x + hw, v.z + hd);
+    else if (ax > 0.5) uv.setXY(i, v.z + hd, v.y + hh);
+    else uv.setXY(i, v.x + hw, v.y + hh);
+    c.set(Math.max(-hw + r, Math.min(hw - r, v.x)), Math.max(-hh + r, Math.min(hh - r, v.y)), Math.max(-hd + r, Math.min(hd - r, v.z)));
+    n.copy(v).sub(c);
+    if (n.lengthSq() > 1e-12) {
+      n.normalize();
+      v.copy(c).addScaledVector(n, r);
+    } else n.fromBufferAttribute(nor, i);
+    if (bu) {
+      const u = v.x / hw;
+      const t = v.z / hd;
+      const k = Math.max(0, 1 - u * u) * Math.max(0, 1 - t * t);
+      const f = Math.max(0, v.y / hh);
+      v.y += bu * k * f;
+      if (n.y > 0) {
+        const dx = bu * f * -2 * u / hw * Math.max(0, 1 - t * t);
+        const dz = bu * f * -2 * t / hd * Math.max(0, 1 - u * u);
+        n.x -= dx * n.y;
+        n.z -= dz * n.y;
+        n.normalize();
+      }
+    }
+    pos.setXYZ(i, v.x, v.y, v.z);
+    nor.setXYZ(i, n.x, n.y, n.z);
+  }
+  const m = addMesh(p, g, mt);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  return m;
+}
+
+function Pillow(p, x, y, z, w, h, t, mt, tilt, rotY) {
+  const g = new THREE.BoxGeometry(w, h, t, 14, 12, 1);
+  const pos = g.attributes.position;
+  const uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) / (w / 2);
+    const v = pos.getY(i) / (h / 2);
+    const f = Math.sqrt(Math.max(0.02, (1 - Math.pow(Math.abs(u), 3)) * (1 - Math.pow(Math.abs(v), 3))));
+    pos.setXYZ(i, pos.getX(i) * (1 - 0.07 * v * v), pos.getY(i) * (1 - 0.07 * u * u), pos.getZ(i) * f);
+    uv.setXY(i, pos.getX(i) + w / 2, pos.getY(i) + h / 2);
+  }
+  g.computeVertexNormals();
+  const m = addMesh(p, g, mt);
+  m.position.set(x, y, z);
+  m.rotation.set(tilt || 0, rotY || 0, 0, "YXZ");
+  return m;
+}
+
+function TLeg(p, x, z, y0, y1, rBot, rTop, mt) {
+  return Cy(p, rBot, y0, y1, x, z, mt, 12, rTop);
 }
 
 function Cy(p, r, y0, y1, x, z, mt, seg, rTop) {
@@ -463,6 +607,65 @@ function Tube(p, pts, r, mt, seg) {
   const curve = new THREE.CatmullRomCurve3(pts.map(q => new THREE.Vector3(q[0], q[1], q[2])));
   const g = new THREE.TubeGeometry(curve, seg || 16, r, 8, false);
   return addMesh(p, g, mt);
+}
+
+function MG() {
+  return new Map();
+}
+
+function mgAdd(mg, mt, geo, mx) {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  if (g !== geo) geo.dispose();
+  if (mx) g.applyMatrix4(mx);
+  if (!mg.has(mt)) mg.set(mt, []);
+  mg.get(mt).push(g);
+}
+
+function mgBox(mg, mt, x0, x1, y0, y1, z0, z1) {
+  const w = x1 - x0;
+  const h = y1 - y0;
+  const d = z1 - z0;
+  if (w <= 0.001 || h <= 0.001 || d <= 0.001) return;
+  const g = new THREE.BoxGeometry(w, h, d);
+  uvBox(g, w, h, d);
+  g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  mgAdd(mg, mt, g);
+}
+
+function mgCy(mg, mt, r, y0, y1, x, z, seg, rTop) {
+  if (y1 - y0 <= 0.001) return;
+  const g = new THREE.CylinderGeometry(rTop === undefined ? r : rTop, r, y1 - y0, seg || 12);
+  uvScale(g, 2 * Math.PI * r, y1 - y0);
+  g.translate(x, (y0 + y1) / 2, z);
+  mgAdd(mg, mt, g);
+}
+
+function mgEnd(mg, parent, noShadow) {
+  const out = [];
+  for (const [mt, list] of mg) {
+    let n = 0;
+    for (const g of list) n += g.attributes.position.count;
+    const pos = new Float32Array(n * 3);
+    const nor = new Float32Array(n * 3);
+    const uv = new Float32Array(n * 2);
+    let o = 0;
+    for (const g of list) {
+      pos.set(g.attributes.position.array, o * 3);
+      nor.set(g.attributes.normal.array, o * 3);
+      if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
+      o += g.attributes.position.count;
+      g.dispose();
+    }
+    const bg = new THREE.BufferGeometry();
+    bg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    bg.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    bg.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    const mesh = addMesh(parent, bg, mt);
+    if (noShadow) mesh.castShadow = false;
+    out.push(mesh);
+  }
+  mg.clear();
+  return out;
 }
 
 function uvPlane(geo, w, d) {

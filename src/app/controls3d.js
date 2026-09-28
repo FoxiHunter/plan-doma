@@ -22,8 +22,17 @@ function camU(o) {
   return (o || new THREE.Vector3()).crossVectors(camR(), camF());
 }
 
+function camNear(y) {
+  return V.walk ? 0.05 : clamp(y * 0.012, 0.05, 1.5);
+}
+
 function applyCam() {
   if (!V.camera) return;
+  const nr = camNear(CAM.pos.y);
+  if (Math.abs(nr - V.camera.near) > 0.005) {
+    V.camera.near = nr;
+    V.camera.updateProjectionMatrix();
+  }
   V.camera.position.copy(CAM.pos);
   const f = camF();
   V.camera.up.set(0, 1, 0);
@@ -42,6 +51,7 @@ function setPose(p) {
 }
 
 function tweenTo(p) {
+  padReset();
   let y1 = p.yaw;
   while (y1 - CAM.yaw > Math.PI) y1 -= 2 * Math.PI;
   while (y1 - CAM.yaw < -Math.PI) y1 += 2 * Math.PI;
@@ -277,6 +287,27 @@ function startWalk() {
   schedule3D();
 }
 
+function windowView(w) {
+  const e = ext();
+  const L = V.ok && w && e ? lineOf(w, wallSegs(), extSides(e), true) : null;
+  if (!L) return false;
+  const nx = L.o === "v" ? L.out : 0;
+  const ny = L.o === "h" ? L.out : 0;
+  const r = S.rooms.find(q => w.x - nx * 0.05 > q.x - 0.01 && w.x - nx * 0.05 < q.x + q.w + 0.01 && w.y - ny * 0.05 > q.y - 0.01 && w.y - ny * 0.05 < q.y + q.d + 0.01);
+  const room = r ? (L.o === "h" ? r.d : r.w) : 2;
+  const back = Math.min(1.3, room * 0.6);
+  const ns = winSashes(w);
+  const sh = ns % 2 ? 0 : w.w / (2 * ns);
+  const p = houseToWorld(w.x - nx * back + ny * sh, w.y - ny * back + nx * sh);
+  const n = dirToWorld(nx, ny);
+  startWalk();
+  CAM.pos.set(p.x, S.house.base + 0.02 + EYE, p.z);
+  CAM.yaw = Math.atan2(n.x, n.z) + Math.PI;
+  CAM.pitch = clamp(Math.atan2(S.house.base + w.sill + w.h / 2 - CAM.pos.y, 3), -0.35, 0.25);
+  applyCam();
+  return true;
+}
+
 function exitWalk(keepPose) {
   if (!V.walk) return;
   V.walk = null;
@@ -355,14 +386,29 @@ function tick3D(dt) {
   }
   if (V.walk) moved = walkStep(dt) || moved;
   else if (IN.keys.size) moved = flyStep(dt) || moved;
+  if (!V.walk && padTick(dt)) moved = true;
   return moved;
 }
 
 function sameSel(pk) {
-  return !!(sel && pk && sel.t === pk.t && (pk.t === "house" || sel.id === pk.id));
+  return !!(sel && pk && sel.t === pk.t && (pk.t === "house" || sel.id === pk.id || (sel.ids && sel.ids.includes(pk.id))));
 }
 
-function selectPick(pk, point) {
+function selectPick(pk, point, e) {
+  if (e && e.shiftKey && (pk.t === "item" || pk.t === "obj") && sel && sel.t === pk.t) {
+    selToggle(pk.t, pk.id);
+    frozen = null;
+    renderAll();
+    schedule3D();
+    return;
+  }
+  if (pk.t === "fence") {
+    sel = null;
+    tab = "plot";
+    frozen = null;
+    renderAll();
+    return;
+  }
   if (pk.t === "house") {
     if (tab === "house" && point && V.camera) {
       const hp = worldToHouse(point.x, point.z);
@@ -677,7 +723,7 @@ function startDrag3(part, e, point) {
   const p0 = rayPlane(e.clientX, e.clientY, pl);
   if (!p0) return false;
   const it = selItem();
-  const D = {part, F, pl, p0, moved: false, snapS: JSON.stringify(S), it0: it ? JSON.parse(JSON.stringify(it)) : null, house0: JSON.parse(JSON.stringify(S.house)), att: [], rot0: 0};
+  const D = {part, F, pl, p0, moved: false, snapS: JSON.stringify(S), it0: it ? JSON.parse(JSON.stringify(it)) : null, house0: JSON.parse(JSON.stringify(S.house)), att: [], rot0: 0, grp: selThings().map(a => ({a, x: a.x, y: a.y, z: a.z || 0}))};
   if (sel.t === "room" && it) {
     D.att = attachedTo(it).map(a => ({a, x: a.x, y: a.y})).concat(itemsIn(it).map(a => ({a, x: a.x, y: a.y})));
   }
@@ -704,6 +750,15 @@ function moveDelta(D, dv, e) {
     return;
   }
   if (!it) return;
+  if (D.grp.length && (sel.t === "obj" || sel.t === "item")) {
+    const dg = sel.t === "item" ? dirToHouse(dv.x, dv.z) : {x: dv.x, y: dv.z};
+    for (const g of D.grp) {
+      g.a.x = up(g.x, dg.x);
+      g.a.y = up(g.y, dg.y);
+      if (Math.abs(dv.y) > 1e-6) g.a.z = Math.max(0, sn(g.z + dv.y));
+    }
+    return;
+  }
   if (sel.t === "obj") {
     it.x = up(s0.x, dv.x);
     it.y = up(s0.y, dv.z);
@@ -714,6 +769,7 @@ function moveDelta(D, dv, e) {
   if (sel.t === "item") {
     it.x = up(s0.x, dh.x);
     it.y = up(s0.y, dh.y);
+    if (!fine && (Math.abs(dh.x) > 1e-6 || Math.abs(dh.y) > 1e-6)) snapThing(it, s0.rot || 0);
     if (Math.abs(dv.y) > 1e-6) it.z = Math.max(0, sn((s0.z || 0) + dv.y));
     return;
   }
@@ -947,7 +1003,7 @@ function ghostThing(kind, wx, wz, inHouse) {
     GH.obj = g;
   }
   const K = MODELS[kind] || MODELS.other;
-  GH.obj.position.set(wx, (inHouse ? S.house.base + 0.02 : 0) + (K.z || 0), wz);
+  GH.obj.position.set(wx, (inHouse ? S.house.base + 0.02 : 0) + modelZ(K), wz);
   GH.obj.rotation.y = inHouse ? -S.house.rot * Math.PI / 180 : 0;
   V.need = true;
 }
@@ -962,7 +1018,9 @@ function insideHouse(wx, wz) {
 
 function toolHover3(e) {
   if (!tool) return;
-  if (tool.t === "open") {
+  if (tool.t === "meas") {
+    measHover3(e);
+  } else if (tool.t === "open") {
     const p = pointAt(e.clientX, e.clientY);
     if (!p || !ext()) {
       clearGhost();
@@ -978,6 +1036,18 @@ function toolHover3(e) {
     ghostThing(tool.kind, p.x, p.z, inH);
   } else if (tool.t === "room") {
     if (!IN.g) clearGhost();
+  } else if (tool.t === "wall") {
+    const p = pointAt(e.clientX, e.clientY);
+    const h = p && ext() ? wallPairAt(worldToHouse(p.x, p.z), 0.7) : null;
+    if (!h || h.ext) {
+      clearGhost();
+      return;
+    }
+    const E = h.e || h.L;
+    const Hs = S.house;
+    const th = Hs.inner + 0.06;
+    if (E.o === "h") ghostBoxHouse((E.a + E.b) / 2, E.c, E.b - E.a, th, Hs.base, Hs.base + Hs.h);
+    else ghostBoxHouse(E.c, (E.a + E.b) / 2, th, E.b - E.a, Hs.base, Hs.base + Hs.h);
   }
 }
 
@@ -1034,6 +1104,12 @@ function toolUp3(e, g) {
     const kind = tool.kind;
     clearGhost();
     dropThing(kind, p.x, p.z, inH, e.shiftKey);
+  } else if (tool.t === "wall") {
+    const p = pointAt(e.clientX, e.clientY);
+    clearGhost();
+    if (p && ext()) toggleWallAt(worldToHouse(p.x, p.z), 0.7);
+  } else if (tool.t === "meas") {
+    measClick(measAt3(e));
   }
 }
 
@@ -1045,6 +1121,7 @@ function pinchState() {
 function onDown3(e) {
   const cv = V.renderer.domElement;
   IN.anim = null;
+  padReset();
   try {
     cv.setPointerCapture(e.pointerId);
   } catch (err) {
@@ -1103,6 +1180,10 @@ function onDown3(e) {
 
 function onMove3(e) {
   if (!IN.g) {
+    if (SMAP.on && SMAP.grid && !tool) {
+      const gp = groundAt(e.clientX, e.clientY, 0);
+      smapCur(gp ? smapAt(gp.x, gp.z) : null);
+    }
     if (tool) toolHover3(e);
     else if (GZ.F && !V.walk) {
       const hp = gizmoHit(e.clientX, e.clientY);
@@ -1158,6 +1239,7 @@ function onUp3(e) {
   IN.g = null;
   IN.rmb = false;
   if (!g) return;
+  if (RND.pick && !g.moved && e.type === "pointerup" && rpopPick(e)) return;
   if (g.type === "gizmo") {
     endDrag3();
     return;
@@ -1173,11 +1255,100 @@ function onUp3(e) {
     return;
   }
   const h = g.hit !== undefined ? g.hit : hitScene(e.clientX, e.clientY);
-  if (h && h.pick) selectPick(h.pick, h.point);
+  if (h && h.pick) selectPick(h.pick, h.point, e);
   else if (sel) {
     sel = null;
     renderAll();
   }
+}
+
+const PADQ = {ox: 0, oy: 0, px: 0, py: 0, z: 0, zp: null, zx: 0, zy: 0, pivot: null, depth: 10, at: 0};
+const NAV = {act: "", pivot: null};
+
+function padPivot() {
+  const r = V.renderer.domElement.getBoundingClientRect();
+  if (sel && sel.t !== "house") {
+    const F = tgtFrame();
+    if (F && F.o.clone().sub(CAM.pos).dot(camF()) > 0.5) return F.o.clone();
+  }
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const h = hitScene(cx, cy);
+  if (h && h.point.distanceTo(CAM.pos) < 400) return h.point.clone();
+  const g = groundAt(cx, cy, 0);
+  if (g && g.distanceTo(CAM.pos) < 400) return g;
+  return CAM.pos.clone().addScaledVector(camF(), clamp(CAM.dist, 2, 120));
+}
+
+function dollyTo(p, f) {
+  const dir = p.clone().sub(CAM.pos);
+  const d = dir.length();
+  if (d < 1e-4) return;
+  dir.divideScalar(d);
+  const nd = clamp(d / f, 0.35, 1500);
+  CAM.pos.addScaledVector(dir, d - nd);
+  if (CAM.pos.y < 0.15) CAM.pos.y = 0.15;
+  CAM.pivot.copy(p);
+  CAM.dist = nd;
+  applyCam();
+}
+
+function zoomTarget(cx, cy) {
+  const p = pointAt(cx, cy);
+  if (p && p.distanceTo(CAM.pos) < 600) return p;
+  return V.ray.ray.at(clamp(CAM.dist, 2, 200), new THREE.Vector3());
+}
+
+function padTick(dt) {
+  const q = PADQ;
+  const f = 1 - Math.exp(-dt / 0.055);
+  let moved = false;
+  if (Math.abs(q.ox) + Math.abs(q.oy) > 1e-5) {
+    const a = q.ox * f;
+    const b = q.oy * f;
+    q.ox -= a;
+    q.oy -= b;
+    orbit(a, b, q.pivot || CAM.pivot);
+    moved = true;
+  } else {
+    q.ox = 0;
+    q.oy = 0;
+  }
+  if (Math.abs(q.px) + Math.abs(q.py) > 0.01) {
+    const a = q.px * f;
+    const b = q.py * f;
+    q.px -= a;
+    q.py -= b;
+    pan(a, b, q.depth);
+    moved = true;
+  } else {
+    q.px = 0;
+    q.py = 0;
+  }
+  if (Math.abs(q.z) > 1e-4) {
+    const a = q.z * f;
+    q.z -= a;
+    if (q.zp) dollyTo(q.zp, Math.exp(a));
+    moved = true;
+  } else {
+    q.z = 0;
+  }
+  if (NAV.act) {
+    const k = dt * (UIP.padk || 1);
+    const pv = NAV.pivot || CAM.pivot;
+    if (NAV.act === "left") orbit(-1.3 * k, 0, pv);
+    else if (NAV.act === "right") orbit(1.3 * k, 0, pv);
+    else if (NAV.act === "up") orbit(0, -0.9 * k, pv);
+    else if (NAV.act === "down") orbit(0, 0.9 * k, pv);
+    else if (NAV.act === "in") dollyTo(pv, Math.exp(1.6 * k));
+    else if (NAV.act === "out") dollyTo(pv, Math.exp(-1.6 * k));
+    moved = true;
+  }
+  return moved;
+}
+
+function padReset() {
+  Object.assign(PADQ, {ox: 0, oy: 0, px: 0, py: 0, z: 0});
 }
 
 function onWheel3(e) {
@@ -1195,17 +1366,64 @@ function onWheel3(e) {
     }
     return;
   }
-  if (kind === "pinch") {
-    dollyAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.012));
-  } else if (kind === "mouse") {
-    dollyAt(e.clientX, e.clientY, Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+  const now = performance.now();
+  const fresh = now - PADQ.at > 280;
+  PADQ.at = now;
+  const k = UIP.padk || 1;
+  if (kind === "pinch" || kind === "mouse") {
+    if (fresh || !PADQ.zp || Math.hypot(e.clientX - PADQ.zx, e.clientY - PADQ.zy) > 12) {
+      PADQ.zp = zoomTarget(e.clientX, e.clientY);
+      PADQ.zx = e.clientX;
+      PADQ.zy = e.clientY;
+    }
+    PADQ.z += kind === "pinch" ? -e.deltaY * 0.012 * k : -clamp(e.deltaY, -300, 300) * 0.0016;
   } else {
-    const now = performance.now();
-    if (!IN.padPivot || now - IN.padPivotAt > 300) IN.padPivot = pointAt(e.clientX, e.clientY) || CAM.pivot.clone();
-    IN.padPivotAt = now;
-    if (e.shiftKey) pan(-e.deltaX, -e.deltaY, Math.max(0.5, IN.padPivot.clone().sub(CAM.pos).dot(camF())));
-    else orbit(e.deltaX * 0.005, e.deltaY * 0.005, IN.padPivot);
+    if (fresh || !PADQ.pivot) {
+      PADQ.pivot = padPivot();
+      PADQ.depth = Math.max(0.5, PADQ.pivot.clone().sub(CAM.pos).dot(camF()));
+    }
+    const panMode = (UIP.pad2 === "pan") !== e.shiftKey;
+    if (panMode) {
+      PADQ.px -= e.deltaX * k;
+      PADQ.py -= e.deltaY * k;
+    } else {
+      PADQ.ox += e.deltaX * 0.0045 * k;
+      PADQ.oy += e.deltaY * 0.0045 * k;
+    }
   }
+  V.need = true;
+}
+
+function navInit() {
+  const box = $("#nav3");
+  if (!box) return;
+  const stop = () => {
+    NAV.act = "";
+    box.querySelectorAll("[data-nav]").forEach(b => b.classList.remove("on"));
+  };
+  box.addEventListener("pointerdown", e => {
+    const b = e.target.closest("[data-nav]");
+    if (!b) return;
+    e.preventDefault();
+    if (b.dataset.nav === "home") {
+      camPreset("iso");
+      return;
+    }
+    IN.anim = null;
+    padReset();
+    NAV.pivot = padPivot();
+    NAV.act = b.dataset.nav;
+    b.classList.add("on");
+    try {
+      b.setPointerCapture(e.pointerId);
+    } catch (err) {
+      return;
+    }
+    V.need = true;
+  });
+  box.addEventListener("pointerup", stop);
+  box.addEventListener("pointercancel", stop);
+  box.addEventListener("lostpointercapture", stop);
 }
 
 function typingTarget(e) {
@@ -1277,6 +1495,17 @@ function attach3D() {
         e.preventDefault();
         V.need = true;
       }
+      return;
+    }
+    if (IN.hover && !sel && visible3D() && !IN.rmb && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.code)) {
+      e.preventDefault();
+      IN.anim = null;
+      const pv = padPivot();
+      const st = e.shiftKey ? 0.2 : 0.07;
+      if (e.code === "ArrowLeft") orbit(-st, 0, pv);
+      else if (e.code === "ArrowRight") orbit(st, 0, pv);
+      else if (e.code === "ArrowUp") orbit(0, -st * 0.7, pv);
+      else orbit(0, st * 0.7, pv);
       return;
     }
     if ((IN.hover || IN.rmb) && visible3D() && (FLY.has(e.code) || ((e.code === "ShiftLeft" || e.code === "ShiftRight") && IN.keys.size))) {

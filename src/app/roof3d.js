@@ -334,7 +334,6 @@ function roof3D(g, e, m) {
   rg.position.set((e.minX + e.maxX) / 2, top, (e.minY + e.maxY) / 2);
   rg.userData.pick = {t: "house"};
   g.add(rg);
-  const snow = SKY.snowOn;
   if (Hs.roof === "flat") {
     B(rg, -Wo / 2 - 0.05, Wo / 2 + 0.05, 0, 0.25, -Do / 2 - 0.05, Do / 2 + 0.05, m(hk("trim", "roofedge")));
     const fa = m(hk("facade", "facade"));
@@ -348,14 +347,14 @@ function roof3D(g, e, m) {
     B(rg, -Wo / 2 - 0.08, Wo / 2 + 0.08, 0.62, 0.65, Do / 2 + 0.02 - pt, Do / 2 + 0.08, cp);
     B(rg, -Wo / 2 - 0.08, -Wo / 2 - 0.02 + pt, 0.62, 0.65, -Do / 2 - 0.02 + pt, Do / 2 + 0.02 - pt, cp);
     B(rg, Wo / 2 + 0.02 - pt, Wo / 2 + 0.08, 0.62, 0.65, -Do / 2 - 0.02 + pt, Do / 2 + 0.02 - pt, cp);
-    B(rg, -Wo / 2 + 0.09, Wo / 2 - 0.09, 0.25, 0.27, -Do / 2 + 0.09, Do / 2 - 0.09, m(snow ? "snow" : hk("roof", "membrane")));
+    B(rg, -Wo / 2 + 0.09, Wo / 2 - 0.09, 0.25, 0.27, -Do / 2 + 0.09, Do / 2 - 0.09, m(hk("roof", "membrane")));
     chimney3D(rg, e, 0.65, m);
     return;
   }
   const R = roofCalc();
   if (!R) return;
   const trim = m(hk("trim", "roofedge"));
-  const mesh = addMesh(rg, roofMesh(R), [m(snow ? "snow" : hk("roof", "roof")), m(hk("soffit", "soffit")), trim]);
+  const mesh = addMesh(rg, roofMesh(R), [m(hk("roof", "roof")), m(hk("soffit", "soffit")), trim]);
   mesh.userData.roof = true;
   roofInfill(rg, R, wl, m(hk("facade", "facade")));
   for (const [a, b] of roofEdges(R)) {
