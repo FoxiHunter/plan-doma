@@ -113,8 +113,8 @@ function secSelected() {
       row(`<label class="f">Как открывается<select data-b="sel.op">${ops}</select></label>`) + how +
       (it.op !== "fixed" ? openRow(it.open, "toggle-open") : "") +
       `<div class="btns">${btn("wp-std", "1,5 × 1,4")}${btn("wp-pan", "В пол 1,8 × 2,1")}${btn("wp-lift", "Панорама с дверью 3 × 2,4")}${btn("wp-nar", "Узкое 0,6 × 1,4")}${btn("wp-wet", "Санузел 0,8 × 0,6")}</div>` +
-      `<div class="btns">${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Окна ставятся только на наружные стены.</p>`) + matsSec("win", it);
+      `<div class="btns">${btn("win-view", "Вид из окна", "primary")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
+      `<p class="hint">Окна ставятся только на наружные стены. «Вид из окна» ставит тебя в комнату перед окном, Esc возвращает прежний вид.</p>`) + matsSec("win", it);
   }
   return "";
 }
@@ -735,6 +735,13 @@ panel.addEventListener("click", e => {
       it.rot = normDeg((it.rot || 0) - 15);
       ch = true;
     }
+  } else if (a === "win-view") {
+    if (view === "2d") {
+      view = "3d";
+      applyView();
+    }
+    const w = it;
+    setTimeout(() => windowView(w), 30);
   } else if (a === "focus") {
     if (view === "2d") {
       view = "split";

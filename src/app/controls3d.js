@@ -287,6 +287,27 @@ function startWalk() {
   schedule3D();
 }
 
+function windowView(w) {
+  const e = ext();
+  const L = V.ok && w && e ? lineOf(w, wallSegs(), extSides(e), true) : null;
+  if (!L) return false;
+  const nx = L.o === "v" ? L.out : 0;
+  const ny = L.o === "h" ? L.out : 0;
+  const r = S.rooms.find(q => w.x - nx * 0.05 > q.x - 0.01 && w.x - nx * 0.05 < q.x + q.w + 0.01 && w.y - ny * 0.05 > q.y - 0.01 && w.y - ny * 0.05 < q.y + q.d + 0.01);
+  const room = r ? (L.o === "h" ? r.d : r.w) : 2;
+  const back = Math.min(1.3, room * 0.6);
+  const ns = winSashes(w);
+  const sh = ns % 2 ? 0 : w.w / (2 * ns);
+  const p = houseToWorld(w.x - nx * back + ny * sh, w.y - ny * back + nx * sh);
+  const n = dirToWorld(nx, ny);
+  startWalk();
+  CAM.pos.set(p.x, S.house.base + 0.02 + EYE, p.z);
+  CAM.yaw = Math.atan2(n.x, n.z) + Math.PI;
+  CAM.pitch = clamp(Math.atan2(S.house.base + w.sill + w.h / 2 - CAM.pos.y, 3), -0.35, 0.25);
+  applyCam();
+  return true;
+}
+
 function exitWalk(keepPose) {
   if (!V.walk) return;
   V.walk = null;
