@@ -1035,6 +1035,17 @@ $("#wheel").addEventListener("change", e => {
   saveUI();
 });
 
+$("#pad2").addEventListener("change", e => {
+  UIP.pad2 = e.target.value === "pan" ? "pan" : "orbit";
+  saveUI();
+});
+
+$("#padk").addEventListener("change", e => {
+  const v = Number(e.target.value);
+  UIP.padk = [0.5, 0.75, 1, 1.5, 2].includes(v) ? v : 1;
+  saveUI();
+});
+
 document.querySelectorAll("[data-z]").forEach(b => b.addEventListener("click", () => {
   const z = b.dataset.z;
   if (z === "in") zoom2D(1.25);
@@ -1078,6 +1089,10 @@ function sync3DButtons() {
   if (cp) cp.value = String(V.cut.t);
   const wh = $("#wheel");
   if (wh) wh.value = UIP.wheel;
+  const p2 = $("#pad2");
+  if (p2) p2.value = UIP.pad2;
+  const pk = $("#padk");
+  if (pk) pk.value = String(UIP.padk);
   const sb = $("#sunbar");
   if (sb) sb.hidden = !V.sunbar;
   const q = $("#qual");

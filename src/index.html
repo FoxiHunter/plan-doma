@@ -304,7 +304,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .sunbar input[type="range"] { -webkit-appearance: none; appearance: none; width: 190px; height: 8px; border-radius: 4px; background: var(--daygrad, linear-gradient(90deg, #1b2440, #f59e0b 25%, #9fd3ff 40%, #9fd3ff 60%, #f97316 75%, #1b2440)); outline: none; margin: 0 4px; cursor: pointer; }
 .sunbar input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid #f59e0b; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
 .sunbar input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid #f59e0b; }
-.sunbar input[type="number"] { width: 48px; height: 32px; padding: 3px 6px; font-size: 12.5px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); }
+.sunbar input[type="number"] { width: 56px; height: 32px; padding: 3px 6px; font-size: 12.5px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); }
 .sunbar select { height: 32px; border: 1px solid var(--line); border-radius: 9px; padding: 0 6px; background: var(--panel-2); color: var(--ink); font-size: 12.5px; cursor: pointer; }
 .wxpop { position: absolute; z-index: 9; left: 50%; bottom: 72px; transform: translateX(-50%); width: min(360px, calc(100% - 24px)); padding: 14px 16px; border-radius: 18px; font-size: 12.5px; color: var(--ink); display: grid; gap: 8px; }
 .wxpop .row { margin-top: 0; }
@@ -328,6 +328,16 @@ body.walking .sunbar { bottom: 62px; }
 .v-split .br { bottom: auto; top: 128px; left: 12px; right: auto; }
 .v-split .help3 { bottom: auto; top: 180px; left: 12px; right: auto; }
 .brk { display: none; flex-basis: 100%; height: 0; }
+.nav3 { position: absolute; z-index: 6; right: 12px; bottom: 14px; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 16px; }
+.navpad { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 1px; }
+.nav3 button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-2); cursor: pointer; padding: 0; touch-action: none; }
+.nav3 button:hover { background: var(--hover); color: var(--ink); }
+.nav3 button.on { background: var(--accent-soft); color: var(--accent); }
+.nav3 button[data-nav="home"] { background: var(--seg); }
+.navz { display: grid; gap: 2px; padding-left: 6px; border-left: 1px solid var(--line); }
+.nav3 svg.i { width: 16px; height: 16px; }
+.v-split .nav3 { bottom: auto; top: 180px; }
+.v-3d .sunbar { transform: translateX(calc(-50% - 60px)); }
 .ib.glass { background: var(--glass); color: var(--ink); }
 .ib.glass:hover { background: var(--glass-strong); }
 .v-3d .br { bottom: auto; top: 128px; }
@@ -466,13 +476,25 @@ body.walking .sunbar { bottom: 62px; }
           <div class="btns"><button type="button" class="btn" data-wx="dry">Сухо</button><button type="button" class="btn" data-wx="season">Как в это время года</button></div>
           <p class="hint">Нажми ▶ в ленте времени, и время побежит. Снег будет копиться и таять, в дождь появятся лужи, на солнце они высохнут.</p>
         </div>
+        <div class="nav3 glass" id="nav3" aria-label="Навигация">
+          <div class="navpad">
+            <span></span><button type="button" data-nav="up" aria-label="Смотреть сверху" data-tip="Наклонить вид" data-tipd="Держи кнопку, вид плавно наклоняется"><svg class="i" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button><span></span>
+            <button type="button" data-nav="left" aria-label="Повернуть влево" data-tip="Повернуть влево" data-tipd="Держи кнопку, вид плавно крутится вокруг выбранного или центра экрана"><svg class="i" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><button type="button" data-nav="home" aria-label="Весь дом" data-tip="Весь дом"><svg class="i" viewBox="0 0 24 24"><path d="M4.5 11 12 5l7.5 6M7 9.5V19h10V9.5"/></svg></button><button type="button" data-nav="right" aria-label="Повернуть вправо" data-tip="Повернуть вправо"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+            <span></span><button type="button" data-nav="down" aria-label="Смотреть сбоку" data-tip="Поднять вид"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><span></span>
+          </div>
+          <div class="navz">
+            <button type="button" data-nav="in" aria-label="Приблизить" data-tip="Приблизить"><svg class="i" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
+            <button type="button" data-nav="out" aria-label="Отдалить" data-tip="Отдалить"><svg class="i" viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+          </div>
+        </div>
         <div class="help3 glass" id="help3" hidden>
           <h3>Мышь</h3>
           <p>ЛКМ по пустому месту или Alt + ЛКМ - вращать вокруг точки под курсором</p>
           <p>Зажатая ПКМ - осмотреться, с ней <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> летают, <kbd>Q</kbd> и <kbd>E</kbd> вниз и вверх, Shift быстрее</p>
           <p>Колесо - приблизить к курсору, средняя кнопка или Shift + ЛКМ - сдвинуть</p>
           <h3>Тачпад</h3>
-          <p>Два пальца - вращать, Shift и два пальца - сдвигать, щипок - приблизить</p>
+          <p>Два пальца вращают вид вокруг выбранного или того, что в центре экрана, с Shift двигают. Щипок приближает к точке под курсором. В настройках (шестерёнка) можно поменять местами вращение и сдвиг и выбрать чувствительность</p>
+          <p>Стрелки на клавиатуре крутят вид, когда ничего не выбрано, кнопки справа внизу крутят его, пока их держишь</p>
           <h3>Правка</h3>
           <p>Клик выбирает, повторное перетаскивание двигает выбранное</p>
           <p>Двойной клик по двери, окну, воротам или лампе открывает, закрывает и включает их</p>
@@ -524,6 +546,21 @@ body.walking .sunbar { bottom: 62px; }
                 <option value="auto">сама решает</option>
                 <option value="mouse">мышь</option>
                 <option value="pad">тачпад</option>
+              </select>
+            </label>
+            <label>Два пальца на тачпаде
+              <select id="pad2">
+                <option value="orbit">вращают вид</option>
+                <option value="pan">двигают вид</option>
+              </select>
+            </label>
+            <label>Чувствительность
+              <select id="padk">
+                <option value="0.5">очень мягко</option>
+                <option value="0.75">мягко</option>
+                <option value="1">обычно</option>
+                <option value="1.5">быстро</option>
+                <option value="2">очень быстро</option>
               </select>
             </label>
             <label>Тема

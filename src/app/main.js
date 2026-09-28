@@ -19,6 +19,8 @@
       }
       if (has(LAMP_MODES, ui.lights)) LAMP.mode = ui.lights;
       if (["auto", "light", "dark"].includes(ui.theme)) UIP.theme = ui.theme;
+      if (["orbit", "pan"].includes(ui.pad2)) UIP.pad2 = ui.pad2;
+      if ([0.5, 0.75, 1, 1.5, 2].includes(ui.padk)) UIP.padk = ui.padk;
       if (typeof ui.side === "boolean" && window.innerWidth > 1000) UIP.side = ui.side;
       if (ui.sky && typeof ui.sky === "object") {
         const k = ui.sky;

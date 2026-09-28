@@ -552,6 +552,7 @@ function init3D() {
   if (!V.ok) return;
   applySky(true);
   attach3D();
+  navInit();
   size3D();
   if (window.ResizeObserver) new ResizeObserver(size3D).observe($("#gl"));
   else window.addEventListener("resize", size3D);

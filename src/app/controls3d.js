@@ -51,6 +51,7 @@ function setPose(p) {
 }
 
 function tweenTo(p) {
+  padReset();
   let y1 = p.yaw;
   while (y1 - CAM.yaw > Math.PI) y1 -= 2 * Math.PI;
   while (y1 - CAM.yaw < -Math.PI) y1 += 2 * Math.PI;
@@ -364,6 +365,7 @@ function tick3D(dt) {
   }
   if (V.walk) moved = walkStep(dt) || moved;
   else if (IN.keys.size) moved = flyStep(dt) || moved;
+  if (!V.walk && padTick(dt)) moved = true;
   return moved;
 }
 
@@ -1077,6 +1079,7 @@ function pinchState() {
 function onDown3(e) {
   const cv = V.renderer.domElement;
   IN.anim = null;
+  padReset();
   try {
     cv.setPointerCapture(e.pointerId);
   } catch (err) {
@@ -1212,6 +1215,95 @@ function onUp3(e) {
   }
 }
 
+const PADQ = {ox: 0, oy: 0, px: 0, py: 0, z: 0, zp: null, zx: 0, zy: 0, pivot: null, depth: 10, at: 0};
+const NAV = {act: "", pivot: null};
+
+function padPivot() {
+  const r = V.renderer.domElement.getBoundingClientRect();
+  if (sel && sel.t !== "house") {
+    const F = tgtFrame();
+    if (F && F.o.clone().sub(CAM.pos).dot(camF()) > 0.5) return F.o.clone();
+  }
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const h = hitScene(cx, cy);
+  if (h && h.point.distanceTo(CAM.pos) < 400) return h.point.clone();
+  const g = groundAt(cx, cy, 0);
+  if (g && g.distanceTo(CAM.pos) < 400) return g;
+  return CAM.pos.clone().addScaledVector(camF(), clamp(CAM.dist, 2, 120));
+}
+
+function dollyTo(p, f) {
+  const dir = p.clone().sub(CAM.pos);
+  const d = dir.length();
+  if (d < 1e-4) return;
+  dir.divideScalar(d);
+  const nd = clamp(d / f, 0.35, 1500);
+  CAM.pos.addScaledVector(dir, d - nd);
+  if (CAM.pos.y < 0.15) CAM.pos.y = 0.15;
+  CAM.pivot.copy(p);
+  CAM.dist = nd;
+  applyCam();
+}
+
+function zoomTarget(cx, cy) {
+  const p = pointAt(cx, cy);
+  if (p && p.distanceTo(CAM.pos) < 600) return p;
+  return V.ray.ray.at(clamp(CAM.dist, 2, 200), new THREE.Vector3());
+}
+
+function padTick(dt) {
+  const q = PADQ;
+  const f = 1 - Math.exp(-dt / 0.055);
+  let moved = false;
+  if (Math.abs(q.ox) + Math.abs(q.oy) > 1e-5) {
+    const a = q.ox * f;
+    const b = q.oy * f;
+    q.ox -= a;
+    q.oy -= b;
+    orbit(a, b, q.pivot || CAM.pivot);
+    moved = true;
+  } else {
+    q.ox = 0;
+    q.oy = 0;
+  }
+  if (Math.abs(q.px) + Math.abs(q.py) > 0.01) {
+    const a = q.px * f;
+    const b = q.py * f;
+    q.px -= a;
+    q.py -= b;
+    pan(a, b, q.depth);
+    moved = true;
+  } else {
+    q.px = 0;
+    q.py = 0;
+  }
+  if (Math.abs(q.z) > 1e-4) {
+    const a = q.z * f;
+    q.z -= a;
+    if (q.zp) dollyTo(q.zp, Math.exp(a));
+    moved = true;
+  } else {
+    q.z = 0;
+  }
+  if (NAV.act) {
+    const k = dt * (UIP.padk || 1);
+    const pv = NAV.pivot || CAM.pivot;
+    if (NAV.act === "left") orbit(-1.3 * k, 0, pv);
+    else if (NAV.act === "right") orbit(1.3 * k, 0, pv);
+    else if (NAV.act === "up") orbit(0, -0.9 * k, pv);
+    else if (NAV.act === "down") orbit(0, 0.9 * k, pv);
+    else if (NAV.act === "in") dollyTo(pv, Math.exp(1.6 * k));
+    else if (NAV.act === "out") dollyTo(pv, Math.exp(-1.6 * k));
+    moved = true;
+  }
+  return moved;
+}
+
+function padReset() {
+  Object.assign(PADQ, {ox: 0, oy: 0, px: 0, py: 0, z: 0});
+}
+
 function onWheel3(e) {
   e.preventDefault();
   IN.anim = null;
@@ -1227,17 +1319,64 @@ function onWheel3(e) {
     }
     return;
   }
-  if (kind === "pinch") {
-    dollyAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.012));
-  } else if (kind === "mouse") {
-    dollyAt(e.clientX, e.clientY, Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+  const now = performance.now();
+  const fresh = now - PADQ.at > 280;
+  PADQ.at = now;
+  const k = UIP.padk || 1;
+  if (kind === "pinch" || kind === "mouse") {
+    if (fresh || !PADQ.zp || Math.hypot(e.clientX - PADQ.zx, e.clientY - PADQ.zy) > 12) {
+      PADQ.zp = zoomTarget(e.clientX, e.clientY);
+      PADQ.zx = e.clientX;
+      PADQ.zy = e.clientY;
+    }
+    PADQ.z += kind === "pinch" ? -e.deltaY * 0.012 * k : -clamp(e.deltaY, -300, 300) * 0.0016;
   } else {
-    const now = performance.now();
-    if (!IN.padPivot || now - IN.padPivotAt > 300) IN.padPivot = pointAt(e.clientX, e.clientY) || CAM.pivot.clone();
-    IN.padPivotAt = now;
-    if (e.shiftKey) pan(-e.deltaX, -e.deltaY, Math.max(0.5, IN.padPivot.clone().sub(CAM.pos).dot(camF())));
-    else orbit(e.deltaX * 0.005, e.deltaY * 0.005, IN.padPivot);
+    if (fresh || !PADQ.pivot) {
+      PADQ.pivot = padPivot();
+      PADQ.depth = Math.max(0.5, PADQ.pivot.clone().sub(CAM.pos).dot(camF()));
+    }
+    const panMode = (UIP.pad2 === "pan") !== e.shiftKey;
+    if (panMode) {
+      PADQ.px -= e.deltaX * k;
+      PADQ.py -= e.deltaY * k;
+    } else {
+      PADQ.ox += e.deltaX * 0.0045 * k;
+      PADQ.oy += e.deltaY * 0.0045 * k;
+    }
   }
+  V.need = true;
+}
+
+function navInit() {
+  const box = $("#nav3");
+  if (!box) return;
+  const stop = () => {
+    NAV.act = "";
+    box.querySelectorAll("[data-nav]").forEach(b => b.classList.remove("on"));
+  };
+  box.addEventListener("pointerdown", e => {
+    const b = e.target.closest("[data-nav]");
+    if (!b) return;
+    e.preventDefault();
+    if (b.dataset.nav === "home") {
+      camPreset("iso");
+      return;
+    }
+    IN.anim = null;
+    padReset();
+    NAV.pivot = padPivot();
+    NAV.act = b.dataset.nav;
+    b.classList.add("on");
+    try {
+      b.setPointerCapture(e.pointerId);
+    } catch (err) {
+      return;
+    }
+    V.need = true;
+  });
+  box.addEventListener("pointerup", stop);
+  box.addEventListener("pointercancel", stop);
+  box.addEventListener("lostpointercapture", stop);
 }
 
 function typingTarget(e) {
@@ -1309,6 +1448,17 @@ function attach3D() {
         e.preventDefault();
         V.need = true;
       }
+      return;
+    }
+    if (IN.hover && !sel && visible3D() && !IN.rmb && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.code)) {
+      e.preventDefault();
+      IN.anim = null;
+      const pv = padPivot();
+      const st = e.shiftKey ? 0.2 : 0.07;
+      if (e.code === "ArrowLeft") orbit(-st, 0, pv);
+      else if (e.code === "ArrowRight") orbit(st, 0, pv);
+      else if (e.code === "ArrowUp") orbit(0, -st * 0.7, pv);
+      else orbit(0, st * 0.7, pv);
       return;
     }
     if ((IN.hover || IN.rmb) && visible3D() && (FLY.has(e.code) || ((e.code === "ShiftLeft" || e.code === "ShiftRight") && IN.keys.size))) {

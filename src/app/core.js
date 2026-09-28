@@ -24,7 +24,7 @@ const OP_SIDES = {f: "Спереди", b: "Сзади", l: "Слева", r: "С�
 const FILL = {sleep: "var(--f-sleep)", day: "var(--f-day)", wet: "var(--f-wet)", pass: "var(--f-pass)", other: "var(--f-other)"};
 const INK = {sleep: "var(--t-sleep)", day: "var(--t-day)", wet: "var(--t-wet)", pass: "var(--t-pass)", other: "var(--t-other)"};
 const LISTS = {room: "rooms", door: "doors", win: "windows", item: "items", obj: "objects"};
-const UIP = {wheel: "auto", ptab: "props", cat: "all", recent: [], theme: "auto", side: window.innerWidth > 1000};
+const UIP = {wheel: "auto", ptab: "props", cat: "all", recent: [], theme: "auto", side: window.innerWidth > 1000, pad2: "orbit", padk: 1};
 
 const WEB = window.PLAN_WEB === true;
 const $ = s => document.querySelector(s);
@@ -1035,7 +1035,7 @@ function save() {
 
 function saveUI() {
   try {
-    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, theme: UIP.theme, side: UIP.side, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
+    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, theme: UIP.theme, side: UIP.side, pad2: UIP.pad2, padk: UIP.padk, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
   } catch (err) {
     return;
   }
