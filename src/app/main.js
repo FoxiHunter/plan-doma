@@ -53,6 +53,7 @@
   setStatus(had ? "План загружен из браузера" : "Автосохранение включено");
   sync3DButtons();
   skyUIInit();
+  gapInit();
   init3D();
   renderAll();
   camPreset(had || !WEB ? "iso" : "plot", true);

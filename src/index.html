@@ -144,6 +144,14 @@ svg.i { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-widt
 .v-split #cv { width: calc(100% - 78px); }
 #cv text { font-family: var(--font); }
 #gl { position: absolute; inset: 0; }
+.gaps3 { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; overflow: visible; }
+.gaps3 line { stroke: var(--sel); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.gaps3 circle { fill: var(--sel); }
+.gaps3 .gp { pointer-events: auto; cursor: text; }
+.gaps3 .gp rect { fill: var(--panel); stroke: var(--sel); stroke-width: 1; }
+.gaps3 .gp text { fill: var(--sel); font-size: 12px; font-weight: 600; text-anchor: middle; }
+body.walking .gaps3 { display: none; }
+.gapin { position: fixed; z-index: 60; width: 80px; padding: 5px 8px; border-radius: 10px; border: 1.5px solid var(--sel); background: var(--panel); color: var(--ink); font: 600 13px/1.2 inherit; text-align: center; box-shadow: var(--shadow-lg); }
 #gl canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
 body.placing #cv, body.placing #gl canvas { cursor: crosshair; }
 body.walking #gmodes, body.walking .cutbar, body.walking .rail, body.walking .hintpill { display: none; }
@@ -418,6 +426,7 @@ body.walking .sunbar { bottom: 62px; }
       </div>
       <div class="pane" id="p3">
         <div id="gl"></div>
+        <svg id="gaps3" class="gaps3" aria-hidden="true"></svg>
         <div class="ov tl" id="cams">
           <select class="selx" id="camsel" aria-label="Вид">
             <option value="">Вид камеры…</option>
@@ -651,6 +660,7 @@ body.walking .sunbar { bottom: 62px; }
   </aside>
 </div>
 <div class="modal" id="busy" hidden><div class="card2"><div id="busyt">Считаю рендер…</div><div class="prog"><i id="busyp"></i></div><div><button type="button" class="btn" id="busyc">Отменить</button></div></div></div>
+<input type="text" inputmode="decimal" id="gapin" class="gapin" aria-label="Расстояние, м" hidden>
 <div id="print"></div>
 <input type="file" id="file" accept=".json,application/json" hidden>
 <!--web-->
@@ -679,6 +689,7 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/measure.js"></script>
 <script src="app/boq.js"></script>
 <script src="app/video.js"></script>
+<script src="app/gaps.js"></script>
 <script src="app/controls3d.js"></script>
 <script src="app/render.js"></script>
 <script src="app/main.js"></script>

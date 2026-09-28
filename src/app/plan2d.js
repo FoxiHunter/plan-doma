@@ -124,28 +124,6 @@ function thingHandles(o) {
   return h + "</g>";
 }
 
-function dimLine(x1, y1, x2, y2, lbl, halo) {
-  if (Math.hypot(x2 - x1, y2 - y1) < 0.05) return "";
-  const vertical = Math.abs(x2 - x1) < Math.abs(y2 - y1);
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  let h = L2(x1, y1, x2, y2, "var(--sel)", 1, [4, 3]);
-  h += `<circle cx="${x1}" cy="${y1}" r="${2.5 / k}" fill="var(--sel)"/><circle cx="${x2}" cy="${y2}" r="${2.5 / k}" fill="var(--sel)"/>`;
-  h += T2(vertical ? mx + 5 / k : mx, vertical ? my : my - 9 / k, lbl, {fill: "var(--sel)", size: 11, weight: 500, anchor: vertical ? "start" : "middle", halo});
-  return h;
-}
-
-function plotDims(r) {
-  const P = S.plot;
-  const cx = r.x + r.w / 2;
-  const cy = r.y + r.d / 2;
-  let h = dimLine(0, cy, r.x, cy, fm(r.x) + " м", "var(--land)");
-  h += dimLine(r.x + r.w, cy, P.w, cy, fm(P.w - r.x - r.w) + " м", "var(--land)");
-  h += dimLine(cx, 0, cx, r.y, fm(r.y) + " м", "var(--land)");
-  h += dimLine(cx, r.y + r.d, cx, P.d, fm(P.d - r.y - r.d) + " м", "var(--land)");
-  return h;
-}
-
 function fitLabel(x, y, w, d, name, sub, fill, third) {
   const W = w * k;
   const H = d * k;
@@ -240,7 +218,8 @@ function drawPlot() {
   if (sel && sel.t === "house") r = footprint();
   if (r) {
     const b = sel.t === "obj" ? thingBox(r) : r;
-    h += `<g pointer-events="none">${plotDims(b)}${sel.t === "house" ? R2(b.x, b.y, b.w, b.d, "none", "var(--sel)", 2.5) : ""}</g>`;
+    h += gapsSVG(sel.t, sel.t === "obj" ? r : null);
+    if (sel.t === "house") h += `<g pointer-events="none">${R2(b.x, b.y, b.w, b.d, "none", "var(--sel)", 2.5)}</g>`;
   }
   if (sel && sel.t === "obj" && r) h += thingHandles(r);
   h += ghostSVG() + measSVG();
@@ -481,6 +460,7 @@ function drawHouse() {
   const it = sel && sel.t === "item" ? selItem() : null;
   if (it) {
     const bx = thingBox(it);
+    h += gapsSVG("item", it);
     h += `<g pointer-events="none">${T2(bx.x + bx.w / 2, bx.y - 12 / k, it.name + ", " + fm(it.w) + " × " + fm(it.d) + " м", {fill: "var(--sel)", size: 11, weight: 500, halo: "var(--paper)"})}</g>`;
     h += thingHandles(it);
   }
@@ -698,6 +678,11 @@ svg.addEventListener("pointerdown", e => {
   if (!t) {
     drag = {type: "pan", lx: e.clientX, ly: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, click: true};
     svg.setPointerCapture(e.pointerId);
+    return;
+  }
+  if (t.dataset.t === "gap") {
+    e.preventDefault();
+    gapEdit(t.dataset.dir, e.clientX, e.clientY);
     return;
   }
   bounds();

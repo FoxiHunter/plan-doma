@@ -508,6 +508,7 @@ function loop(ts) {
     updateGizmo();
     render3D();
     refineReset();
+    gaps3Sync();
   } else {
     refineTick(ts);
   }
