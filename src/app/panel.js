@@ -82,9 +82,9 @@ function secSelected() {
       row(num("От левого края, м", "sel.x", it.x, "in-x"), num("От верхнего края, м", "sel.y", it.y, "in-y")) +
       `<label class="check"><input type="checkbox" data-b="sel.open"${it.open ? " checked" : ""}>Открытая зона, между открытыми нет стен</label>` +
       wallsList(it) +
-      `<div class="btns">${btn("add-door", "Дверь в комнату")}${btn("add-win", "Окно")}</div>` +
+      `<div class="btns">${btn("furnish", itemsIn(it).length ? "Заменить мебель набором" : "Обставить комнату", "primary")}${btn("add-door", "Дверь в комнату")}${btn("add-win", "Окно")}</div>` +
       `<div class="btns">${btn("rot", "Повернуть на 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Двери, окна и мебель в комнате ездят и крутятся вместе с ней.</p>`) + matsSec("room", it);
+      `<p class="hint">Двери, окна и мебель в комнате ездят и крутятся вместе с ней. «Обставить комнату» ставит набор мебели по типу комнаты и не загораживает двери и окна, Ctrl+Z вернёт как было.</p>`) + matsSec("room", it);
   }
   if (sel.t === "door") {
     const kinds = Object.entries(DOOR_KINDS).map(([key, v]) => `<option value="${key}"${key === it.kind ? " selected" : ""}>${v}</option>`).join("");
@@ -744,6 +744,8 @@ panel.addEventListener("click", e => {
     }
   } else if (a === "boq-csv") {
     boqCSV();
+  } else if (a === "furnish") {
+    if (it && sel.t === "room") furnishRoom(it);
   } else if (a === "win-view") {
     if (view === "2d") {
       view = "3d";
