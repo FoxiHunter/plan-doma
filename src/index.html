@@ -326,6 +326,11 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .v-split .rpop { right: auto; left: 0; }
 .rpop select { border: 1px solid var(--line-2); border-radius: 9px; padding: 6px; background: var(--panel-2); color: var(--ink); font-size: 13px; width: 100%; }
 .rpop .hint { margin: 0; }
+.rpop .btns { margin: 0; }
+.panov { position: fixed; inset: 0; z-index: 70; background: #000; }
+#panocv { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.panobar { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 8px 10px 8px 16px; border-radius: 16px; color: var(--ink); font-size: 13px; white-space: nowrap; }
+.panobar span { color: var(--ink-3); }
 .rp-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rp-f span { color: var(--ink-2); }
 .tplpop { width: min(460px, calc(100% - 24px)); }
@@ -495,7 +500,7 @@ body.walking .sunbar { bottom: 62px; }
             <label class="f">Размер<select id="rp-size"></select></label>
             <label class="f">Размытие фона<select id="rp-dof"></select></label>
             <div class="rp-f" id="rp-frow" hidden><span id="rp-ftxt"></span><button type="button" class="btn" data-rp="focus" id="rp-fbtn">Навести кликом</button></div>
-            <button type="button" class="btn primary" data-rp="go">Сделать рендер</button>
+            <div class="btns"><button type="button" class="btn primary" data-rp="go">Сделать рендер</button><button type="button" class="btn" data-rp="pano">Панорама 360°</button></div>
             <p class="hint">Картинку считает эта видеокарта, 96 проходов, с размытием 160. Свет берётся текущий, шаблоны света в ленте времени.</p>
           </div>
         </div>
@@ -647,6 +652,7 @@ body.walking .sunbar { bottom: 62px; }
             <button type="button" data-m="zip">Рендеры со всех сторон, ZIP<span>8 видов 2560 × 1440 в JPEG, план дома и участка в PNG и SVG, файл плана</span></button>
             <button type="button" data-m="video-orbit">Видео облёта дома<span>Круг вокруг дома за 14 секунд, 1280 × 720</span></button>
             <button type="button" data-m="video-day">Видео дня<span>Текущий вид от рассвета до заката за 16 секунд</span></button>
+            <button type="button" data-m="pano">Панорама 360°<span>Круговой снимок из текущей точки, лучше из прогулки. Открывается на телефоне и в VR</span></button>
             <button type="button" data-m="print">Лист A3 для печати или PDF<span>План 1:100, участок, экспликация и 4 вида</span></button>
           </div>
         </div>
@@ -690,6 +696,7 @@ body.walking .sunbar { bottom: 62px; }
 </div>
 <div class="modal" id="busy" hidden><div class="card2"><div id="busyt">Считаю рендер…</div><div class="prog"><i id="busyp"></i></div><div><button type="button" class="btn" id="busyc">Отменить</button></div></div></div>
 <input type="text" inputmode="decimal" id="gapin" class="gapin" aria-label="Расстояние, м" hidden>
+<div class="panov" id="panov" hidden><canvas id="panocv"></canvas><div class="panobar glass"><b>Панорама 360°</b><span>Тяни мышью, колесо приближает</span><button type="button" class="btn primary" data-pv="save">Скачать JPEG</button><button type="button" class="btn" data-pv="close">Закрыть</button></div></div>
 <div id="print"></div>
 <input type="file" id="file" accept=".json,application/json" hidden>
 <!--web-->
@@ -722,6 +729,7 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/gaps.js"></script>
 <script src="app/controls3d.js"></script>
 <script src="app/render.js"></script>
+<script src="app/pano.js"></script>
 <script src="app/main.js"></script>
 </body>
 </html>

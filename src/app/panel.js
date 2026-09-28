@@ -905,6 +905,8 @@ function menuAction(a, el) {
     snapshotHQ();
   } else if (a === "zip") {
     exportZip();
+  } else if (a === "pano") {
+    panoRender();
   } else if (a === "video-orbit") {
     recordVideo("orbit");
   } else if (a === "video-day") {

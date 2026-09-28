@@ -65,11 +65,12 @@ async function renderHQ(opt, onp) {
   GZ.sroot.visible = false;
   GH.root.visible = false;
   if (SKY.pathG) SKY.pathG.visible = false;
-  const cam = new THREE.PerspectiveCamera(V.camera.fov, W / H, camNear(opt.pose ? opt.pose.pos.y : V.camera.position.y), 3000);
+  const cam = new THREE.PerspectiveCamera(opt.fov || V.camera.fov, W / H, opt.near || camNear(opt.pose ? opt.pose.pos.y : V.camera.position.y), 3000);
   if (opt.pose) {
     cam.position.copy(opt.pose.pos);
     const f = camF(null, opt.pose.yaw, opt.pose.pitch);
-    cam.lookAt(opt.pose.pos.x + f.x, opt.pose.pos.y + f.y, opt.pose.pos.z + f.z);
+    if (opt.quat) cam.quaternion.copy(opt.quat);
+    else cam.lookAt(opt.pose.pos.x + f.x, opt.pose.pos.y + f.y, opt.pose.pos.z + f.z);
   } else {
     cam.position.copy(V.camera.position);
     cam.quaternion.copy(V.camera.quaternion);
@@ -249,6 +250,9 @@ function rpopInit() {
     } else if (k === "go") {
       box.hidden = true;
       snapshotHQ();
+    } else if (k === "pano") {
+      box.hidden = true;
+      panoRender();
     }
     rpopUI();
   });

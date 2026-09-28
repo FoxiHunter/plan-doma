@@ -58,6 +58,7 @@
   skyUIInit();
   gapInit();
   rpopInit();
+  panoInit();
   init3D();
   renderAll();
   camPreset(had || !WEB ? "iso" : "plot", true);
