@@ -905,6 +905,10 @@ function menuAction(a, el) {
     snapshotHQ();
   } else if (a === "zip") {
     exportZip();
+  } else if (a === "video-orbit") {
+    recordVideo("orbit");
+  } else if (a === "video-day") {
+    recordVideo("day");
   } else if (a === "print") {
     printSheet();
   }
