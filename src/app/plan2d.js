@@ -214,7 +214,8 @@ function drawPlot() {
   for (const o of rest) h += drawThing(o, "obj", !EXP);
   if (EXP) return h;
   let r = null;
-  if (sel && sel.t === "obj") r = selItem();
+  h += multiSVG("obj");
+  if (sel && sel.t === "obj" && !selIds()) r = selItem();
   if (sel && sel.t === "house") r = footprint();
   if (r) {
     const b = sel.t === "obj" ? thingBox(r) : r;
@@ -457,7 +458,8 @@ function drawHouse() {
     h += "</g>";
     h += handles(s);
   }
-  const it = sel && sel.t === "item" ? selItem() : null;
+  h += multiSVG("item");
+  const it = sel && sel.t === "item" && !selIds() ? selItem() : null;
   if (it) {
     const bx = thingBox(it);
     h += gapsSVG("item", it);
@@ -499,6 +501,7 @@ function measSVG() {
 function ghostSVG() {
   if (!ghost2) return "";
   const g = ghost2;
+  if (g.t === "box") return `<g pointer-events="none">${R2(g.x, g.y, g.w, g.d, "var(--sel)", "var(--sel)", 1.2, [4, 3], 0.1)}</g>`;
   if (g.t === "rect") return `<g pointer-events="none">${R2(g.x, g.y, g.w, g.d, "var(--sel)", "var(--sel)", 1.5, [5, 3], 0.18)}${T2(g.x + g.w / 2, g.y + g.d / 2, fm(g.w) + " × " + fm(g.d) + " м", {fill: "var(--sel)", weight: 600, halo: "var(--paper)"})}</g>`;
   if (g.t === "open" && tab === "house") {
     const e = ext();
@@ -675,6 +678,12 @@ svg.addEventListener("pointerdown", e => {
     return;
   }
   const t = e.target.closest("[data-t]");
+  if (e.shiftKey && (!t || t.dataset.t === "room" || t.dataset.t === "house")) {
+    drag = {type: "box", p0: p, moved: false};
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
   if (!t) {
     drag = {type: "pan", lx: e.clientX, ly: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, click: true};
     svg.setPointerCapture(e.pointerId);
@@ -700,11 +709,19 @@ svg.addEventListener("pointerdown", e => {
     if (!it) return;
     drag = {type: "trot", it, start: Object.assign({}, it), p0: p, moved: false};
   } else if (kind === "room" || kind === "obj" || kind === "item") {
-    sel = {t: kind, id: t.dataset.id};
-    const it = selItem();
+    const id = t.dataset.id;
+    if (e.shiftKey && kind !== "room") {
+      selToggle(kind, id);
+      e.preventDefault();
+      renderAll();
+      return;
+    }
+    const inGroup = !!(selIds() && sel.t === kind && sel.ids.includes(id));
+    if (!inGroup) sel = {t: kind, id};
+    const it = (listOf(kind) || []).find(x => x.id === id);
     if (!it) return;
     const att = kind === "room" ? attachedTo(it).concat(itemsIn(it)).map(a => ({a, x: a.x, y: a.y})) : [];
-    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, rot0: it.rot || 0, att, p0: p, moved: false};
+    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, rot0: it.rot || 0, att, p0: p, moved: false, group: inGroup ? selThings().map(a => ({a, x: a.x, y: a.y})) : null};
   } else if (kind === "door" || kind === "win") {
     sel = {t: kind, id: t.dataset.id};
     const it = selItem();
@@ -738,6 +755,13 @@ svg.addEventListener("pointermove", e => {
     P2.pinch = ps;
     return;
   }
+  if (drag.type === "box") {
+    const q = pt(e);
+    drag.moved = true;
+    ghost2 = {t: "box", x: Math.min(drag.p0.x, q.x), y: Math.min(drag.p0.y, q.y), w: Math.abs(q.x - drag.p0.x), d: Math.abs(q.y - drag.p0.y)};
+    render2D();
+    return;
+  }
   if (drag.type === "pan") {
     const dx = e.clientX - drag.lx;
     const dy = e.clientY - drag.ly;
@@ -768,6 +792,18 @@ svg.addEventListener("pointermove", e => {
   drag.moved = true;
   const fine = e.altKey;
   const sn = v => (fine ? r2(v) : snapv(v));
+  if (drag.type === "move" && drag.group) {
+    const mx = sn(drag.start.x + dx) - drag.start.x;
+    const my = sn(drag.start.y + dy) - drag.start.y;
+    for (const g of drag.group) {
+      g.a.x = r2(g.x + mx);
+      g.a.y = r2(g.y + my);
+    }
+    render2D();
+    updateLive();
+    schedule3D();
+    return;
+  }
   if (drag.type === "move") {
     let nx = sn(drag.start.x + dx);
     let ny = sn(drag.start.y + dy);
@@ -812,6 +848,19 @@ function endDrag(e) {
   drag = null;
   if (d.type === "pinch") {
     frozen = null;
+    return;
+  }
+  if (d.type === "box") {
+    const g = ghost2;
+    ghost2 = null;
+    const tt = tab === "house" ? "item" : "obj";
+    if (g && d.moved && g.w * k > 4) {
+      const prev = sel && sel.t === tt ? (sel.ids || [sel.id]) : [];
+      selSet(tt, prev.concat(boxPick(tt, g)));
+      frozen = null;
+      renderAll();
+      schedule3D();
+    } else render2D();
     return;
   }
   if (d.type === "pan") {
@@ -859,6 +908,7 @@ function endDrag(e) {
     return;
   }
   frozen = null;
+  if (!d.moved && d.group && sel) sel = {t: sel.t, id: d.it.id};
   if (d.moved) changed();
   else renderAll();
 }

@@ -665,7 +665,7 @@ body.walking .sunbar { bottom: 62px; }
       </div>
     </header>
     <nav class="rail glass" id="rail" aria-label="Инструменты">
-      <button type="button" data-tool="select" aria-label="Выбор" data-tip="Выбор" data-tipk="V" data-tipd="Клик выбирает, повторное перетаскивание двигает выбранное" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 3 14 7.5-6.2 1.7L10 18.5z"/></svg><b>V</b></button>
+      <button type="button" data-tool="select" aria-label="Выбор" data-tip="Выбор" data-tipk="V" data-tipd="Клик выбирает, повторное перетаскивание двигает выбранное. Shift+клик и Shift+рамка выбирают несколько" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 3 14 7.5-6.2 1.7L10 18.5z"/></svg><b>V</b></button>
       <button type="button" data-g="move" aria-label="Двигать в 3D" data-tip="Двигать в 3D" data-tipk="1" data-tipd="Стрелки и квадратик у выбранного двигают его"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg><b>1</b></button>
       <button type="button" data-g="rotate" aria-label="Вращать в 3D" data-tip="Вращать в 3D" data-tipk="2" data-tipd="Кольцо у выбранного поворачивает его"><svg class="i" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 1 1 17.3 6.7"/><path d="M19.5 3.5v5h-5"/></svg><b>2</b></button>
       <button type="button" data-g="scale" aria-label="Размер в 3D" data-tip="Размер в 3D" data-tipk="3" data-tipd="Кубики у выбранного тянут его размеры"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="12" width="8" height="8" rx="1"/><path d="M13 4h7v7M20 4l-7.5 7.5"/></svg><b>3</b></button>
@@ -715,6 +715,7 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/kitchen.js"></script>
 <script src="app/walls3d.js"></script>
 <script src="app/core.js"></script>
+<script src="app/multi.js"></script>
 <script src="app/presets.local.js" data-local></script>
 <script src="app/plan2d.js"></script>
 <script src="app/panel.js"></script>

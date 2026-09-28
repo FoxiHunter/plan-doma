@@ -156,12 +156,12 @@ function thingGroup(o, parent, mfn, y0, pick) {
   const P = buildModel(g, o, mfn, false);
   if (modelOf(o).lamp) lampThing(g, P, o, pick.t === "item");
   parent.add(g);
-  if (!V.hq && sel && sel.t === pick.t && sel.id === pick.id) edges(g, o.w + 0.04, o.h + 0.04, o.d + 0.04, 0, o.h / 2, 0, selColor());
+  if (!V.hq && sel && sel.t === pick.t && (sel.id === pick.id || (sel.ids && sel.ids.includes(pick.id)))) edges(g, o.w + 0.04, o.h + 0.04, o.d + 0.04, 0, o.h / 2, 0, selColor());
   return g;
 }
 
 function syncThing3D() {
-  if (!sel || (sel.t !== "item" && sel.t !== "obj") || V.rebuild || !V.root) return false;
+  if (!sel || (sel.t !== "item" && sel.t !== "obj") || selIds() || V.rebuild || !V.root) return false;
   const it = selItem();
   const parent = sel.t === "item" ? V.hgi : V.root;
   if (!it || !parent) return false;

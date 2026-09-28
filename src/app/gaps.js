@@ -55,7 +55,7 @@ function gapsOf(t, it) {
 }
 
 function gapTarget() {
-  if (!sel) return null;
+  if (!sel || selIds()) return null;
   if (sel.t === "house") return footprint() ? {t: "house", it: null} : null;
   if (sel.t === "item" && tab === "house") return {t: "item", it: selItem()};
   if (sel.t === "obj" && tab === "plot") return {t: "obj", it: selItem()};

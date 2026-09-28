@@ -1,7 +1,7 @@
 "use strict";
 const HINT = {
   plot: "Тяни дом и объекты. Колесо или щипок меняют масштаб, пустое место двигает план. R поворачивает, стрелки двигают, Delete удаляет.",
-  house: "Тяни комнаты, двери, окна и мебель. Комнаты липнут к соседним стенам, мебель к стенам и соседней мебели и встаёт к стене спиной. Alt отключает привязку. R поворачивает, Delete удаляет.",
+  house: "Тяни комнаты, двери, окна и мебель. Комнаты липнут к соседним стенам, мебель к стенам и соседней мебели и встаёт к стене спиной. Alt отключает привязку. Shift+клик и Shift+рамка выбирают несколько. R поворачивает, Delete удаляет.",
   room: "Зажми и протяни на плане дома или по полу в 3D, получится комната. Esc отменяет.",
   open: "Кликни по стене, проём встанет в эту точку. Shift ставит несколько подряд, Esc отменяет.",
   thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет.",
@@ -50,6 +50,7 @@ function wallsList(r) {
 }
 
 function secSelected() {
+  if (selIds()) return multiSec();
   if (sel && sel.t === "house") {
     const f = footprint();
     if (!f) return "";
@@ -835,6 +836,10 @@ panel.addEventListener("click", e => {
     skySet({path: !SKY.path});
   } else if (a === "sun-map") {
     smapToggle();
+  } else if (a.indexOf("al-") === 0) {
+    ch = groupAlign(a.slice(3));
+  } else if (a === "desel") {
+    sel = null;
   } else if (a.indexOf("km-") === 0) {
     ch = kitAction(a, Number(b.dataset.i), it);
   } else if (a === "dup") {

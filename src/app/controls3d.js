@@ -391,10 +391,17 @@ function tick3D(dt) {
 }
 
 function sameSel(pk) {
-  return !!(sel && pk && sel.t === pk.t && (pk.t === "house" || sel.id === pk.id));
+  return !!(sel && pk && sel.t === pk.t && (pk.t === "house" || sel.id === pk.id || (sel.ids && sel.ids.includes(pk.id))));
 }
 
-function selectPick(pk, point) {
+function selectPick(pk, point, e) {
+  if (e && e.shiftKey && (pk.t === "item" || pk.t === "obj") && sel && sel.t === pk.t) {
+    selToggle(pk.t, pk.id);
+    frozen = null;
+    renderAll();
+    schedule3D();
+    return;
+  }
   if (pk.t === "fence") {
     sel = null;
     tab = "plot";
@@ -716,7 +723,7 @@ function startDrag3(part, e, point) {
   const p0 = rayPlane(e.clientX, e.clientY, pl);
   if (!p0) return false;
   const it = selItem();
-  const D = {part, F, pl, p0, moved: false, snapS: JSON.stringify(S), it0: it ? JSON.parse(JSON.stringify(it)) : null, house0: JSON.parse(JSON.stringify(S.house)), att: [], rot0: 0};
+  const D = {part, F, pl, p0, moved: false, snapS: JSON.stringify(S), it0: it ? JSON.parse(JSON.stringify(it)) : null, house0: JSON.parse(JSON.stringify(S.house)), att: [], rot0: 0, grp: selThings().map(a => ({a, x: a.x, y: a.y, z: a.z || 0}))};
   if (sel.t === "room" && it) {
     D.att = attachedTo(it).map(a => ({a, x: a.x, y: a.y})).concat(itemsIn(it).map(a => ({a, x: a.x, y: a.y})));
   }
@@ -743,6 +750,15 @@ function moveDelta(D, dv, e) {
     return;
   }
   if (!it) return;
+  if (D.grp.length && (sel.t === "obj" || sel.t === "item")) {
+    const dg = sel.t === "item" ? dirToHouse(dv.x, dv.z) : {x: dv.x, y: dv.z};
+    for (const g of D.grp) {
+      g.a.x = up(g.x, dg.x);
+      g.a.y = up(g.y, dg.y);
+      if (Math.abs(dv.y) > 1e-6) g.a.z = Math.max(0, sn(g.z + dv.y));
+    }
+    return;
+  }
   if (sel.t === "obj") {
     it.x = up(s0.x, dv.x);
     it.y = up(s0.y, dv.z);
@@ -1239,7 +1255,7 @@ function onUp3(e) {
     return;
   }
   const h = g.hit !== undefined ? g.hit : hitScene(e.clientX, e.clientY);
-  if (h && h.pick) selectPick(h.pick, h.point);
+  if (h && h.pick) selectPick(h.pick, h.point, e);
   else if (sel) {
     sel = null;
     renderAll();

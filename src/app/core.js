@@ -733,6 +733,10 @@ function rotItemAround(it, cx, cy) {
 
 function rotateSel() {
   if (!sel) return false;
+  if (selIds()) {
+    groupRotate();
+    return true;
+  }
   if (sel.t === "house") {
     S.house.rot = (S.house.rot + 90) % 360;
     return true;
@@ -768,6 +772,10 @@ function rotateSel() {
 
 function delSel() {
   if (!sel) return;
+  if (selIds()) {
+    groupDel();
+    return;
+  }
   if (sel.t === "room") {
     const r = selItem();
     if (r) {
@@ -787,6 +795,10 @@ function delSel() {
 }
 
 function dupSel() {
+  if (selIds()) {
+    groupDup();
+    return true;
+  }
   const it = selItem();
   if (!it) return false;
   const c = Object.assign({}, it, {id: uid()});
@@ -839,6 +851,10 @@ function addOpening(kind) {
 }
 
 function moveSel(mx, my, step) {
+  if (selIds()) {
+    groupMove(mx * step, my * step);
+    return true;
+  }
   if (sel.t === "house") {
     S.house.cx = r2(S.house.cx + mx * step);
     S.house.cy = r2(S.house.cy + my * step);
