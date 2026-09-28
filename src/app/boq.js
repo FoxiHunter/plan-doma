@@ -196,6 +196,7 @@ function boqRows() {
       if (rf.gut) add(R, "Водосточный желоб", rf.eaves, "м");
     }
   }
+  kitBoq(add);
   const Pl = S.plot;
   const F = fenceOf(Pl);
   const gw = F.gate === "none" ? 0 : clamp(F.gw, 1.5, Math.max(1.5, Pl.w - 2));

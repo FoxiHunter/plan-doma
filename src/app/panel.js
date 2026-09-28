@@ -72,7 +72,7 @@ function secSelected() {
       pos +
       row(num("Поворот, °", "sel.rot", it.rot || 0, "in-rot", 15), num("Над полом, м", "sel.z", it.z || 0, "in-z")) +
       `<div class="btns">${btn("rot-15", "↺ 15°")}${btn("rot", "↻ 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (md.lamp ? lampSec(it) : "") + (md.fs ? fenceSecSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
+      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (it.kind === "kitchen" && sel.t === "item" ? kitSec(it) : "") + (md.lamp ? lampSec(it) : "") + (md.fs ? fenceSecSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
   }
   if (sel.t === "room") {
     const types = Object.keys(TYPES).map(t => `<option${t === it.type ? " selected" : ""}>${t}</option>`).join("");
@@ -429,6 +429,7 @@ function applyBind(el) {
     return true;
   }
   if (b.indexOf("pf.") === 0) return fenceBind(b, el);
+  if (b.indexOf("km.") === 0) return kitBind(b, el, it);
   if (b.indexOf("op.") === 0) {
     if (!it || sel.t !== "obj") return false;
     const [, oid, f] = b.split(".");
@@ -834,6 +835,8 @@ panel.addEventListener("click", e => {
     skySet({path: !SKY.path});
   } else if (a === "sun-map") {
     smapToggle();
+  } else if (a.indexOf("km-") === 0) {
+    ch = kitAction(a, Number(b.dataset.i), it);
   } else if (a === "dup") {
     ch = dupSel();
   } else if (a === "del") {

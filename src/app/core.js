@@ -1154,6 +1154,14 @@ function sanitize(d) {
     }, o);
     if (K.ops && Array.isArray(o.opens)) res.opens = opens(o.opens);
     if (K.fs && typeof o.fs === "string" && has(FENCES, o.fs)) res.fs = o.fs;
+    if (kind === "kitchen") {
+      const km = kitSanitize(o);
+      if (km) {
+        res.mods = km;
+        res.w = r2(km.reduce((s, m) => s + m.w, 0));
+      }
+      if (o.up === false) res.up = false;
+    }
     if (K.gate && typeof o.open === "number" && isFinite(o.open)) res.open = clamp(o.open, 0, 1);
     if (K.lamp) {
       if (o.on === false) res.on = false;

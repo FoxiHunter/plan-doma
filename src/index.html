@@ -223,6 +223,11 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .stats { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; margin: 0; }
 .stats dt { color: var(--ink-2); }
 .stats dd { margin: 0; text-align: right; font-weight: 550; }
+.kmods { display: grid; gap: 6px; margin-bottom: 10px; }
+.kmrow { display: grid; grid-template-columns: 18px minmax(0, 1fr) 62px 28px 28px 28px; gap: 4px; align-items: center; }
+.kmrow select, .kmrow input { min-width: 0; border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 6px; background: var(--panel-2); color: var(--ink); font-size: 12.5px; }
+.kmrow .ib { width: 28px; height: 28px; font-size: 13px; }
+.kmi { font-size: 11px; color: var(--ink-3); text-align: center; }
 .boq { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .boq td { padding: 3px 0; vertical-align: top; color: var(--ink-2); }
 .boq td + td { text-align: right; white-space: nowrap; padding-left: 10px; color: var(--ink); font-weight: 550; }
@@ -707,6 +712,7 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/models.js"></script>
 <script src="app/fence.js"></script>
 <script src="app/models2.js"></script>
+<script src="app/kitchen.js"></script>
 <script src="app/walls3d.js"></script>
 <script src="app/core.js"></script>
 <script src="app/presets.local.js" data-local></script>

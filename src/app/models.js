@@ -968,79 +968,6 @@ MB.desk = (g, P, m) => {
   }
 };
 
-MB.kitchen = (g, P, m) => {
-  const {w, d, h} = P;
-  const body = m("white", "body");
-  const front = m("white_gloss", "fronts");
-  const top = m("graphite", "top");
-  const ct = Math.min(0.86, h - 0.04);
-  B(g, -w / 2, w / 2, 0, 0.1, -d / 2, d / 2 - 0.07, m("graphite", "plinth"));
-  const n = Math.max(1, Math.round(w / 0.6));
-  const mw = w / n;
-  const sinkI = Math.min(n - 1, Math.floor(n * 0.3));
-  let hobI = n > 1 ? Math.min(n - 1, Math.floor(n * 0.7)) : -1;
-  if (hobI === sinkI) hobI = -1;
-  for (let i = 0; i < n; i++) {
-    const x0 = -w / 2 + i * mw;
-    if (i === hobI) {
-      B(g, x0 + 0.003, x0 + mw - 0.003, 0.12, ct - 0.16, d / 2 - 0.02, d / 2 - 0.002, m("screen", "oven"));
-      B(g, x0 + 0.08, x0 + mw - 0.08, ct - 0.2, ct - 0.185, d / 2 - 0.002, d / 2 + 0.02, m("steel", "handles"));
-      fronts(g, x0, x0 + mw, ct - 0.15, ct, d / 2 - 0.02, 1, 1, 1, front, m("steel", "handles"), false);
-    } else {
-      fronts(g, x0, x0 + mw, 0.1, ct, d / 2 - 0.02, 1, 1, i % 2 ? 3 : 1, front, m("steel", "handles"), i % 2 === 0);
-    }
-  }
-  const sx = -w / 2 + (sinkI + 0.5) * mw;
-  const sw = Math.max(0.12, Math.min(0.24, mw / 2 - 0.05));
-  const s0 = -d / 2 + 0.14;
-  const s1 = d / 2 - 0.07;
-  B(g, -w / 2, sx - sw, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
-  B(g, sx + sw, w / 2, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
-  B(g, sx - sw, sx + sw, ct, ct + 0.04, -d / 2, s0, top);
-  B(g, sx - sw, sx + sw, ct, ct + 0.04, s1, d / 2 + 0.01, top);
-  const sk = m("steel", "sink");
-  const sb = ct - 0.17;
-  B(g, -w / 2, sx - sw, 0.1, ct, -d / 2, d / 2 - 0.02, body);
-  B(g, sx + sw, w / 2, 0.1, ct, -d / 2, d / 2 - 0.02, body);
-  B(g, sx - sw, sx + sw, 0.1, sb, -d / 2, d / 2 - 0.02, body);
-  B(g, sx - sw, sx + sw, sb, ct, -d / 2, s0, body);
-  B(g, sx - sw, sx + sw, sb, ct, s1, d / 2 - 0.02, body);
-  B(g, sx - sw, sx + sw, sb, sb + 0.01, s0, s1, sk);
-  B(g, sx - sw, sx - sw + 0.008, sb, ct + 0.04, s0, s1, sk);
-  B(g, sx + sw - 0.008, sx + sw, sb, ct + 0.04, s0, s1, sk);
-  B(g, sx - sw, sx + sw, sb, ct + 0.04, s0, s0 + 0.008, sk);
-  B(g, sx - sw, sx + sw, sb, ct + 0.04, s1 - 0.008, s1, sk);
-  Cy(g, 0.03, sb + 0.01, sb + 0.013, sx, (s0 + s1) / 2, m("darkmetal", "sink"), 16);
-  const fc = m("chrome", "faucet");
-  const fz = -d / 2 + 0.07;
-  Cy(g, 0.024, ct + 0.04, ct + 0.07, sx, fz, fc, 14);
-  Cy(g, 0.013, ct + 0.07, ct + 0.3, sx, fz, fc, 10);
-  let prev = [sx, ct + 0.3, fz];
-  for (let i = 1; i <= 6; i++) {
-    const a = i / 6 * Math.PI;
-    const pt = [sx, ct + 0.3 + Math.sin(a) * 0.09, fz + 0.09 - Math.cos(a) * 0.09];
-    Lb(g, prev, pt, 0.012, 0.012, fc, 8);
-    prev = pt;
-  }
-  Lb(g, prev, [sx, prev[1] - 0.05, prev[2]], 0.012, 0.011, fc, 8);
-  Lb(g, [sx, ct + 0.12, fz], [sx + 0.07, ct + 0.14, fz], 0.006, 0.006, fc, 6);
-  let hx = null;
-  if (hobI >= 0) {
-    hx = -w / 2 + (hobI + 0.5) * mw;
-    B(g, hx - 0.29, hx + 0.29, ct + 0.04, ct + 0.046, -d / 2 + 0.06, d / 2 - 0.04, m("screen", "hob"));
-    for (const ox of [-0.13, 0.13]) for (const oz of [-0.11, 0.11]) Cy(g, 0.085, ct + 0.046, ct + 0.048, hx + ox, (d / 2 - 0.04 + -d / 2 + 0.06) / 2 + oz, m("darkmetal", "hob"), 24);
-  }
-  if (h > 1.3) B(g, -w / 2, w / 2, ct + 0.04, Math.min(h, 1.45), -d / 2, -d / 2 + 0.012, m("tile", "splash"));
-  if (h > 1.9) {
-    const uy0 = 1.45;
-    B(g, -w / 2, w / 2, uy0, h, -d / 2, -d / 2 + 0.33, body);
-    fronts(g, -w / 2, w / 2, uy0, h, -d / 2 + 0.33, 1, n, 1, front, m("steel", "handles"), true);
-    if (hx !== null) {
-      B(g, hx - 0.3, hx + 0.3, uy0 - 0.09, uy0, -d / 2 + 0.33, -d / 2 + 0.52, m("steel", "hood"));
-    }
-  }
-};
-
 MB.fridge = (g, P, m) => {
   const {w, d, h} = P;
   RB(g, -w / 2, w / 2, 0.02, h, -d / 2, d / 2 - 0.05, 0.02, m("steel", "body"));
@@ -1258,7 +1185,7 @@ function slotMat(o, m) {
 }
 
 function modelSlots(o) {
-  const key = o.kind + "|" + o.w + "|" + o.d + "|" + o.h + "|" + (o.opens ? JSON.stringify(o.opens.map(x => x.kind + x.op)) : "");
+  const key = o.kind + "|" + o.w + "|" + o.d + "|" + o.h + "|" + (o.opens ? JSON.stringify(o.opens.map(x => x.kind + x.op)) : "") + (o.mods ? JSON.stringify(o.mods) + o.up : "");
   if (SLOTC.has(key)) return SLOTC.get(key);
   if (!SLOTM) SLOTM = new THREE.MeshBasicMaterial();
   const seen = new Map();
@@ -1268,7 +1195,7 @@ function modelSlots(o) {
     if (!seen.has(s)) seen.set(s, name);
     return SLOTM;
   };
-  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: {kind: o.kind, opens: o.opens}};
+  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: {kind: o.kind, opens: o.opens, mods: o.mods, up: o.up}};
   (MB[o.kind] || MB.other)(g, P, rec, srng(hashStr(o.id || o.kind)));
   g.traverse(x => {
     if (x.geometry) x.geometry.dispose();
@@ -1363,22 +1290,8 @@ function sym2D(o) {
       return R(x0, y0, w, d, f) + Ln(x0, y0, x0 + w, y0 + d) + Ln(x0 + w, y0, x0, y0 + d) + Ln(x0 + w - 0.01, y0, x0 + w - 0.01, y0 + d - 0.1) + R(x0 + 0.1, y0 + 0.06, w - 0.2, 0.06, "none");
     case "washer":
       return R(x0, y0, w, d, f, 0.03) + `<circle cx="0" cy="0" r="${Math.min(w, d) * 0.3}" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
-    case "kitchen": {
-      let s = R(x0, y0, w, d, f);
-      const n = Math.max(1, Math.round(w / 0.6));
-      const mw = w / n;
-      const sinkI = Math.min(n - 1, Math.floor(n * 0.3));
-      let hobI = n > 1 ? Math.min(n - 1, Math.floor(n * 0.7)) : -1;
-      if (hobI === sinkI) hobI = -1;
-      const sx = x0 + (sinkI + 0.5) * mw;
-      s += R(sx - Math.min(0.24, mw / 2 - 0.05), y0 + 0.14, Math.min(0.48, mw - 0.1), d - 0.22, "none", 0.04);
-      if (hobI >= 0) {
-        const hx = x0 + (hobI + 0.5) * mw;
-        for (const ox of [-0.13, 0.13]) for (const oy of [-0.11, 0.11]) s += `<circle cx="${hx + ox}" cy="${oy + 0.01}" r="0.085" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
-      }
-      if (o.h > 1.9) s += Ln(x0, y0 + 0.33, x0 + w, y0 + 0.33, true);
-      return s;
-    }
+    case "kitchen":
+      return kitSym(o, x0, y0, st, sw, R, Ln);
     case "fridge":
       return R(x0, y0, w, d, f, 0.02) + Ln(x0, y0 + d - 0.06, x0 + w, y0 + d - 0.06);
     case "wardrobe":
