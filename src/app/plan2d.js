@@ -243,7 +243,7 @@ function drawPlot() {
     h += `<g pointer-events="none">${plotDims(b)}${sel.t === "house" ? R2(b.x, b.y, b.w, b.d, "none", "var(--sel)", 2.5) : ""}</g>`;
   }
   if (sel && sel.t === "obj" && r) h += thingHandles(r);
-  h += ghostSVG();
+  h += ghostSVG() + measSVG();
   return h;
 }
 
@@ -411,7 +411,7 @@ function drawHouse() {
     for (let y = Math.ceil(b.y0); y <= b.y1; y++) h += L2(b.x0, y, b.x1, y, "var(--line)", 0.5);
   }
   const e = ext();
-  if (!e) return h + T2((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, "Нарисуй первую комнату инструментом «Комната»", {fill: "var(--ink-2)", size: 13}) + ghostSVG();
+  if (!e) return h + T2((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, "Нарисуй первую комнату инструментом «Комната»", {fill: "var(--ink-2)", size: 13}) + ghostSVG() + measSVG();
   const wl = S.house.wall;
   const t = S.house.inner;
   const W = e.maxX - e.minX;
@@ -484,8 +484,36 @@ function drawHouse() {
     h += `<g pointer-events="none">${T2(bx.x + bx.w / 2, bx.y - 12 / k, it.name + ", " + fm(it.w) + " × " + fm(it.d) + " м", {fill: "var(--sel)", size: 11, weight: 500, halo: "var(--paper)"})}</g>`;
     h += thingHandles(it);
   }
-  h += ghostSVG();
+  h += ghostSVG() + measSVG();
   return h;
+}
+
+function measSVG() {
+  if (!tool || tool.t !== "meas") return "";
+  let h = "";
+  const col = "var(--red)";
+  if (MEAS.cur && !(MEAS.b && MEAS.cur === MEAS.b)) {
+    const c = measToTab(MEAS.cur);
+    h += `<circle cx="${c.x}" cy="${c.y}" r="${(MEAS.cur.snap ? 5 : 3.5) / k}" fill="${MEAS.cur.snap ? col : "none"}" stroke="${col}" stroke-width="${1.5 / k}"/>`;
+  }
+  const end = MEAS.b || MEAS.cur;
+  if (MEAS.a && end) {
+    const a = measToTab(MEAS.a);
+    const b = measToTab(end);
+    const L = Math.hypot(b.x - a.x, b.y - a.y);
+    h += L2(a.x, a.y, b.x, b.y, col, 2);
+    const nx = L > 1e-6 ? -(b.y - a.y) / L : 0;
+    const ny = L > 1e-6 ? (b.x - a.x) / L : 1;
+    const tk = 7 / k;
+    for (const q of [a, b]) h += L2(q.x - nx * tk, q.y - ny * tk, q.x + nx * tk, q.y + ny * tk, col, 2);
+    const t = measText(MEAS.a, end);
+    const off = 16 / k;
+    const mx = (a.x + b.x) / 2 + nx * off;
+    const my = (a.y + b.y) / 2 + ny * off;
+    h += T2(mx, my, t.main, {fill: col, weight: 700, size: 14, halo: "var(--paper)"});
+    if (t.sub) h += T2(mx, my + 15 / k, t.sub, {fill: col, size: 11, halo: "var(--paper)"});
+  }
+  return h ? `<g pointer-events="none">${h}</g>` : "";
 }
 
 function ghostSVG() {
@@ -608,9 +636,12 @@ function toolPoint2(p) {
   return {inHouse: inside, wx: p.x, wz: p.y, hp};
 }
 
-function toolHover2(p) {
+function toolHover2(p, e) {
   if (!tool) return;
-  if (tool.t === "open") {
+  if (tool.t === "meas") {
+    MEAS.cur = measAt2(p, e);
+    measSync3();
+  } else if (tool.t === "open") {
     if (tab !== "house") {
       ghost2 = null;
       return;
@@ -706,7 +737,7 @@ svg.addEventListener("pointerdown", e => {
 svg.addEventListener("pointermove", e => {
   if (P2.ptrs.has(e.pointerId)) P2.ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if (!drag) {
-    if (tool) toolHover2(pt(e));
+    if (tool) toolHover2(pt(e), e);
     else if (SMAP.on && tab === "plot") {
       const p = pt(e);
       smapCur(smapAt(p.x, p.y));
@@ -735,7 +766,7 @@ svg.addEventListener("pointermove", e => {
   const p = pt(e);
   if (drag.type === "place") {
     if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) drag.moved = true;
-    toolHover2(p);
+    toolHover2(p, e);
     return;
   }
   if (drag.type === "newroom") {
@@ -828,6 +859,8 @@ function endDrag(e) {
       const tp = toolPoint2(p);
       ghost2 = null;
       dropThing(tool.kind, tp.wx, tp.wz, tp.inHouse, e.shiftKey);
+    } else if (tool && tool.t === "meas") {
+      measClick(measAt2(p, e));
     } else if (tool && tool.t === "wall") {
       if (tab !== "house") {
         tab = "house";

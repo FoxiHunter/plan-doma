@@ -442,6 +442,7 @@ function build3D() {
   alphaShadows(V.scene);
   pruneMats(V.scene);
   smapPlaced();
+  measSync3();
 }
 
 function fitSun() {

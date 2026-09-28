@@ -1001,7 +1001,9 @@ function insideHouse(wx, wz) {
 
 function toolHover3(e) {
   if (!tool) return;
-  if (tool.t === "open") {
+  if (tool.t === "meas") {
+    measHover3(e);
+  } else if (tool.t === "open") {
     const p = pointAt(e.clientX, e.clientY);
     if (!p || !ext()) {
       clearGhost();
@@ -1089,6 +1091,8 @@ function toolUp3(e, g) {
     const p = pointAt(e.clientX, e.clientY);
     clearGhost();
     if (p && ext()) toggleWallAt(worldToHouse(p.x, p.z), 0.7);
+  } else if (tool.t === "meas") {
+    measClick(measAt3(e));
   }
 }
 

@@ -5,7 +5,8 @@ const HINT = {
   room: "Зажми и протяни на плане дома или по полу в 3D, получится комната. Esc отменяет.",
   open: "Кликни по стене, проём встанет в эту точку. Shift ставит несколько подряд, Esc отменяет.",
   thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет.",
-  wall: "Кликни по стене между двумя комнатами, и её не станет вместе с дверями на ней. Клик по пунктиру возвращает стену. Esc отменяет."
+  wall: "Кликни по стене между двумя комнатами, и её не станет вместе с дверями на ней. Клик по пунктиру возвращает стену. Esc отменяет.",
+  meas: "Кликни начало и конец. Точка липнет к углам и стенам, Shift держит прямую, Alt отключает привязку. Esc сбрасывает замер."
 };
 const TOOLNAMES = {door: "Дверь", open: "Проём", arch: "Арка", win: "Окно"};
 
@@ -315,13 +316,18 @@ function syncTools() {
   }
   const t3 = $("#toolchip");
   if (t3) {
-    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "wall" ? "Убрать или вернуть стену" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
+    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "wall" ? "Убрать или вернуть стену" : tool.t === "meas" ? "Рулетка" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
     t3.hidden = !tool;
     t3.querySelector("span").textContent = nm;
   }
 }
 
 function setTool(t) {
+  if (!(t && t.t === "meas")) {
+    MEAS.a = null;
+    MEAS.b = null;
+    MEAS.cur = null;
+  }
   tool = t;
   ghost2 = null;
   if (typeof clearGhost === "function" && GH.root) clearGhost();
@@ -335,6 +341,7 @@ function setTool(t) {
   syncTools();
   render2D();
   if (UIP.ptab === "cat") renderPanel();
+  if (typeof measSync3 === "function") measSync3();
   V.need = true;
 }
 
@@ -933,7 +940,10 @@ document.addEventListener("keydown", e => {
   if (isTyping || mod) return;
   if (e.key === "Escape") {
     closeMenus();
-    if (tool) setTool(null);
+    if (tool && tool.t === "meas" && MEAS.a) {
+      measClear();
+      render2D();
+    } else if (tool) setTool(null);
     else if (sel) {
       sel = null;
       renderAll();
@@ -954,6 +964,10 @@ document.addEventListener("keydown", e => {
   }
   if (e.code === "KeyV") {
     setTool(null);
+    return;
+  }
+  if (e.code === "KeyM") {
+    setTool(tool && tool.t === "meas" ? null : {t: "meas"});
     return;
   }
   if (e.code === "KeyF") {
@@ -1018,6 +1032,7 @@ document.querySelectorAll("#rail [data-tool]").forEach(b => b.addEventListener("
     renderPanel();
   } else if (t === "person") setTool(tool && tool.t === "thing" && tool.kind === "person" ? null : {t: "thing", kind: "person"});
   else if (t === "wall") setTool(tool && tool.t === "wall" ? null : {t: "wall"});
+  else if (t === "meas") setTool(tool && tool.t === "meas" ? null : {t: "meas"});
   else setTool(tool && tool.t === "open" && tool.kind === t ? null : {t: "open", kind: t});
 }));
 
