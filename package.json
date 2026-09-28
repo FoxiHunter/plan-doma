@@ -1,0 +1,18 @@
+{
+  "name": "house-planner",
+  "private": true,
+  "version": "4.0.0",
+  "description": "Конструктор плана дома и участка с 2D-редактором и 3D-видом, работает офлайн",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs && node tools/check.cjs",
+    "render": "node build.mjs && node tools/render3d.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  },
+  "optionalDependencies": {
+    "gl": "8.1.6",
+    "pngjs": "7.0.0"
+  }
+}

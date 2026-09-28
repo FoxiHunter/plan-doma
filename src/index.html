@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>План дома и участка</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A1%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #eceee9;
+  --paper: #f7f8f5;
+  --panel: #ffffff;
+  --glass: rgba(255, 255, 255, 0.86);
+  --glass-line: rgba(20, 24, 28, 0.08);
+  --seg: #eef0ec;
+  --hover: #f1f3ef;
+  --ink: #1d2126;
+  --ink-2: #5d646c;
+  --ink-3: #8a9097;
+  --line: #e3e6e0;
+  --line-2: #bfc5bb;
+  --accent: #2f6fdf;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(47, 111, 223, 0.12);
+  --land: #e3ebd8;
+  --zone: #cddcc0;
+  --red: #c62e22;
+  --sel: #2f6fdf;
+  --wall: #2a2e33;
+  --warn: #9a3a08;
+  --f-sleep: #d7def1;
+  --f-day: #d4e6c9;
+  --f-wet: #f1e1bd;
+  --f-pass: #e4e5e0;
+  --f-other: #ead9e5;
+  --t-sleep: #273d72;
+  --t-day: #2c4f1d;
+  --t-wet: #654509;
+  --t-pass: #43474c;
+  --t-other: #5c2d50;
+  --item: #ffffff;
+  --item-line: #6b727a;
+  --tree: #9cc28a;
+  --tree-line: #4f7a44;
+  --water: #9fd0e6;
+  --thumb: #f1f3ef;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.18);
+  --font: "Golos Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171a; --paper: #1b1f23; --panel: #212529; --glass: rgba(33, 37, 41, 0.86); --glass-line: rgba(255, 255, 255, 0.08);
+    --seg: #2a2f35; --hover: #2b3036; --ink: #e8eaec; --ink-2: #a2a9b0; --ink-3: #737a82; --line: #2e343a; --line-2: #464e56;
+    --accent: #7aa7ff; --accent-ink: #0f1a2e; --accent-soft: rgba(122, 167, 255, 0.16); --land: #1f2a1d; --zone: #2c4128; --red: #ea6154;
+    --sel: #7aa7ff; --wall: #c5cad0; --warn: #f2a46a; --f-sleep: #293550; --f-day: #25381e; --f-wet: #45371b; --f-pass: #2e3236;
+    --f-other: #3e2c3b; --t-sleep: #bccaf3; --t-day: #b9dda5; --t-wet: #eed49c; --t-pass: #cdd1d5; --t-other: #e7c1de;
+    --item: #2a3036; --item-line: #9aa1a8; --tree: #3f5e37; --tree-line: #86b777; --water: #2d5b70; --thumb: #2a2f35;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3); --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171a; --paper: #1b1f23; --panel: #212529; --glass: rgba(33, 37, 41, 0.86); --glass-line: rgba(255, 255, 255, 0.08);
+  --seg: #2a2f35; --hover: #2b3036; --ink: #e8eaec; --ink-2: #a2a9b0; --ink-3: #737a82; --line: #2e343a; --line-2: #464e56;
+  --accent: #7aa7ff; --accent-ink: #0f1a2e; --accent-soft: rgba(122, 167, 255, 0.16); --land: #1f2a1d; --zone: #2c4128; --red: #ea6154;
+  --sel: #7aa7ff; --wall: #c5cad0; --warn: #f2a46a; --f-sleep: #293550; --f-day: #25381e; --f-wet: #45371b; --f-pass: #2e3236;
+  --f-other: #3e2c3b; --t-sleep: #bccaf3; --t-day: #b9dda5; --t-wet: #eed49c; --t-pass: #cdd1d5; --t-other: #e7c1de;
+  --item: #2a3036; --item-line: #9aa1a8; --tree: #3f5e37; --tree-line: #86b777; --water: #2d5b70; --thumb: #2a2f35;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3); --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; font-variant-numeric: tabular-nums; overflow: hidden; }
+button, input, select { font: inherit; }
+svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.app { display: grid; grid-template-rows: 54px minmax(0, 1fr); height: 100vh; height: 100dvh; }
+.top { display: flex; align-items: center; gap: 12px; padding: 0 14px; background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 16px; letter-spacing: -0.01em; margin-right: 6px; white-space: nowrap; }
+.brand .logo { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); }
+.grow { flex: 1; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--seg); }
+.seg button { border: 0; background: transparent; padding: 5px 11px; border-radius: 7px; font-size: 13px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+.tools { display: flex; gap: 6px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { color: var(--red); }
+.ib { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; padding: 0; }
+.ib:hover { background: var(--hover); }
+.ib:disabled { opacity: 0.35; cursor: default; }
+.menu { position: relative; }
+.pop { position: absolute; right: 0; top: calc(100% + 6px); min-width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; z-index: 60; }
+.pop[hidden] { display: none; }
+.pop button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; text-align: left; border: 0; background: transparent; color: var(--ink); padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.pop button:hover { background: var(--hover); }
+.pop button span { color: var(--ink-2); font-size: 12px; }
+.pop button small { color: var(--warn); font-size: 12px; }
+.pop small:empty { display: none; }
+.pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
+.pop .cap { font-size: 11.5px; color: var(--ink-3); padding: 6px 10px 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.work { display: grid; grid-template-columns: 58px minmax(0, 1fr) 350px; min-height: 0; }
+.rail { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0; background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; }
+.rail button { position: relative; width: 42px; height: 42px; border-radius: 11px; border: 0; background: transparent; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; flex: none; }
+.rail button:hover { background: var(--hover); color: var(--ink); }
+.rail button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.rail button b { position: absolute; right: 3px; bottom: 2px; font-size: 9.5px; font-weight: 600; color: var(--ink-3); }
+.rail hr { width: 30px; border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+.stage { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; padding: 10px 10px 8px; gap: 8px; }
+.views { display: grid; min-height: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
+.v-split { grid-template-columns: 1fr 1fr; }
+.v-2d, .v-3d { grid-template-columns: 1fr; }
+.v-2d #p3, .v-3d #p2 { display: none; }
+.pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+#p2 { background: var(--paper); }
+#p3 { border-left: 1px solid var(--line); background: #dce6ec; }
+#cv { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cv text { font-family: var(--font); }
+#gl { position: absolute; inset: 0; }
+#gl canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+body.placing #cv, body.placing #gl canvas { cursor: crosshair; }
+body.walking #gmodes, body.walking .cutbar { display: none; }
+.ov { position: absolute; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; align-items: flex-start; }
+.ov > * { pointer-events: auto; }
+.tl { top: 10px; left: 10px; right: 50%; }
+.tr { top: 10px; right: 10px; justify-content: flex-end; left: 45%; }
+.bl { bottom: 10px; left: 10px; }
+.br { bottom: 10px; right: 10px; }
+.glass { background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--glass-line); box-shadow: var(--shadow); }
+.seg.glass { background: var(--glass); }
+.seg.glass button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.selx { border: 1px solid var(--glass-line); border-radius: 10px; padding: 6px 8px; background: var(--glass); color: var(--ink); font-size: 13px; box-shadow: var(--shadow); }
+.cutbar { top: 52px; right: 10px; left: auto; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; font-size: 12.5px; color: var(--ink-2); }
+.cutbar[hidden] { display: none; }
+.cutbar select { border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; background: var(--panel); color: var(--ink); }
+.cutbar input[type="range"] { width: 150px; accent-color: var(--accent); }
+.zoom { top: 10px; left: 10px; }
+.zoom .seg { background: var(--glass); }
+.zoom .seg button { min-width: 32px; }
+.float { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--glass); border: 1px solid var(--glass-line); border-radius: 10px; padding: 7px 12px; font-size: 12.5px; color: var(--ink); max-width: 92%; text-align: center; box-shadow: var(--shadow); }
+.float[hidden] { display: none; }
+.tip { position: absolute; pointer-events: none; background: rgba(20, 22, 26, 0.88); color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 5; }
+.tip[hidden] { display: none; }
+.help3 { position: absolute; right: 10px; bottom: 56px; width: 330px; padding: 12px 14px; border-radius: 12px; font-size: 12.5px; color: var(--ink); z-index: 4; }
+.help3[hidden] { display: none; }
+.help3 h3 { font-size: 12px; margin: 8px 0 4px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.help3 h3:first-child { margin-top: 0; }
+.help3 p { margin: 2px 0; }
+.help3 kbd, .kbd { font: inherit; font-size: 11px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line-2); background: var(--panel); }
+.toolchip { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; z-index: 6; box-shadow: var(--shadow-lg); }
+.toolchip[hidden] { display: none; }
+.toolchip button { border: 0; border-radius: 999px; padding: 4px 10px; background: rgba(255, 255, 255, 0.22); color: inherit; cursor: pointer; font-size: 12px; }
+.bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 0 4px; font-size: 12px; color: var(--ink-2); min-height: 28px; }
+.bar label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.bar select { width: auto; font-size: 12.5px; padding: 3px 6px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.bar .hint-txt { flex: 1; min-width: 200px; }
+.status { color: var(--ink-3); white-space: nowrap; }
+.side { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: var(--panel); border-left: 1px solid var(--line); }
+.ptabs { margin: 10px 12px 2px; display: flex; }
+.ptabs button { flex: 1; }
+.badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--warn); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.badge[hidden] { display: none; }
+.pbody { overflow-y: auto; padding: 2px 14px 18px; }
+.sec { padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--line); }
+.sec:first-child { border-top: 0; margin-top: 0; }
+.sec h2 { font-size: 14px; font-weight: 650; margin: 0 0 8px; overflow-wrap: anywhere; }
+.sec.empty { padding: 14px 12px; margin-top: 10px; border: 1px dashed var(--line-2); border-radius: 12px; }
+.kind { margin: -4px 0 6px; font-size: 12px; color: var(--ink-3); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); min-width: 0; }
+.f.area b { font-size: 15px; color: var(--ink); font-weight: 600; padding-top: 4px; }
+input[type="number"], input[type="text"], input[type="search"], .pbody select, .wiz select { font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 8px; width: 100%; min-width: 0; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.list { display: flex; flex-direction: column; gap: 2px; max-height: 230px; overflow: auto; }
+.item { display: flex; align-items: center; gap: 8px; padding: 6px 7px; border-radius: 8px; cursor: pointer; border: 0; background: transparent; font-size: 13px; color: var(--ink); text-align: left; width: 100%; }
+.item:hover { background: var(--hover); }
+.item[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.item .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: none; border: 1px solid var(--line-2); }
+.item .a { margin-left: auto; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; margin: 0; }
+.stats dt { color: var(--ink-2); }
+.stats dd { margin: 0; text-align: right; font-weight: 500; }
+.warn { color: var(--warn); font-size: 13px; margin: 6px 0 0; }
+.ok { color: var(--ink-2); font-size: 13px; margin: 6px 0 0; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 10px; }
+.hint { font-size: 12px; color: var(--ink-2); margin: 8px 0 0; }
+.catbar { position: sticky; top: 0; z-index: 2; background: var(--panel); padding-top: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 10px; }
+.chip { border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); padding: 4px 10px; border-radius: 999px; font-size: 12.5px; cursor: pointer; }
+.chip:hover { color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card { display: flex; flex-direction: column; gap: 2px; padding: 6px 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; min-width: 0; }
+.card[hidden] { display: none; }
+.card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
+.card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.thumb { display: block; aspect-ratio: 4 / 3; border-radius: 8px; background: var(--thumb) center / contain no-repeat; margin-bottom: 4px; }
+.thumb.nothumb { background-image: none; }
+.cn { font-size: 12.5px; font-weight: 550; line-height: 1.25; }
+.cs { font-size: 11.5px; color: var(--ink-3); }
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(10, 12, 14, 0.42); z-index: 100; }
+.modal[hidden] { display: none; }
+.modal .card2 { width: min(420px, 90vw); background: var(--panel); border-radius: 14px; padding: 18px; box-shadow: var(--shadow-lg); display: grid; gap: 12px; }
+.prog { height: 8px; border-radius: 4px; background: var(--seg); overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+#print { display: none; }
+.tipx { position: fixed; z-index: 400; max-width: 280px; padding: 7px 10px; border-radius: 9px; background: rgba(22, 25, 29, 0.95); color: #fff; font-size: 12.5px; line-height: 1.35; pointer-events: none; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+.tipx[hidden] { display: none; }
+.tipx b { font-weight: 600; }
+.tipx kbd { margin-left: 8px; font: inherit; font-size: 11px; padding: 0 5px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.35); color: rgba(255, 255, 255, 0.9); }
+.tipx span { display: block; margin-top: 2px; color: rgba(255, 255, 255, 0.72); }
+.mlist { display: flex; flex-direction: column; gap: 2px; }
+.mrow { display: flex; align-items: center; gap: 10px; padding: 5px 7px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); cursor: pointer; text-align: left; width: 100%; font-size: 13px; }
+.mrow:hover { background: var(--hover); }
+.mrow[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.mrow .nm { flex: none; font-weight: 500; }
+.mrow .a { margin-left: auto; color: var(--ink-2); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.msw { width: 28px; height: 28px; border-radius: 8px; flex: none; border: 1px solid var(--line-2); background-position: center; background-size: cover; background-repeat: no-repeat; }
+.msw.big { width: 46px; height: 46px; border-radius: 10px; }
+.mpop { position: fixed; z-index: 150; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 12px; display: grid; gap: 10px; max-height: calc(100vh - 16px); overflow-y: auto; }
+.mpop[hidden] { display: none; }
+.mph { display: flex; align-items: center; justify-content: space-between; }
+.mph b { font-size: 14px; }
+.mph .ib { width: 30px; height: 30px; }
+.mpcur { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.mpcur .hint { margin: 2px 0 0; }
+.mpop .chips { margin: 0; }
+.mpgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 214px; overflow-y: auto; padding: 1px; }
+.mt { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font-size: 11.5px; line-height: 1.2; cursor: pointer; text-align: center; min-width: 0; }
+.mt:hover { border-color: var(--line-2); }
+.mt[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.mt .msw { width: 100%; height: 50px; border-radius: 7px; }
+.mpc { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: start; }
+.wheel { position: relative; width: 150px; height: 150px; touch-action: none; cursor: crosshair; }
+.wheel canvas { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.wheel i { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.4); pointer-events: none; }
+.mpv { display: grid; gap: 8px; min-width: 0; }
+.mpv input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; border-radius: 6px; border: 1px solid var(--line-2); padding: 0; margin: 4px 0; }
+.mpv input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 1px solid rgba(0, 0, 0, 0.4); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.mpv input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 1px solid rgba(0, 0, 0, 0.4); }
+.mpv .row3 { margin-top: 0; gap: 6px; }
+.mpv input[type="number"], .mpv input[type="text"] { font-size: 13px; padding: 5px 6px; }
+.mprec { display: flex; flex-wrap: wrap; gap: 5px; }
+.mprec .rc { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--line-2); cursor: pointer; padding: 0; }
+.mpop .btns { margin-top: 0; justify-content: flex-end; }
+.opbox { border: 1px solid var(--line); border-radius: 12px; padding: 4px 10px 10px; margin-bottom: 8px; }
+.card2.wiz { width: min(520px, 94vw); }
+.card2.wiz h2 { margin: 0; font-size: 18px; }
+.card2.wiz .hint { margin: 0; }
+.card2.wiz .row, .card2.wiz .row3 { margin-top: 0; }
+.btns.end { justify-content: flex-end; margin-top: 4px; }
+.optitle { font-size: 12.5px; font-weight: 600; margin-top: 6px; }
+.btns.tight { margin-top: 0; gap: 4px; }
+.btns.tight .btn { padding: 6px 8px; }
+.f input[type="range"] { accent-color: var(--accent); width: 100%; margin: 8px 0 0; }
+.f b { font-weight: 600; color: var(--ink); }
+.sunbar { left: 50%; bottom: 54px; transform: translateX(-50%); align-items: center; gap: 6px; padding: 5px 8px; border-radius: 12px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); font-size: 12.5px; color: var(--ink); }
+.sunbar[hidden] { display: none; }
+.sunbar .ib { width: 30px; height: 30px; border-color: transparent; background: transparent; }
+.sunbar .ib[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.sunbar .ib .is, .sunbar #skplay[aria-pressed="true"] .ip { display: none; }
+.sunbar #skplay[aria-pressed="true"] .is { display: block; }
+.sunbar .sktime { min-width: 40px; text-align: center; font-weight: 600; }
+.sunbar input[type="range"] { width: 150px; accent-color: #f5a524; }
+.sunbar input[type="number"] { width: 48px; padding: 3px 5px; font-size: 12.5px; border-radius: 7px; background: var(--panel); }
+.sunbar select { border: 1px solid var(--line); border-radius: 7px; padding: 3px 5px; background: var(--panel); color: var(--ink); font-size: 12.5px; }
+.sec h3.sub { font-size: 12px; margin: 12px 0 6px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.sunrow { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.sunrow:last-child { border-bottom: 0; }
+.sunrow span { color: var(--ink-2); font-size: 12.5px; }
+body.walking .sunbar { bottom: 58px; }
+@media (max-width: 1150px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; grid-template-rows: auto auto; }
+  .top { flex-wrap: wrap; padding: 8px 12px; }
+  .work { grid-template-columns: 52px minmax(0, 1fr); }
+  .side { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
+  .pbody { overflow: visible; }
+  .views { height: 72vh; }
+  .v-split { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  #p3 { border-left: 0; border-top: 1px solid var(--line); }
+  .rail button { width: 38px; height: 38px; }
+}
+@media (max-width: 640px) {
+  .mpc { grid-template-columns: 1fr; justify-items: center; }
+  .brand .title { display: none; }
+  .work { grid-template-columns: 1fr; }
+  .rail { flex-direction: row; flex-wrap: wrap; justify-content: center; border-right: 0; border-bottom: 1px solid var(--line); padding: 6px; }
+  .rail hr { display: none; }
+  .tl, .tr { left: 10px; right: 10px; }
+  .tr { top: 56px; justify-content: flex-start; }
+}
+@page { size: A3 landscape; margin: 10mm; }
+@media print {
+  body { overflow: visible; background: #fff; color: #1d2126; }
+  body:has(#print:not(:empty)) .app, .modal, .toolchip { display: none !important; }
+  #print { display: block; }
+  .sheet { font-family: var(--font); color: #1d2126; }
+  .sheet header { display: flex; align-items: baseline; gap: 16px; border-bottom: 1.5px solid #1d2126; padding-bottom: 4mm; margin-bottom: 4mm; }
+  .sheet h1 { font-size: 18pt; margin: 0; }
+  .sheet header p { margin: 0; font-size: 10pt; color: #5d646c; }
+  .sheet .plans { display: flex; flex-wrap: wrap; gap: 8mm; align-items: flex-start; }
+  .sheet figure { margin: 0; }
+  .sheet figcaption { font-size: 9pt; color: #5d646c; margin-top: 1mm; }
+  .sheet table { border-collapse: collapse; font-size: 8.5pt; align-self: flex-start; }
+  .sheet th, .sheet td { border-bottom: 0.3mm solid #d0d4cc; padding: 1mm 2mm; text-align: left; }
+  .sheet tfoot td { font-weight: 600; border-bottom: 0; }
+  .sheet .shots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin-top: 5mm; break-inside: avoid; }
+  .sheet .shots img { width: 100%; display: block; border-radius: 1.5mm; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h12V9.5M10 20v-5.5h4V20"/></svg></span><span class="title">План дома</span></div>
+    <div class="seg" id="tabs">
+      <button type="button" data-tab="plot" aria-pressed="true">Участок</button>
+      <button type="button" data-tab="house" aria-pressed="false">Дом</button>
+    </div>
+    <div class="seg" id="viewsw">
+      <button type="button" data-view="2d" aria-pressed="false">2D</button>
+      <button type="button" data-view="split" aria-pressed="true">2D и 3D</button>
+      <button type="button" data-view="3d" aria-pressed="false">3D</button>
+    </div>
+    <div class="grow"></div>
+    <div class="tools">
+      <button type="button" class="ib" id="undo" aria-label="Отменить" data-tip="Отменить" data-tipk="Ctrl+Z"><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button type="button" class="ib" id="redo" aria-label="Вернуть" data-tip="Вернуть" data-tipk="Ctrl+Y"><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <div class="menu">
+        <button type="button" class="btn" aria-expanded="false">Файл</button>
+        <div class="pop" hidden>
+          <button type="button" data-m="new">Новый участок<span>Размеры, отступы, город и стороны света</span></button>
+          <button type="button" data-m="save-json">Сохранить в файл<span>План целиком в JSON, потом открывается обратно</span></button>
+          <button type="button" data-m="open-json">Открыть файл<span>Загрузить план из JSON</span></button>
+          <hr>
+          <div class="cap">Шаблоны</div>
+          <div id="presets"></div>
+        </div>
+      </div>
+      <div class="menu">
+        <button type="button" class="btn primary" aria-expanded="false">Экспорт</button>
+        <div class="pop" hidden>
+          <button type="button" data-m="plan-png">Планировка в PNG<span>План открытой вкладки с размерами</span></button>
+          <button type="button" data-m="plan-svg">Планировка в SVG<span>Векторный план, не теряет качество при печати</span></button>
+          <hr>
+          <button type="button" data-m="shot">Рендер текущего вида<span>Один кадр в высоком качестве, несколько секунд</span></button>
+          <button type="button" data-m="zip">Рендеры со всех сторон, ZIP<span>8 видов 2560 × 1440 в JPEG, план дома и участка в PNG и SVG, файл плана</span></button>
+          <button type="button" data-m="print">Лист A3 для печати или PDF<span>План 1:100, участок, экспликация и 4 вида</span></button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="work">
+    <nav class="rail" id="rail" aria-label="Инструменты">
+      <button type="button" data-tool="select" aria-label="Выбор" data-tip="Выбор" data-tipk="V" data-tipd="Клик выбирает, повторное перетаскивание двигает выбранное" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 3 14 7.5-6.2 1.7L10 18.5z"/></svg><b>V</b></button>
+      <button type="button" data-g="move" aria-label="Двигать в 3D" data-tip="Двигать в 3D" data-tipk="1" data-tipd="Стрелки и квадратик у выбранного двигают его"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg><b>1</b></button>
+      <button type="button" data-g="rotate" aria-label="Вращать в 3D" data-tip="Вращать в 3D" data-tipk="2" data-tipd="Кольцо у выбранного поворачивает его"><svg class="i" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 1 1 17.3 6.7"/><path d="M19.5 3.5v5h-5"/></svg><b>2</b></button>
+      <button type="button" data-g="scale" aria-label="Размер в 3D" data-tip="Размер в 3D" data-tipk="3" data-tipd="Кубики у выбранного тянут его размеры"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="12" width="8" height="8" rx="1"/><path d="M13 4h7v7M20 4l-7.5 7.5"/></svg><b>3</b></button>
+      <hr>
+      <button type="button" data-tool="room" aria-label="Комната" data-tip="Комната" data-tipd="Протяни прямоугольник на плане дома или по полу в 3D"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17zM3.5 12.5h7v8"/></svg></button>
+      <button type="button" data-tool="door" aria-label="Дверь" data-tip="Дверь" data-tipd="Клик по стене ставит дверь, Shift ставит несколько"><svg class="i" viewBox="0 0 24 24"><path d="M3 19h4.5M16.5 19H21M7.5 19V6.5"/><path d="M7.5 6.5a12.5 12.5 0 0 1 9 12.5"/></svg></button>
+      <button type="button" data-tool="open" aria-label="Проём без двери" data-tip="Проём без двери" data-tipd="Клик по стене"><svg class="i" viewBox="0 0 24 24"><path d="M2.5 12h5M16.5 12h5M7.5 8v8M16.5 8v8"/></svg></button>
+      <button type="button" data-tool="arch" aria-label="Арка" data-tip="Арка" data-tipd="Клик по стене"><svg class="i" viewBox="0 0 24 24"><path d="M5.5 20.5V11a6.5 6.5 0 0 1 13 0v9.5M2.5 20.5h19"/></svg></button>
+      <button type="button" data-tool="win" aria-label="Окно" data-tip="Окно" data-tipd="Клик по наружной стене"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg></button>
+      <hr>
+      <button type="button" data-tool="person" aria-label="Человек 175 см" data-tip="Человек 175 см" data-tipd="Поставь рядом с мебелью, чтобы видеть масштаб"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 8v7M7.5 11h9M12 15l-3.2 6M12 15l3.2 6"/></svg></button>
+      <button type="button" data-tool="catalog" aria-label="Каталог моделей" data-tip="Каталог моделей" data-tipd="Мебель, техника, постройки, растения и машины"><svg class="i" viewBox="0 0 24 24"><path d="M4.5 17.5V13a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4.5M4.5 17.5h15M6.5 11V8.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2V11M6.5 17.5v2M17.5 17.5v2"/></svg></button>
+    </nav>
+    <main class="stage">
+      <div class="views v-split" id="views">
+        <div class="pane" id="p2">
+          <svg id="cv" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-label="План"></svg>
+          <div class="ov zoom"><div class="seg glass"><button type="button" data-z="out" title="Отдалить">−</button><button type="button" data-z="fit" title="Вписать план"><span id="zlvl">100%</span></button><button type="button" data-z="in" title="Приблизить">+</button></div></div>
+        </div>
+        <div class="pane" id="p3">
+          <div id="gl"></div>
+          <div class="ov tl" id="cams">
+            <select class="selx" id="camsel" aria-label="Вид">
+              <option value="">Вид…</option>
+              <option value="iso">Сверху под углом</option>
+              <option value="street">С улицы</option>
+              <option value="back">Сзади</option>
+              <option value="left">Слева</option>
+              <option value="right">Справа</option>
+              <option value="iso2">Сзади под углом</option>
+              <option value="top">Сверху</option>
+              <option value="plot">Участок целиком</option>
+            </select>
+            <div class="seg glass"><button type="button" data-cam="walk" aria-pressed="false">Прогулка</button></div>
+          </div>
+          <div class="ov tr">
+            <div class="seg glass" id="modes">
+              <button type="button" data-mode="roof" aria-pressed="false">С крышей</button>
+              <button type="button" data-mode="noroof" aria-pressed="true">Без крыши</button>
+              <button type="button" data-mode="cut" aria-pressed="false">Разрез</button>
+            </div>
+            <div class="seg glass" id="toggles">
+              <button type="button" data-tg="labels" aria-pressed="true">Подписи</button>
+              <button type="button" data-tg="fence" aria-pressed="true">Забор</button>
+              <button type="button" data-tg="sunbar" aria-pressed="true" data-tip="Солнце и погода" data-tipd="Показать или спрятать полосу с временем, датой и погодой">Солнце</button>
+            </div>
+          </div>
+          <div class="ov cutbar glass" id="cutbar" hidden>
+            <label>Режу
+              <select id="cutside">
+                <option value="top">сверху</option>
+                <option value="front">со стороны улицы</option>
+                <option value="back">сзади</option>
+                <option value="left">слева</option>
+                <option value="right">справа</option>
+              </select>
+            </label>
+            <input type="range" id="cutpos" min="0" max="1" step="0.01" value="0.43" aria-label="Глубина разреза">
+          </div>
+          <div class="ov bl">
+            <div class="seg glass" id="gmodes">
+              <button type="button" data-g="move" data-tip="Двигать" data-tipk="1">1 Двигать</button>
+              <button type="button" data-g="rotate" data-tip="Вращать" data-tipk="2">2 Вращать</button>
+              <button type="button" data-g="scale" data-tip="Размер" data-tipk="3">3 Размер</button>
+            </div>
+          </div>
+          <div class="ov br">
+            <button type="button" class="ib glass" id="help" title="Управление" aria-label="Управление"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.8h.01"/></svg></button>
+            <button type="button" class="btn glass" id="shot" title="Рендер текущего вида в высоком качестве"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>Рендер</button>
+          </div>
+          <div class="ov sunbar glass" id="sunbar">
+            <button type="button" class="ib" id="skplay" aria-pressed="false" aria-label="Прокрутить день" data-tip="Прокрутить день" data-tipd="Время бежит час в секунду, клик ещё раз ставит на паузу"><svg class="i ip" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></svg><svg class="i is" viewBox="0 0 24 24"><path d="M8 5.5v13M16 5.5v13"/></svg></button>
+            <b class="sktime" id="sktime" data-tip="Время">14:00</b>
+            <input type="range" id="skt" min="0" max="1439" step="1" value="840" aria-label="Время суток" data-tip="Время суток" data-tipd="Тени и небо считаются по координатам участка">
+            <input type="number" id="skd" min="1" max="31" step="1" value="21" aria-label="День месяца">
+            <select id="skm" aria-label="Месяц"></select>
+            <select id="skw" aria-label="Погода" data-tip="Погода"></select>
+            <button type="button" class="ib" id="skpath" aria-pressed="false" aria-label="Путь солнца" data-tip="Путь солнца" data-tipd="Дуга солнца за выбранный день с отметками по часам"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="2.6"/><path d="M3 19c2-6 5.2-9 9-9s7 3 9 9M3 19h18"/></svg></button>
+          </div>
+          <div class="help3 glass" id="help3" hidden>
+            <h3>Мышь</h3>
+            <p>ЛКМ по пустому месту или Alt + ЛКМ - вращать вокруг точки под курсором</p>
+            <p>Зажатая ПКМ - осмотреться, с ней <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> летают, <kbd>Q</kbd> и <kbd>E</kbd> вниз и вверх, Shift быстрее</p>
+            <p>Колесо - приблизить к курсору, средняя кнопка или Shift + ЛКМ - сдвинуть</p>
+            <h3>Тачпад</h3>
+            <p>Два пальца - вращать, Shift и два пальца - сдвигать, щипок - приблизить</p>
+            <h3>Правка</h3>
+            <p>Клик выбирает, повторное перетаскивание двигает выбранное</p>
+            <p>Двойной клик по двери, окну или воротам открывает и закрывает их</p>
+            <p><kbd>1</kbd> двигать, <kbd>2</kbd> вращать, <kbd>3</kbd> размер, <kbd>F</kbd> или двойной клик показывают выбранное</p>
+            <p><kbd>R</kbd> поворот на 90°, <kbd>Delete</kbd> удалить, Alt при перетаскивании отключает сетку и привязку</p>
+          </div>
+          <div class="float" id="walkhint" hidden>Прогулка с ростом 175 см. W A S D или стрелки идти, мышь смотреть, Shift быстрее, E или клик открывает двери и окна, Esc выход</div>
+          <div class="float" id="nogl" hidden>Браузер не дал включить 3D. Обнови браузер или включи аппаратное ускорение.</div>
+          <div class="tip" id="tip3" hidden></div>
+        </div>
+      </div>
+      <div class="toolchip" id="toolchip" hidden><span></span><button type="button">Отмена, Esc</button></div>
+      <footer class="bar">
+        <label>Шаг сетки
+          <select id="snap">
+            <option value="0.05">5 см</option>
+            <option value="0.1">10 см</option>
+            <option value="0.5">50 см</option>
+          </select>
+        </label>
+        <label>Качество 3D
+          <select id="qual" data-tip="Качество 3D" data-tipd="Когда камера стоит, «Красиво» за секунду-две докручивает мягкие тени и затенение в углах">
+            <option value="fast">быстро</option>
+            <option value="nice">красиво</option>
+            <option value="max">максимум</option>
+          </select>
+        </label>
+        <label>Прокрутка
+          <select id="wheel">
+            <option value="auto">сама решает</option>
+            <option value="mouse">мышь</option>
+            <option value="pad">тачпад</option>
+          </select>
+        </label>
+        <span class="hint-txt" id="hint"></span>
+        <span class="status" id="st" aria-live="polite"></span>
+      </footer>
+    </main>
+    <aside class="side">
+      <div class="seg ptabs" id="ptabs">
+        <button type="button" data-p="props" aria-pressed="true">Свойства</button>
+        <button type="button" data-p="cat" aria-pressed="false">Каталог</button>
+        <button type="button" data-p="proj" aria-pressed="false">Проект<span class="badge" id="wbadge" hidden></span></button>
+      </div>
+      <div class="pbody" id="panel"></div>
+    </aside>
+  </div>
+</div>
+<div class="modal" id="busy" hidden><div class="card2"><div id="busyt">Считаю рендер…</div><div class="prog"><i id="busyp"></i></div><div><button type="button" class="btn" id="busyc">Отменить</button></div></div></div>
+<div id="print"></div>
+<input type="file" id="file" accept=".json,application/json" hidden>
+<!--web-->
+<script src="vendor/three.min.js"></script>
+<script src="app/texgen.js"></script>
+<script src="app/mat3d.js"></script>
+<script src="app/models.js"></script>
+<script src="app/walls3d.js"></script>
+<script src="app/core.js"></script>
+<script src="app/presets.local.js" data-local></script>
+<script src="app/plan2d.js"></script>
+<script src="app/panel.js"></script>
+<script src="app/matui.js"></script>
+<script src="app/wizard.js"></script>
+<script src="app/three-d.js"></script>
+<script src="app/openings3d.js"></script>
+<script src="app/roof3d.js"></script>
+<script src="app/sky.js"></script>
+<script src="app/refine.js"></script>
+<script src="app/controls3d.js"></script>
+<script src="app/render.js"></script>
+<script src="app/main.js"></script>
+</body>
+</html>

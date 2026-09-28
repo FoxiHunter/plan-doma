@@ -1,0 +1,8 @@
+node_modules/
+dist/
+site/
+renders/
+.DS_Store
+docs/project-memory.md
+.claude/settings.local.json
+src/app/presets.local.js
