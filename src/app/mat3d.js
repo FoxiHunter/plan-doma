@@ -38,14 +38,20 @@ const MGROUPS = [
 ];
 
 const MDEF = {
-  grass: {n: "Газон", g: "ground", map: "grass", c: 0x71a04c, r: 1, anti: 0.0667},
-  meadow: {n: "Трава луговая", g: "ground", map: "grass", c: 0x7f9c55, r: 1, anti: 0.0667},
-  soil: {n: "Земля", g: "ground", map: "soil", c: 0x6a4c38, r: 1},
-  gravel: {n: "Гравий", g: "ground", map: "gravel", c: 0xafa89c, r: 1},
-  paving: {n: "Тротуарная плитка", g: "ground", map: "paving", c: 0xb2aa9f, c2: 0x7d776d, r: 0.88},
-  sidewalk: {n: "Плитка серая", g: "ground", map: "paving", c: 0xb9b8b4, c2: 0x85847f, r: 0.9},
-  asphalt: {n: "Асфальт", g: "ground", map: "asphalt", c: 0x55575b, r: 0.92, anti: 0.1},
-  deck: {n: "Террасная доска", g: "wood", map: "deck", c: 0xb5865c, r: 0.8},
+  grass: {n: "Газон", g: "ground", map: "grass", c: 0x71a04c, r: 1, anti: 0.0667, pud: 0.25},
+  meadow: {n: "Трава луговая", g: "ground", map: "grass", c: 0x7f9c55, r: 1, anti: 0.0667, pud: 0.25},
+  grass_s: {map: "grass", c: 0x86b852, r: 1, anti: 0.0667, pud: 0.25},
+  grass_a: {map: "grass", c: 0x8f9a4c, r: 1, anti: 0.0667, pud: 0.25},
+  grass_w: {map: "grass", c: 0x8a8660, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_s: {map: "grass", c: 0x8aa857, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_a: {map: "grass", c: 0x9c9a55, r: 1, anti: 0.0667, pud: 0.25},
+  meadow_w: {map: "grass", c: 0x928a67, r: 1, anti: 0.0667, pud: 0.25},
+  soil: {n: "Земля", g: "ground", map: "soil", c: 0x6a4c38, r: 1, pud: 0.8},
+  gravel: {n: "Гравий", g: "ground", map: "gravel", c: 0xafa89c, r: 1, pud: 0.35},
+  paving: {n: "Тротуарная плитка", g: "ground", map: "paving", c: 0xb2aa9f, c2: 0x7d776d, r: 0.88, pud: 1},
+  sidewalk: {n: "Плитка серая", g: "ground", map: "paving", c: 0xb9b8b4, c2: 0x85847f, r: 0.9, pud: 1},
+  asphalt: {n: "Асфальт", g: "ground", map: "asphalt", c: 0x55575b, r: 0.92, anti: 0.1, pud: 1.1},
+  deck: {n: "Террасная доска", g: "wood", map: "deck", c: 0xb5865c, r: 0.8, pud: 0.4},
   facade: {n: "Штукатурка фасадная", g: "facade", map: "plaster", c: 0xf3ece0, r: 0.93},
   decor: {n: "Декоративная штукатурка", g: "facade", map: "decor", c: 0xeee6d8, r: 0.95},
   brick: {n: "Кирпич красный", g: "facade", map: "brick", c: 0xc27458, c2: 0xbdb7ad, r: 0.9},
@@ -83,7 +89,7 @@ const MDEF = {
   carpet: {n: "Ковролин", g: "floor", map: "carpet", c: 0xa99f92, r: 1},
   marble: {n: "Мрамор", g: "stone", map: "marble", c: 0xf3f1ed, c2: 0xd9d5cf, r: 0.9, cc: 0.55, ccr: 0.05},
   granite: {n: "Гранит", g: "stone", map: "granite", c: 0xa3a09d, r: 0.8, cc: 0.4, ccr: 0.06},
-  concrete: {n: "Бетон", g: "stone", map: "concrete", c: 0xbdb9b2, r: 0.9},
+  concrete: {n: "Бетон", g: "stone", map: "concrete", c: 0xbdb9b2, r: 0.9, pud: 0.9},
   ceramic: {n: "Санфаянс", g: "stone", c: 0xf9f9f7, r: 0.3, cc: 1, ccr: 0.03},
   terracotta: {n: "Терракота", g: "stone", c: 0xb86a45, r: 0.8},
   wood_light: {n: "Дуб светлый", g: "wood", map: "wood", c: 0xe6cda6, r: 0.55},
@@ -134,6 +140,11 @@ const MDEF = {
   leaf_light: {n: "Листва светлая", g: "plant", map: "leaf", c: 0xb5d18a, r: 0.9},
   leaf_dark: {n: "Хвоя", g: "plant", map: "leaf", c: 0x5f8061, r: 0.9},
   bark: {n: "Кора", g: "plant", map: "bark", c: 0x7a6250, r: 1},
+  leaf_spring: {n: "Листва весенняя", g: "plant", map: "leaf", c: 0xa7d06a, r: 0.9},
+  leaf_y: {n: "Листва жёлтая", g: "plant", map: "leaf", c: 0xd9ad3a, r: 0.9},
+  leaf_o: {n: "Листва оранжевая", g: "plant", map: "leaf", c: 0xcf7a30, r: 0.9},
+  leaf_r: {n: "Листва красная", g: "plant", map: "leaf", c: 0xa9452f, r: 0.9},
+  leaf_brown: {n: "Листва сухая", g: "plant", map: "leaf", c: 0x8a6a3e, r: 0.95},
   water: {n: "Вода", g: "glass", c: 0x3a8fb3, r: 0.03, m: 0.1, op: 0.82, env: 1.4},
   snow: {map: "snow", c: 0xf6f8fb, r: 0.75},
   lamp: {c: 0xfff4dc, r: 0.3, em: 0xfff0d0},
@@ -222,8 +233,10 @@ function patchMat(mt, def, T) {
   const macro = T && T.map && def.anti ? tex("macro") : null;
   const mk = !!(macro && macro.map);
   const c2 = T && T.map && def.c2 !== undefined && T.rough ? lin(def.c2) : null;
+  const wind = def.g === "plant";
+  const pud = def.pud !== undefined ? def.pud : 0.6;
   mt.onBeforeCompile = sh => {
-    shadePatch(sh);
+    shadePatch(sh, wind, pud);
     if (!mk && !c2) return;
     let code = "#ifdef USE_MAP\n\tvec4 texelColor = texture2D( map, vUv );\n";
     let pre = "";
@@ -243,7 +256,7 @@ function patchMat(mt, def, T) {
     code += "\tdiffuseColor *= texelColor;\n#endif";
     sh.fragmentShader = pre + sh.fragmentShader.replace("#include <map_fragment>", code);
   };
-  mt.customProgramCacheKey = () => "sh2" + (mk ? "macro" : "") + (c2 ? "joint" : "");
+  mt.customProgramCacheKey = () => "sh3" + (mk ? "macro" : "") + (c2 ? "joint" : "") + (wind ? "wind" : "");
 }
 
 function makeMat(name) {

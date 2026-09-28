@@ -25,6 +25,12 @@
         if (k.t >= 0 && k.t < 1440) SKY.t = k.t;
         if (has(WEATHER, k.weather)) SKY.weather = k.weather;
         SKY.path = !!k.path;
+        if (has(WX_SPEEDS, String(k.speed))) SKY.speed = k.speed;
+      }
+      if (ui.wx && typeof ui.wx === "object") {
+        const w = ui.wx;
+        const f = (v, a, b) => (typeof v === "number" && isFinite(v) ? clamp(v, a, b) : a);
+        Object.assign(WX, {snow: f(w.snow, 0, 1), wet: f(w.wet, 0, 1), pud: f(w.pud, 0, 1), wind: f(w.wind, 0, 30), windDir: f(w.dir, 0, 359)});
       }
     } else if (window.innerWidth < 1000) {
       view = "2d";

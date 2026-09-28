@@ -930,7 +930,7 @@ function save() {
 
 function saveUI() {
   try {
-    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path}, lights: LAMP.mode}));
+    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
   } catch (err) {
     return;
   }

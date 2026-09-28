@@ -263,6 +263,39 @@ setTimeout(() => {
     const s2 = run("(() => { const p = JSON.parse(JSON.stringify(S)); p.items[p.items.length - 1].k = 99999; p.items[p.items.length - 1].lm = -5; return sanitize(p).items.find(x => x.id === 'fl'); })()");
     return run("hist.length") === h0 + 1 && s2.on === false && s2.k === 7000 && s2.lm === 20;
   });
+  test("снег копится в снегопад и тает в тепле", () => {
+    run("S = presetExample(); Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'snow'; SKY.m = 1; SKY.d = 15; SKY.t = 720; wxStep(150);");
+    const fell = run("WX.snow");
+    run("SKY.weather = 'clear'; SKY.m = 7; applySky(true); for (let i = 0; i < 2; i++) wxStep(10);");
+    const melting = run("WX.snow") < fell && run("WX.wet") > 0.5;
+    run("for (let i = 0; i < 60; i++) wxStep(10);");
+    return fell > 0.6 && melting && run("WX.snow") < 0.05;
+  });
+  test("после дождя лужи и мокрое высыхают на солнце", () => {
+    run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'rain'; SKY.m = 7; SKY.t = 600; applySky(true); wxStep(90);");
+    const wet = run("WX.wet");
+    const pud = run("WX.pud");
+    run("SKY.weather = 'clear'; applySky(true); for (let i = 0; i < 60; i++) wxStep(10);");
+    return wet > 0.95 && pud > 0.4 && run("WX.wet") < 0.3 && run("WX.pud") < pud;
+  });
+  test("зимой деревья голые, осенью жёлтые, газон меняет цвет", () => {
+    const leaves = () => run("(() => { const g = new THREE.Group(); buildModel(g, {id: 't1', kind: 'tree', w: 4, d: 4, h: 6}, matPlot, false); let n = 0; g.traverse(o => { if (o.isMesh && /^leaf/.test(o.material.userData.key)) n++; }); return n; })()");
+    run("SKY.m = 1; SKY.d = 15; wxSeasonCheck();");
+    const winter = leaves();
+    const gw = run("grassKey('grass')");
+    run("SKY.m = 10; SKY.d = 15; wxSeasonCheck();");
+    const autumn = run("(() => { const g = new THREE.Group(); buildModel(g, {id: 't1', kind: 'tree', w: 4, d: 4, h: 6}, matPlot, false); let y = false; g.traverse(o => { if (o.isMesh && /^leaf_(y|o|r)/.test(o.material.userData.key)) y = true; }); return y; })()");
+    run("SKY.m = 7; SKY.d = 15; wxSeasonCheck();");
+    return winter === 0 && gw === "grass_w" && autumn && leaves() > 4 && run("grassKey('grass')") === "grass";
+  });
+  test("зимний месяц кладёт снег, гроза и град есть в погоде", () => {
+    run("skySet({m: 1}); ");
+    const sn = run("WX.snow");
+    run("skySet({m: 7, weather: 'clear'});");
+    return sn > 0.8 && run("WX.snow") === 0 && run("!!(WEATHER.storm.bolt && WEATHER.hail.hail)");
+  });
+  test("ветер качает только растения, снег и лужи есть в шейдере", () => run(`(() => { const a = {uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader}; mat("leaf").onBeforeCompile(a); const b = {uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader}; mat("plaster").onBeforeCompile(b); return a.vertexShader.includes("uWind") && !b.vertexShader.includes("uWind") && b.fragmentShader.includes("uSnow") && b.fragmentShader.includes("uPud") && a.uniforms.uPudK.value > 0; })()`));
+  run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
   run("LAMP.mode = 'auto';");
   run("S = presetExample(); changed(); save();");
   setTimeout(() => {

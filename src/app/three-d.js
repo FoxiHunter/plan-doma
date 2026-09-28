@@ -436,8 +436,8 @@ function build3D() {
   const P = S.plot;
   const R = V.root;
   const far = 450;
-  ground(R, -far, P.w + far, -far, P.d + far, -0.02, matPlot(SKY.snowOn ? "snow" : "meadow"));
-  ground(R, 0, P.w, 0, P.d, 0, matPlot(SKY.snowOn ? "snow" : "grass"));
+  ground(R, -far, P.w + far, -far, P.d + far, -0.02, matPlot(grassKey("meadow")));
+  ground(R, 0, P.w, 0, P.d, 0, matPlot(grassKey("grass")));
   const X0 = -far;
   const X1 = P.w + far;
   B(R, X0, X1, -0.02, 0.03, P.d, P.d + 1.8, matPlot("sidewalk"));

@@ -338,6 +338,8 @@ MB.beds = (g, P, m) => {
   B(g, -w / 2, -w / 2 + 0.04, 0, h, -d / 2 + 0.04, d / 2 - 0.04, wood);
   B(g, w / 2 - 0.04, w / 2, 0, h, -d / 2 + 0.04, d / 2 - 0.04, wood);
   B(g, -w / 2 + 0.04, w / 2 - 0.04, 0, h - 0.04, -d / 2 + 0.04, d / 2 - 0.04, m("soil", "soil"));
+  const ss = WX.season || "summer";
+  if (ss === "bare" || ss === "late") return;
   const rows = Math.max(1, Math.floor((w - 0.2) / 0.35));
   const cols = Math.max(1, Math.floor((d - 0.2) / 0.3));
   for (let i = 0; i < rows; i++) {
@@ -349,27 +351,59 @@ MB.beds = (g, P, m) => {
   }
 };
 
+function leafSet(m) {
+  const s = WX.season || "summer";
+  if (s === "spring") return {k: 0.78, n: 1, mats: [m("leaf_spring", "crown"), m("leaf_light", "crown2")]};
+  if (s === "autumn") return {k: 0.95, n: 1, mats: [m("leaf", "crown"), m("leaf_y", "crown2"), m("leaf_light", "crown2"), m("leaf_o", "crown2")]};
+  if (s === "fall") return {k: 0.8, n: 0.75, mats: [m("leaf_y", "crown"), m("leaf_o", "crown2"), m("leaf_r", "crown2"), m("leaf_y", "crown")]};
+  if (s === "late") return {k: 0.45, n: 0.4, mats: [m("leaf_brown", "crown"), m("leaf_o", "crown2")]};
+  if (s === "bare") return {k: 0, n: 0, mats: []};
+  return {k: 1, n: 1, mats: [m("leaf", "crown"), m("leaf", "crown"), m("leaf_light", "crown2")]};
+}
+
+function bareBranches(g, x, y0, y1, R, tr, bark, rnd, n) {
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2 + rnd() * 0.7;
+    const ys = y0 + (y1 - y0) * (0.15 + rnd() * 0.45);
+    const len = R * (0.55 + rnd() * 0.4);
+    const end = [x + Math.cos(a) * len, ys + (y1 - ys) * (0.45 + rnd() * 0.5), Math.sin(a) * len];
+    Lb(g, [x, ys, 0], end, tr * 0.42, tr * 0.1, bark, 5);
+    for (let j = 0; j < 3; j++) {
+      const f = 0.35 + j * 0.22;
+      const st = [x + (end[0] - x) * f, ys + (end[1] - ys) * f, end[2] * f];
+      const b = a + (rnd() - 0.5) * 1.6;
+      const l2 = len * (0.25 + rnd() * 0.25);
+      Lb(g, st, [st[0] + Math.cos(b) * l2, st[1] + l2 * (0.4 + rnd() * 0.6), st[2] + Math.sin(b) * l2], tr * 0.12, tr * 0.03, bark, 4);
+    }
+  }
+}
+
 MB.tree = (g, P, m, rnd) => {
   const {w, d, h} = P;
   const R = Math.min(w, d) / 2;
   const trunkH = h * 0.42;
   const crownH = h - trunkH;
   const tr = Math.max(0.06, R * 0.07);
-  Cy(g, tr, 0, trunkH + crownH * 0.35, 0, 0, m("bark", "trunk"), 10, tr * 0.6);
+  const bark = m("bark", "trunk");
+  const L = leafSet(m);
+  Cy(g, tr, 0, trunkH + crownH * (L.k ? 0.35 : 0.6), 0, 0, bark, 10, tr * 0.6);
   for (let i = 0; i < 3; i++) {
     const a = rnd() * Math.PI * 2;
-    Lb(g, [0, trunkH * (0.8 + i * 0.15), 0], [Math.cos(a) * R * 0.5, trunkH + crownH * 0.35, Math.sin(a) * R * 0.5], tr * 0.5, tr * 0.25, m("bark", "trunk"), 6);
+    Lb(g, [0, trunkH * (0.8 + i * 0.15), 0], [Math.cos(a) * R * 0.5, trunkH + crownH * 0.35, Math.sin(a) * R * 0.5], tr * 0.5, tr * 0.25, bark, 6);
   }
+  if (L.k < 0.6) bareBranches(g, 0, trunkH * 0.85, h * 0.98, R, tr, bark, rnd, 9);
+  if (!L.k) return;
   const cy = trunkH + crownH * 0.5;
   const r0 = Math.min(R * 0.72, crownH * 0.45);
-  Lump(g, r0, 0, cy, 0, m("leaf", "crown"), rnd, 1);
-  const n = 5 + Math.floor(rnd() * 3);
+  if (L.n > 0.5) Lump(g, r0 * L.k, 0, cy, 0, L.mats[0], rnd, 1);
+  const n = Math.round((5 + Math.floor(rnd() * 3)) * (L.n > 0.5 ? 1 : 1.6));
   for (let i = 0; i < n; i++) {
     const a = rnd() * Math.PI * 2;
     const rr = R * (0.2 + rnd() * 0.25);
     const s = Math.min(R * (0.36 + rnd() * 0.16), crownH * 0.32);
     const y = trunkH + s + rnd() * Math.max(0.01, crownH - 2 * s);
-    Lump(g, s, Math.cos(a) * rr, y, Math.sin(a) * rr, i % 3 === 0 ? m("leaf_light", "crown2") : m("leaf", "crown"), rnd, 0.9);
+    if (rnd() > L.n + 0.05) continue;
+    Lump(g, s * L.k, Math.cos(a) * rr, y, Math.sin(a) * rr, L.mats[i % L.mats.length], rnd, 0.9);
   }
 };
 
@@ -391,10 +425,21 @@ MB.bush = (g, P, m, rnd) => {
   const {w, d, h} = P;
   const R = Math.min(w, d) / 2;
   const s = Math.min(R * 0.55, h * 0.45);
-  Lump(g, s, 0, h - s, 0, m("leaf", "crown"), rnd, 0.95);
+  const L = leafSet(m);
+  if (L.k < 0.6) {
+    const bark = m("bark", "twigs");
+    for (let i = 0; i < 11; i++) {
+      const a = i / 11 * Math.PI * 2 + rnd() * 0.5;
+      const r = R * (0.6 + rnd() * 0.4);
+      Lb(g, [0, 0, 0], [Math.cos(a) * r, h * (0.7 + rnd() * 0.3), Math.sin(a) * r], 0.018, 0.005, bark, 4);
+    }
+  }
+  if (!L.k) return;
+  if (L.n > 0.5) Lump(g, s * L.k, 0, h - s, 0, L.mats[0], rnd, 0.95);
   for (let i = 0; i < 4; i++) {
     const a = i * Math.PI / 2 + rnd() * 0.8;
-    Lump(g, s * 0.85, Math.cos(a) * (R - s * 0.85), s * 0.85, Math.sin(a) * (R - s * 0.85), i % 2 ? m("leaf", "crown") : m("leaf_light", "crown2"), rnd, 0.9);
+    if (rnd() > L.n + 0.1) continue;
+    Lump(g, s * 0.85 * L.k, Math.cos(a) * (R - s * 0.85), s * 0.85, Math.sin(a) * (R - s * 0.85), L.mats[(i + 1) % L.mats.length], rnd, 0.9);
   }
 };
 
@@ -411,7 +456,9 @@ MB.flowers = (g, P, m, rnd) => {
   B(g, w / 2 - 0.08, w / 2, 0, 0.15, -d / 2 + 0.08, d / 2 - 0.08, st);
   B(g, -w / 2 + 0.08, w / 2 - 0.08, 0, 0.12, -d / 2 + 0.08, d / 2 - 0.08, m("soil", "soil"));
   const cols = ["flower_r", "flower_y", "flower_v", "flower_w"];
-  const n = Math.min(80, Math.round(w * d * 14));
+  const ss = WX.season || "summer";
+  if (ss === "bare" || ss === "late") return;
+  const n = Math.min(80, Math.round(w * d * 14 * (ss === "spring" || ss === "fall" ? 0.5 : 1)));
   for (let i = 0; i < n; i++) {
     const x = -w / 2 + 0.14 + rnd() * (w - 0.28);
     const z = -d / 2 + 0.14 + rnd() * (d - 0.28);
@@ -1128,7 +1175,7 @@ const PARTN = {
   splash: "Фартук", hood: "Вытяжка", ceramic: "Керамика", button: "Кнопка смыва", lid2: "Сиденье", mirror: "Зеркало",
   mirrorframe: "Рама зеркала", floor: "Пол", drain: "Трап", drum: "Люк и ручки", panel: "Панель", flue: "Дымоход",
   hooks: "Крючки", clothes: "Одежда", rails2: "Направляющие", inwalls: "Стены внутри", gatebox: "Короб и направляющие",
-  winframe: "Рамы окон", sill: "Отлив", bulb: "Лампа", shade: "Абажур", stem: "Ножка", wire: "Провод"
+  winframe: "Рамы окон", sill: "Отлив", twigs: "Ветки", bulb: "Лампа", shade: "Абажур", stem: "Ножка", wire: "Провод"
 };
 const SLOTC = new Map();
 let SLOTM = null;

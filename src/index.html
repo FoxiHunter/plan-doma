@@ -150,6 +150,11 @@ body.walking #gmodes, body.walking .cutbar { display: none; }
 .tip[hidden] { display: none; }
 .help3 { position: absolute; right: 10px; bottom: 56px; width: 330px; padding: 12px 14px; border-radius: 12px; font-size: 12.5px; color: var(--ink); z-index: 4; }
 .help3[hidden] { display: none; }
+.wxpop { position: absolute; left: 50%; bottom: 104px; transform: translateX(-50%); width: min(340px, calc(100% - 20px)); padding: 12px 14px; border-radius: 14px; font-size: 12.5px; color: var(--ink); z-index: 5; display: grid; gap: 6px; }
+.wxpop[hidden] { display: none; }
+.wxpop .row { margin-top: 0; }
+.wxpop .hint { margin: 0; }
+.wxpop select { border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 6px; background: var(--paper); color: var(--ink); font-size: 13px; }
 .help3 h3 { font-size: 12px; margin: 8px 0 4px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .help3 h3:first-child { margin-top: 0; }
 .help3 p { margin: 2px 0; }
@@ -442,7 +447,18 @@ body.walking .sunbar { bottom: 58px; }
             <select id="skm" aria-label="Месяц"></select>
             <select id="skw" aria-label="Погода" data-tip="Погода"></select>
             <select id="skl" aria-label="Свет" data-tip="Свет в доме и на участке" data-tipd="«Свет сам» включает лампы в сумерках и ночью"></select>
+            <button type="button" class="ib" id="skwx" aria-pressed="false" aria-label="Погода и симуляция" data-tip="Погода и симуляция" data-tipd="Ветер, снег на земле, мокрые дорожки и лужи, скорость времени"><svg class="i" viewBox="0 0 24 24"><path d="M7 17.5a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.5 3.3 3.3 0 0 1-.2 6.5z"/><path d="M9 20.5l.8-1.5M13 20.5l.8-1.5"/></svg></button>
             <button type="button" class="ib" id="skpath" aria-pressed="false" aria-label="Путь солнца" data-tip="Путь солнца" data-tipd="Дуга солнца за выбранный день с отметками по часам"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="2.6"/><path d="M3 19c2-6 5.2-9 9-9s7 3 9 9M3 19h18"/></svg></button>
+          </div>
+          <div class="wxpop glass" id="wxpop" hidden>
+            <div class="mph"><b>Погода и симуляция</b><button type="button" class="ib" data-wx="close" aria-label="Закрыть"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+            <p class="hint" id="wx-temp"></p>
+            <div class="row"><label class="f">Ветер <b id="wx-wind-v"></b><input type="range" id="wx-wind" min="0" max="25" step="1" value="0"></label><label class="f">Откуда дует<select id="wx-dir"></select></label></div>
+            <label class="f">Снег на земле <b id="wx-snow-v"></b><input type="range" id="wx-snow" min="0" max="100" step="1" value="0"></label>
+            <div class="row"><label class="f">Мокро <b id="wx-wet-v"></b><input type="range" id="wx-wet" min="0" max="100" step="1" value="0"></label><label class="f">Лужи <b id="wx-pud-v"></b><input type="range" id="wx-pud" min="0" max="100" step="1" value="0"></label></div>
+            <label class="f">Скорость времени<select id="wx-speed"></select></label>
+            <div class="btns"><button type="button" class="btn" data-wx="dry">Сухо</button><button type="button" class="btn" data-wx="season">Как в это время года</button></div>
+            <p class="hint">Нажми ▶ в полосе времени, и время побежит. Снег будет копиться и таять, в дождь появятся лужи, на солнце они высохнут.</p>
           </div>
           <div class="help3 glass" id="help3" hidden>
             <h3>Мышь</h3>
@@ -520,6 +536,7 @@ body.walking .sunbar { bottom: 58px; }
 <script src="app/openings3d.js"></script>
 <script src="app/roof3d.js"></script>
 <script src="app/sky.js"></script>
+<script src="app/weather.js"></script>
 <script src="app/refine.js"></script>
 <script src="app/controls3d.js"></script>
 <script src="app/render.js"></script>
