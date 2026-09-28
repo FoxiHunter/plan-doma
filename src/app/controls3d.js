@@ -753,6 +753,7 @@ function moveDelta(D, dv, e) {
   if (sel.t === "item") {
     it.x = up(s0.x, dh.x);
     it.y = up(s0.y, dh.y);
+    if (!fine && (Math.abs(dh.x) > 1e-6 || Math.abs(dh.y) > 1e-6)) snapThing(it, s0.rot || 0);
     if (Math.abs(dv.y) > 1e-6) it.z = Math.max(0, sn((s0.z || 0) + dv.y));
     return;
   }

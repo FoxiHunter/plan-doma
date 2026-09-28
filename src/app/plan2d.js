@@ -704,7 +704,7 @@ svg.addEventListener("pointerdown", e => {
     const it = selItem();
     if (!it) return;
     const att = kind === "room" ? attachedTo(it).concat(itemsIn(it)).map(a => ({a, x: a.x, y: a.y})) : [];
-    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, att, p0: p, moved: false};
+    drag = {type: "move", it, start: {x: it.x, y: it.y, w: it.w, d: it.d}, rot0: it.rot || 0, att, p0: p, moved: false};
   } else if (kind === "door" || kind === "win") {
     sel = {t: kind, id: t.dataset.id};
     const it = selItem();
@@ -778,6 +778,7 @@ svg.addEventListener("pointermove", e => {
     }
     drag.it.x = nx;
     drag.it.y = ny;
+    if (sel && sel.t === "item" && !fine) snapThing(drag.it, drag.rot0);
     const mx = drag.it.x - drag.start.x;
     const my = drag.it.y - drag.start.y;
     for (const a of drag.att) {
