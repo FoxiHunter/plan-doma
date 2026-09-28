@@ -1222,6 +1222,7 @@ function onUp3(e) {
   IN.g = null;
   IN.rmb = false;
   if (!g) return;
+  if (RND.pick && !g.moved && e.type === "pointerup" && rpopPick(e)) return;
   if (g.type === "gizmo") {
     endDrag3();
     return;

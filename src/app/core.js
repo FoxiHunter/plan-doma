@@ -1035,7 +1035,7 @@ function save() {
 
 function saveUI() {
   try {
-    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, theme: UIP.theme, side: UIP.side, pad2: UIP.pad2, padk: UIP.padk, lt: UIP.lt, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
+    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path, speed: SKY.speed}, lights: LAMP.mode, theme: UIP.theme, side: UIP.side, pad2: UIP.pad2, padk: UIP.padk, lt: UIP.lt, rsize: typeof RND === "undefined" ? "screen" : RND.size, rdof: typeof RND === "undefined" ? "0" : RND.dof, wx: {snow: r2(WX.snow), wet: r2(WX.wet), pud: r2(WX.pud), wind: WX.wind, dir: WX.windDir}}));
   } catch (err) {
     return;
   }

@@ -76,6 +76,12 @@ async function renderHQ(opt, onp) {
   }
   cam.updateMatrixWorld();
   V.sky.position.copy(cam.position);
+  const dof = opt.dof && opt.dof.A > 0 && opt.dof.F > 0.05 ? opt.dof : null;
+  const base = cam.position.clone();
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+  const tanV = Math.tan(cam.fov * Math.PI / 360);
+  const tanH = tanV * cam.aspect;
   setShadowSize(V.sun, 4096);
   refineInit();
   rfBegin();
@@ -86,8 +92,18 @@ async function renderHQ(opt, onp) {
   HQ.cancel = false;
   for (let i = 0; i < N; i++) {
     if (HQ.cancel) break;
-    const jx = N > 1 ? halton(i + 1, 2) - 0.5 : 0;
-    const jy = N > 1 ? halton(i + 1, 3) - 0.5 : 0;
+    let jx = N > 1 ? halton(i + 1, 2) - 0.5 : 0;
+    let jy = N > 1 ? halton(i + 1, 3) - 0.5 : 0;
+    if (dof) {
+      const r = Math.sqrt(halton(i + 1, 17)) * dof.A;
+      const th = halton(i + 1, 19) * Math.PI * 2;
+      const dx = r * Math.cos(th);
+      const dy = r * Math.sin(th);
+      cam.position.copy(base).addScaledVector(right, dx).addScaledVector(up, dy);
+      cam.updateMatrixWorld();
+      jx -= dx / (dof.F * tanH) * W / 2;
+      jy += dy / (dof.F * tanV) * H / 2;
+    }
     cam.setViewOffset(W, H, jx, jy, W, H);
     rfLights(i);
     R.setRenderTarget(rt);
@@ -139,16 +155,115 @@ function canvasBlob(c, type, q) {
   return new Promise(res => c.toBlob(b => res(b), type || "image/png", q));
 }
 
+const RND = {size: "screen", dof: "0", focus: null, pick: false};
+const RSIZES = {screen: ["Как на экране", 0, 0], fhd: ["1920 × 1080", 1920, 1080], qhd: ["2560 × 1440", 2560, 1440], sq: ["2048 × 2048, квадрат", 2048, 2048], port: ["1440 × 1800, вертикальный", 1440, 1800]};
+const RDOF = {"0": ["Нет", 0], "1": ["Слабое", 0.012], "2": ["Среднее", 0.03], "3": ["Сильное", 0.06]};
+
+function renderSize() {
+  const cv = V.renderer.domElement;
+  const S0 = RSIZES[RND.size] || RSIZES.screen;
+  if (S0[1]) return [S0[1], S0[2]];
+  const aspect = (cv.clientWidth || 16) / (cv.clientHeight || 9);
+  const W = Math.min(3200, Math.max(1600, Math.round((cv.clientWidth || 1600) * 2 / 2) * 2));
+  return [W, Math.round(W / aspect / 2) * 2];
+}
+
+function focusPoint(cx, cy) {
+  setRay(cx, cy);
+  for (const h of V.ray.intersectObjects(V.root.children, true)) {
+    if (!h.object.isMesh || h.object.userData.noPick || clippedAway(h)) continue;
+    const m = h.object.material;
+    if (m && !Array.isArray(m) && m.alphaTest > 0) continue;
+    return h.point.clone();
+  }
+  return groundAt(cx, cy, 0);
+}
+
+function focusDist() {
+  const fwd = new THREE.Vector3();
+  V.camera.getWorldDirection(fwd);
+  let p = RND.focus;
+  if (!p) {
+    const r = V.renderer.domElement.getBoundingClientRect();
+    p = focusPoint(r.left + r.width / 2, r.top + r.height / 2);
+  }
+  const d = p ? p.clone().sub(V.camera.position).dot(fwd) : 0;
+  return d > 0.2 ? d : 10;
+}
+
+function rpopUI() {
+  const box = $("#rpop");
+  if (!box) return;
+  const sz = $("#rp-size");
+  if (sz && !sz.options.length) sz.innerHTML = Object.entries(RSIZES).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join("");
+  const df = $("#rp-dof");
+  if (df && !df.options.length) df.innerHTML = Object.entries(RDOF).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join("");
+  if (sz) sz.value = RND.size;
+  if (df) df.value = RND.dof;
+  const fr = $("#rp-frow");
+  if (fr) fr.hidden = RND.dof === "0";
+  const ft = $("#rp-ftxt");
+  if (ft && V.ok) ft.textContent = RND.pick ? "Кликни в 3D по предмету" : (RND.focus ? "Фокус на точке, " : "Фокус в центре кадра, ") + fa(focusDist()) + " м";
+  const fb = $("#rp-fbtn");
+  if (fb) fb.textContent = RND.focus ? "Сбросить" : "Навести кликом";
+  const b = $("#shot");
+  if (b) b.setAttribute("aria-pressed", String(!box.hidden));
+}
+
+function rpopPick(e) {
+  if (!RND.pick) return false;
+  RND.pick = false;
+  const p = focusPoint(e.clientX, e.clientY);
+  if (p) RND.focus = p;
+  document.body.classList.remove("placing");
+  rpopUI();
+  return true;
+}
+
+function rpopInit() {
+  const b = $("#shot");
+  const box = $("#rpop");
+  if (!b || !box) return;
+  b.addEventListener("click", () => {
+    box.hidden = !box.hidden;
+    RND.pick = false;
+    rpopUI();
+  });
+  box.addEventListener("change", e => {
+    if (e.target.id === "rp-size" && has(RSIZES, e.target.value)) RND.size = e.target.value;
+    if (e.target.id === "rp-dof" && has(RDOF, e.target.value)) RND.dof = e.target.value;
+    saveUI();
+    rpopUI();
+  });
+  box.addEventListener("click", e => {
+    const a = e.target.closest("[data-rp]");
+    if (!a) return;
+    const k = a.dataset.rp;
+    if (k === "close") box.hidden = true;
+    else if (k === "focus") {
+      if (RND.focus) RND.focus = null;
+      else {
+        RND.pick = true;
+        document.body.classList.add("placing");
+      }
+    } else if (k === "go") {
+      box.hidden = true;
+      snapshotHQ();
+    }
+    rpopUI();
+  });
+  rpopUI();
+}
+
 async function snapshotHQ() {
   if (!V.ok || HQ.running) return;
   HQ.running = true;
-  const cv = V.renderer.domElement;
-  const aspect = (cv.clientWidth || 16) / (cv.clientHeight || 9);
-  const W = Math.min(3200, Math.max(1600, Math.round((cv.clientWidth || 1600) * 2 / 2) * 2));
-  const H = Math.round(W / aspect / 2) * 2;
+  const [W, H] = renderSize();
+  const A = (RDOF[RND.dof] || RDOF["0"])[1];
+  const dof = A > 0 ? {A, F: focusDist()} : null;
   busy(true, "Считаю рендер текущего вида…", 0);
   await nextFrame();
-  const c = await renderHQ({w: W, h: H, samples: 96}, p => busy(true, undefined, p));
+  const c = await renderHQ({w: W, h: H, samples: dof ? 160 : 96, dof}, p => busy(true, undefined, p));
   busy(false);
   HQ.running = false;
   if (!c) {

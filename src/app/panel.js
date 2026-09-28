@@ -1171,7 +1171,6 @@ document.querySelectorAll("#cams [data-cam]").forEach(b => b.addEventListener("c
   else camPreset(b.dataset.cam);
 }));
 
-$("#shot").addEventListener("click", () => snapshotHQ());
 
 $("#help").addEventListener("click", () => {
   const h = $("#help3");
