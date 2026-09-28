@@ -373,6 +373,9 @@ function buildHouse3D() {
   }
   if (!V.hq && sel && sel.t === "house") edges(g, e.maxX - e.minX + 2 * wl + 0.1, base + H + 0.1, e.maxY - e.minY + 2 * wl + 0.1, bcx, (base + H) / 2, bcy, selColor());
   setClip(cutc);
+  const c0 = houseToWorld(e.minX, e.minY);
+  const c1 = houseToWorld(e.maxX, e.maxY);
+  shadeInterior({x0: Math.min(c0.x, c1.x), z0: Math.min(c0.z, c1.z), x1: Math.max(c0.x, c1.x), z1: Math.max(c0.z, c1.z)}, base, base + H - 0.005, V.mode === "roof" ? 0.3 : 0.8);
 }
 
 function buildFence(R, P) {
@@ -455,6 +458,7 @@ function build3D() {
     }
   }
   if (V.fence) buildFence(R, P);
+  shadeInterior(null);
   for (const o of S.objects) {
     const g = thingGroup(o, R, matPlot, 0, {t: "obj", id: o.id});
     const md = modelOf(o);
@@ -513,6 +517,7 @@ function size3D() {
 function render3D() {
   if (V.sky) V.sky.position.copy(V.camera.position);
   V.renderer.render(V.scene, V.camera);
+  if (RF.max) rfGrab();
 }
 
 function loop(ts) {

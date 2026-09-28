@@ -73,18 +73,18 @@ const MDEF = {
   roofedge: {n: "Металл тёмный", g: "metal", c: 0x3b3f45, r: 0.5, m: 0.4},
   soffit: {n: "Подшив деревом", g: "wood", map: "wood", c: 0xdcc9a8, r: 0.8},
   gutter: {n: "Водосток", g: "metal", c: 0x6d737a, r: 0.35, m: 0.7, side: 2},
-  parquet: {n: "Паркет дуб", g: "floor", map: "parquet", c: 0xd7b089, r: 0.55},
-  parquet_dark: {n: "Паркет орех", g: "floor", map: "parquet", c: 0x8c5f40, r: 0.5},
-  herring: {n: "Ёлочка дуб", g: "floor", map: "herring", c: 0xcfa378, r: 0.55},
-  laminate: {n: "Ламинат серый дуб", g: "floor", map: "laminate", c: 0xb7ab9c, r: 0.6},
+  parquet: {n: "Паркет дуб", g: "floor", map: "parquet", c: 0xd7b089, r: 0.55, cc: 0.3, ccr: 0.14},
+  parquet_dark: {n: "Паркет орех", g: "floor", map: "parquet", c: 0x8c5f40, r: 0.5, cc: 0.3, ccr: 0.14},
+  herring: {n: "Ёлочка дуб", g: "floor", map: "herring", c: 0xcfa378, r: 0.55, cc: 0.3, ccr: 0.14},
+  laminate: {n: "Ламинат серый дуб", g: "floor", map: "laminate", c: 0xb7ab9c, r: 0.6, cc: 0.15, ccr: 0.22},
   tile: {n: "Плитка 30×30", g: "floor", map: "tile", c: 0xf4f2ee, c2: 0xbdb9b1, r: 0.9},
   porcelain: {n: "Керамогранит 60×60", g: "floor", map: "porcelain", c: 0xd3ccc0, c2: 0xa29c93, r: 0.9},
   microcement: {n: "Микроцемент", g: "floor", map: "concrete", c: 0xc3beb5, r: 0.7},
   carpet: {n: "Ковролин", g: "floor", map: "carpet", c: 0xa99f92, r: 1},
-  marble: {n: "Мрамор", g: "stone", map: "marble", c: 0xf3f1ed, c2: 0xd9d5cf, r: 0.9},
-  granite: {n: "Гранит", g: "stone", map: "granite", c: 0xa3a09d, r: 0.8},
+  marble: {n: "Мрамор", g: "stone", map: "marble", c: 0xf3f1ed, c2: 0xd9d5cf, r: 0.9, cc: 0.55, ccr: 0.05},
+  granite: {n: "Гранит", g: "stone", map: "granite", c: 0xa3a09d, r: 0.8, cc: 0.4, ccr: 0.06},
   concrete: {n: "Бетон", g: "stone", map: "concrete", c: 0xbdb9b2, r: 0.9},
-  ceramic: {n: "Санфаянс", g: "stone", c: 0xf9f9f7, r: 0.1},
+  ceramic: {n: "Санфаянс", g: "stone", c: 0xf9f9f7, r: 0.3, cc: 1, ccr: 0.03},
   terracotta: {n: "Терракота", g: "stone", c: 0xb86a45, r: 0.8},
   wood_light: {n: "Дуб светлый", g: "wood", map: "wood", c: 0xe6cda6, r: 0.55},
   wood_mid: {n: "Дуб", g: "wood", map: "wood", c: 0xb98b5e, r: 0.55},
@@ -94,16 +94,16 @@ const MDEF = {
   wood_raw: {n: "Сосна некрашеная", g: "wood", map: "wood", c: 0xdcbb8d, r: 0.8},
   door_int: {n: "Шпон светлый", g: "wood", map: "wood", c: 0xf0e6d4, r: 0.5},
   white: {n: "Белый матовый", g: "paint", c: 0xf1f0ec, r: 0.6},
-  white_gloss: {n: "Белый глянец", g: "paint", c: 0xf6f6f4, r: 0.18},
+  white_gloss: {n: "Белый глянец", g: "paint", c: 0xf6f6f4, r: 0.3, cc: 0.6, ccr: 0.05},
   black: {n: "Чёрный", g: "paint", c: 0x1b1c1e, r: 0.4},
   graphite: {n: "Графит", g: "paint", c: 0x3a3d42, r: 0.5},
-  lacquer: {n: "Эмаль цветная", g: "paint", c: 0x5b7592, r: 0.3},
+  lacquer: {n: "Эмаль цветная", g: "paint", c: 0x5b7592, r: 0.35, cc: 0.9, ccr: 0.04},
   frame: {n: "ПВХ графит", g: "paint", c: 0x3b4047, r: 0.45},
   frame_white: {n: "ПВХ белый", g: "paint", c: 0xf2f2f0, r: 0.4},
   sill_in: {n: "Подоконник ПВХ", g: "paint", c: 0xf4f3f0, r: 0.3},
   plastic_green: {n: "Пластик", g: "paint", c: 0x3f6b3a, r: 0.6},
   rubber: {n: "Резина", g: "paint", c: 0x19191b, r: 0.9},
-  screen: {n: "Экран", g: "paint", c: 0x0c0d0f, r: 0.08, m: 0.3},
+  screen: {n: "Экран", g: "paint", c: 0x0c0d0f, r: 0.3, m: 0.2, cc: 1, ccr: 0.02},
   chrome: {n: "Хром", g: "metal", c: 0xeeeeee, r: 0.12, m: 1},
   steel: {n: "Сталь", g: "metal", c: 0xb9bcc0, r: 0.32, m: 0.85},
   darkmetal: {n: "Чёрный металл", g: "metal", c: 0x2e3135, r: 0.45, m: 0.6},
@@ -113,23 +113,23 @@ const MDEF = {
   door_entry: {n: "Металл входной двери", g: "metal", c: 0x2e3236, r: 0.45, m: 0.35},
   sill_out: {n: "Отлив металлический", g: "metal", c: 0x8f959c, r: 0.4, m: 0.6},
   post: {n: "Металл зелёный", g: "metal", c: 0x3c4a3f, r: 0.5, m: 0.4},
-  glass: {n: "Стекло прозрачное", g: "glass", c: 0xcfe4ee, r: 0.02, op: 0.2, env: 1.6},
+  glass: {n: "Стекло прозрачное", g: "glass", c: 0xcfe4ee, r: 0.02, op: 0.2, tr: 0.84, env: 1.3},
   glass_frost: {n: "Стекло матовое", g: "glass", c: 0xe8eff2, r: 0.35, op: 0.7, env: 1},
-  glass_tint: {n: "Стекло тонированное", g: "glass", c: 0x3d4a52, r: 0.02, op: 0.5, env: 1.6},
+  glass_tint: {n: "Стекло тонированное", g: "glass", c: 0x3d4a52, r: 0.02, op: 0.5, tr: 0.55, env: 1.3},
   mirror: {n: "Зеркало", g: "glass", c: 0xe4eaee, r: 0.02, m: 1},
   poly: {n: "Поликарбонат", g: "glass", c: 0xdff0f5, r: 0.15, op: 0.3, side: 2},
-  carglass: {c: 0x1b2127, r: 0.06, m: 0.3},
-  fabric_grey: {n: "Ткань серая", g: "fabric", map: "fabric", c: 0x9a9fa6, r: 1},
-  fabric_dark: {n: "Ткань тёмная", g: "fabric", map: "fabric", c: 0x5f636a, r: 1},
-  fabric_beige: {n: "Ткань бежевая", g: "fabric", map: "fabric", c: 0xddcfb8, r: 1},
-  fabric_blue: {n: "Ткань синяя", g: "fabric", map: "fabric", c: 0x5f7a9a, r: 1},
-  fabric_green: {n: "Ткань зелёная", g: "fabric", map: "fabric", c: 0x789472, r: 1},
-  fabric_white: {n: "Ткань белая", g: "fabric", map: "fabric", c: 0xf7f5f0, r: 1},
-  fabric_terra: {n: "Ткань терракотовая", g: "fabric", map: "fabric", c: 0xbd7355, r: 1},
-  velvet: {n: "Велюр", g: "fabric", map: "carpet", c: 0x51627a, r: 0.95},
-  leather: {n: "Кожа коричневая", g: "fabric", map: "leather", c: 0x7a5439, r: 0.55},
-  leather_black: {n: "Кожа чёрная", g: "fabric", map: "leather", c: 0x2c2c2d, r: 0.5},
-  rug: {n: "Ковёр", g: "fabric", map: "carpet", c: 0xc4b198, r: 1},
+  carglass: {c: 0x1b2127, r: 0.1, m: 0.2, cc: 1, ccr: 0.02},
+  fabric_grey: {n: "Ткань серая", g: "fabric", map: "fabric", c: 0x9a9fa6, r: 1, sheen: 1},
+  fabric_dark: {n: "Ткань тёмная", g: "fabric", map: "fabric", c: 0x5f636a, r: 1, sheen: 1},
+  fabric_beige: {n: "Ткань бежевая", g: "fabric", map: "fabric", c: 0xddcfb8, r: 1, sheen: 1},
+  fabric_blue: {n: "Ткань синяя", g: "fabric", map: "fabric", c: 0x5f7a9a, r: 1, sheen: 1},
+  fabric_green: {n: "Ткань зелёная", g: "fabric", map: "fabric", c: 0x789472, r: 1, sheen: 1},
+  fabric_white: {n: "Ткань белая", g: "fabric", map: "fabric", c: 0xf7f5f0, r: 1, sheen: 1},
+  fabric_terra: {n: "Ткань терракотовая", g: "fabric", map: "fabric", c: 0xbd7355, r: 1, sheen: 1},
+  velvet: {n: "Велюр", g: "fabric", map: "carpet", c: 0x51627a, r: 0.95, sheen: 1.2},
+  leather: {n: "Кожа коричневая", g: "fabric", map: "leather", c: 0x7a5439, r: 0.55, cc: 0.25, ccr: 0.35},
+  leather_black: {n: "Кожа чёрная", g: "fabric", map: "leather", c: 0x2c2c2d, r: 0.5, cc: 0.25, ccr: 0.35},
+  rug: {n: "Ковёр", g: "fabric", map: "carpet", c: 0xc4b198, r: 1, sheen: 0.6},
   leaf: {n: "Листва", g: "plant", map: "leaf", c: 0x8fb56d, r: 0.9},
   leaf_light: {n: "Листва светлая", g: "plant", map: "leaf", c: 0xb5d18a, r: 0.9},
   leaf_dark: {n: "Хвоя", g: "plant", map: "leaf", c: 0x5f8061, r: 0.9},
@@ -180,8 +180,8 @@ function baseDef(base) {
   if (!def && base.indexOf("#") > 0) {
     const [kind, hx] = base.split("#");
     const c = parseInt(hx, 16);
-    if (kind === "paint") def = {c, r: 0.28, m: 0.55};
-    else if (kind === "fabric") def = {map: "fabric", c, r: 1};
+    if (kind === "paint") def = {c, r: 0.4, m: 0.45, cc: 1, ccr: 0.03};
+    else if (kind === "fabric") def = {map: "fabric", c, r: 1, sheen: 1};
     else def = {c, r: 0.7};
   }
   return def || {c: 0xb0b4b8, r: 0.8};
@@ -212,20 +212,22 @@ function specKey(sp, def) {
 }
 
 function patchMat(mt, def, T) {
-  const macro = def.anti ? tex("macro") : null;
-  const c2 = def.c2 !== undefined && T.rough ? lin(def.c2) : null;
-  if (!(macro && macro.map) && !c2) return;
+  const macro = T && T.map && def.anti ? tex("macro") : null;
+  const mk = !!(macro && macro.map);
+  const c2 = T && T.map && def.c2 !== undefined && T.rough ? lin(def.c2) : null;
   mt.onBeforeCompile = sh => {
+    shadePatch(sh);
+    if (!mk && !c2) return;
     let code = "#ifdef USE_MAP\n\tvec4 texelColor = texture2D( map, vUv );\n";
     let pre = "";
-    if (macro && macro.map) {
+    if (mk) {
       sh.uniforms.uMacro = {value: macro.map};
       sh.uniforms.uMacroK = {value: def.anti};
       pre += "uniform sampler2D uMacro;\nuniform float uMacroK;\n";
       code += "\tfloat mk = texture2D( uMacro, vUv * uMacroK ).r;\n\tvec4 texB = texture2D( map, mat2( 0.8, -0.6, 0.6, 0.8 ) * vUv + vec2( 0.37, 0.61 ) );\n\ttexelColor = mix( texelColor, texB, smoothstep( 0.4, 0.6, mk ) );\n";
     }
     code += "\ttexelColor = mapTexelToLinear( texelColor );\n";
-    if (macro && macro.map) code += "\ttexelColor.rgb *= 0.8 + 0.4 * mk;\n";
+    if (mk) code += "\ttexelColor.rgb *= 0.8 + 0.4 * mk;\n";
     if (c2) {
       sh.uniforms.uC2 = {value: c2};
       pre += "uniform vec3 uC2;\n";
@@ -234,7 +236,7 @@ function patchMat(mt, def, T) {
     code += "\tdiffuseColor *= texelColor;\n#endif";
     sh.fragmentShader = pre + sh.fragmentShader.replace("#include <map_fragment>", code);
   };
-  mt.customProgramCacheKey = () => (macro && macro.map ? "macro" : "") + (c2 ? "joint" : "");
+  mt.customProgramCacheKey = () => "sh2" + (mk ? "macro" : "") + (c2 ? "joint" : "");
 }
 
 function makeMat(name) {
@@ -258,11 +260,21 @@ function makeMat(name) {
   if (def.side === 2) o.side = THREE.DoubleSide;
   if (def.em) {
     o.emissive = lin(def.em);
-    o.emissiveIntensity = 1.2;
+    o.emissiveIntensity = def.emi || 1.2;
   }
   if (def.env) o.envMapIntensity = def.env;
-  const mt = new THREE.MeshStandardMaterial(o);
-  if (T && T.map) patchMat(mt, def, T);
+  const phys = def.cc || def.sheen || def.tr;
+  if (def.cc) {
+    o.clearcoat = def.cc;
+    o.clearcoatRoughness = def.ccr || 0.04;
+  }
+  if (def.sheen) o.sheen = lin(def.c).lerp(new THREE.Color(1, 1, 1), 0.25).multiplyScalar(def.sheen);
+  if (def.tr) {
+    o.transmission = def.tr;
+    o.opacity = 1;
+  }
+  const mt = phys ? new THREE.MeshPhysicalMaterial(o) : new THREE.MeshStandardMaterial(o);
+  patchMat(mt, def, T);
   return mt;
 }
 

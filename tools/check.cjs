@@ -234,6 +234,9 @@ setTimeout(() => {
     const s2 = sanitize(p);
     return s2.site.lat === 89 && s2.site.tz === 14 && s2.site.north === 10 && s2.site.city === "" && s2.house.roof === "hip" && s2.house.pitch2 === 45;
   })()`));
+  test("все материалы получают общий патч шейдера", () => run(`(() => { const sh = {uniforms: {}, fragmentShader: THREE.ShaderLib.physical.fragmentShader}; mat("glass", true).onBeforeCompile(sh); return sh.fragmentShader.includes("uSkyIdx") && sh.fragmentShader.includes("shAmb") && !!sh.uniforms.uEnvDiff && !sh.fragmentShader.includes("#include <lights_fragment_begin>"); })()`));
+  test("лак, ткань и стекло стали физическими материалами", () => run(`mat("lacquer").isMeshPhysicalMaterial && !!mat("fabric_grey").sheen && mat("glass").transmission > 0.5 && !mat("plaster").isMeshPhysicalMaterial`));
+  test("внутри дома рассеянный свет приглушается", () => run(`(() => { S = presetExample(); V.mode = "roof"; build3D(); const b = SHU.uInBox.value; const ok = b.z > b.x && b.w > b.y && SHU.uInK.value < 0.5; V.mode = "noroof"; build3D(); return ok && SHU.uInK.value > 0.5; })()`));
   run("S = presetExample(); changed(); save();");
   setTimeout(() => {
     test("план сохраняется в localStorage", () => (w.localStorage.getItem("house-plan-v2") || "").length > 500);
