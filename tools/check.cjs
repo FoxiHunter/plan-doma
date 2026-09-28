@@ -295,6 +295,20 @@ setTimeout(() => {
     return sn > 0.8 && run("WX.snow") === 0 && run("!!(WEATHER.storm.bolt && WEATHER.hail.hail)");
   });
   test("ветер качает только растения, снег и лужи есть в шейдере", () => run(`(() => { const a = {uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader}; mat("leaf").onBeforeCompile(a); const b = {uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader}; mat("plaster").onBeforeCompile(b); return a.vertexShader.includes("uWind") && !b.vertexShader.includes("uWind") && b.fragmentShader.includes("uSnow") && b.fragmentShader.includes("uPud") && a.uniforms.uPudK.value > 0; })()`));
+  test("все виды забора строятся с воротами и калиткой", () => run(`(() => { const meshes = () => { let k = 0; V.root.traverse(o => { if (o.isMesh) k++; }); return k; }; S = presetExample(); let ok = true; for (const t of Object.keys(FENCES)) for (const gt of Object.keys(FENCE_GATES)) { S.plot.fence = Object.assign(fenceDefault(S.plot), {type: t, front: t, gate: gt, wicket: gt !== 'none'}); V.fence = true; build3D(); let n = 0; V.root.traverse(o => { if (o.userData.pick && o.userData.pick.t === 'fence') n++; }); if (n !== (gt === 'none' ? 0 : gt === 'swing' ? 3 : 2) || meshes() < 60) ok = false; } return ok; })()`));
+  test("ворота и калитка открываются и попадают в историю", () => {
+    run("S = presetExample(); changed();");
+    const h0 = run("hist.length");
+    run("toggleOpen({t: 'fence', part: 'gate'}); toggleOpen({t: 'fence', part: 'wicket'});");
+    run("S.objects.push(thing('wicket', 3, 3, {id: 'wk'})); changed(); toggleOpen({t: 'obj', id: 'wk', gate: true});");
+    return run("S.plot.fence.go") === 1 && run("S.plot.fence.wo") === 1 && run("S.objects.find(o => o.id === 'wk').open") === 1 && run("hist.length") >= h0 + 3;
+  });
+  test("sanitize держит забор, вид секции и открытие ворот", () => {
+    const r = run(`(() => { const p = presetExample(); p.plot.fence = {type: 'zzz', front: 'brick', h: 9, gw: 99, gate: 'slide', go: 5}; p.objects.push({id: 'fs', kind: 'fencesec', w: 4, d: 0.1, h: 1.8, fs: 'picket'}, {id: 'gt', kind: 'gateswing', w: 4, d: 0.2, h: 1.9, open: 7}); const s2 = sanitize(p); return [s2.plot.fence, s2.objects.find(o => o.id === 'fs').fs, s2.objects.find(o => o.id === 'gt').open]; })()`);
+    return r[0].type === "mesh" && r[0].front === "brick" && r[0].h === 3 && r[0].gw === 12 && r[0].go === 1 && r[1] === "picket" && r[2] === 1;
+  });
+  test("ползунок двери открывает её, галочка комнаты открывает зону", () => run(`(() => { S = presetExample(); const d = S.doors.find(x => x.kind === 'door'); sel = {t: 'door', id: d.id}; const el = document.createElement('input'); el.type = 'range'; el.dataset.b = 'sel.open'; el.value = '50'; applyBind(el); const r = S.rooms[0]; sel = {t: 'room', id: r.id}; const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.b = 'sel.open'; cb.checked = true; applyBind(cb); sel = null; return d.open === 0.5 && r.open === true; })()`));
+  test("в каталоге больше сотни моделей, у каждой есть категория", () => run("Object.keys(MODELS).length > 100 && Object.values(MODELS).every(m => CATS.some(c => c[0] === m.cat))"));
   run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
   run("LAMP.mode = 'auto';");
   run("S = presetExample(); changed(); save();");

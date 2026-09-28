@@ -1048,6 +1048,8 @@ function sanitize(d) {
       rot: normDeg(rot)
     }, o);
     if (K.ops && Array.isArray(o.opens)) res.opens = opens(o.opens);
+    if (K.fs && typeof o.fs === "string" && has(FENCES, o.fs)) res.fs = o.fs;
+    if (K.gate && typeof o.open === "number" && isFinite(o.open)) res.open = clamp(o.open, 0, 1);
     if (K.lamp) {
       if (o.on === false) res.on = false;
       if (typeof o.k === "number" && isFinite(o.k)) res.k = clamp(Math.round(o.k / 100) * 100, 1800, 7000);
@@ -1058,13 +1060,13 @@ function sanitize(d) {
   return {
     v: 3,
     snap: [0.05, 0.1, 0.5].includes(d.snap) ? d.snap : 0.1,
-    plot: {
+    plot: Object.assign({
       w: clamp(n(d.plot.w, P0.w), 5, 300),
       d: clamp(n(d.plot.d, P0.d), 5, 300),
       street: clamp(n(d.plot.street, P0.street), 0, 300),
       side: clamp(n(d.plot.side, P0.side), 0, 300),
       back: clamp(n(d.plot.back, P0.back), 0, 300)
-    },
+    }, d.plot.fence ? {fence: fenceSanitize(d.plot.fence, d.plot)} : {}),
     site: {
       lat: clamp(n(ds.lat, D0.lat), -89, 89),
       lon: clamp(n(ds.lon, D0.lon), -180, 180),

@@ -22,8 +22,17 @@ function camU(o) {
   return (o || new THREE.Vector3()).crossVectors(camR(), camF());
 }
 
+function camNear(y) {
+  return V.walk ? 0.05 : clamp(y * 0.012, 0.05, 1.5);
+}
+
 function applyCam() {
   if (!V.camera) return;
+  const nr = camNear(CAM.pos.y);
+  if (Math.abs(nr - V.camera.near) > 0.005) {
+    V.camera.near = nr;
+    V.camera.updateProjectionMatrix();
+  }
   V.camera.position.copy(CAM.pos);
   const f = camF();
   V.camera.up.set(0, 1, 0);
@@ -363,6 +372,13 @@ function sameSel(pk) {
 }
 
 function selectPick(pk, point) {
+  if (pk.t === "fence") {
+    sel = null;
+    tab = "plot";
+    frozen = null;
+    renderAll();
+    return;
+  }
   if (pk.t === "house") {
     if (tab === "house" && point && V.camera) {
       const hp = worldToHouse(point.x, point.z);

@@ -1368,6 +1368,26 @@ function sym2D(o) {
       for (let i = 1; i < n; i++) s += `<circle cx="${x0 + w * i / n}" cy="0" r="0.05" fill="#f5c542" stroke="${st}" stroke-width="${sw}"/>`;
       return s + `<circle cx="${x0}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/><circle cx="${x0 + w}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`;
     }
+    case "fence": {
+      const n = Math.max(1, Math.ceil(w / 2.5));
+      let s = Ln(x0, 0, x0 + w, 0);
+      for (let i = 0; i <= n; i++) s += `<rect x="${x0 + w * i / n - 0.05}" y="-0.05" width="0.1" height="0.1" fill="${st}"/>`;
+      return s;
+    }
+    case "gate": {
+      const r = w / 2;
+      return R(x0, -0.05, 0.1, 0.1, st) + R(x0 + w - 0.1, -0.05, 0.1, 0.1, st) + `<path d="M ${x0} 0 L ${x0} ${-r} A ${r} ${r} 0 0 1 ${x0 + r} 0" fill="none" stroke="${st}" stroke-width="${sw}"/><path d="M ${x0 + w} 0 L ${x0 + w} ${-r} A ${r} ${r} 0 0 0 ${x0 + w - r} 0" fill="none" stroke="${st}" stroke-width="${sw}" stroke-dasharray="${3 / k} ${2 / k}"/>`;
+    }
+    case "bike":
+      return El(0, y0 + d * 0.22, w * 0.18, d * 0.2, f) + El(0, y0 + d * 0.78, w * 0.18, d * 0.2, f) + Ln(0, y0 + d * 0.2, 0, y0 + d * 0.8) + Ln(-w / 2, y0 + d * 0.72, w / 2, y0 + d * 0.72);
+    case "curtain": {
+      let p = `M ${x0} ${y0 + d / 2}`;
+      const n = Math.max(4, Math.round(w / 0.12));
+      for (let i = 1; i <= n; i++) p += ` Q ${x0 + (i - 0.5) * w / n} ${y0 + (i % 2 ? 0 : d)} ${x0 + i * w / n} ${y0 + d / 2}`;
+      return `<path d="${p}" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
+    }
+    case "pond":
+      return El(0, 0, w / 2, d / 2, "var(--water)") + El(0, 0, w / 2 - 0.12, d / 2 - 0.12, "none");
     case "person":
       return El(0, 0, w / 2, d / 2, f) + `<circle cx="0" cy="0" r="${Math.min(w, d) * 0.33}" fill="${f}" stroke="${st}" stroke-width="${sw}"/>` + Ln(0, d * 0.3, 0, d / 2 + 0.08);
     default:

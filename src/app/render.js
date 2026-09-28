@@ -65,7 +65,7 @@ async function renderHQ(opt, onp) {
   GZ.sroot.visible = false;
   GH.root.visible = false;
   if (SKY.pathG) SKY.pathG.visible = false;
-  const cam = new THREE.PerspectiveCamera(V.camera.fov, W / H, 0.05, 3000);
+  const cam = new THREE.PerspectiveCamera(V.camera.fov, W / H, camNear(opt.pose ? opt.pose.pos.y : V.camera.position.y), 3000);
   if (opt.pose) {
     cam.position.copy(opt.pose.pos);
     const f = camF(null, opt.pose.yaw, opt.pose.pitch);

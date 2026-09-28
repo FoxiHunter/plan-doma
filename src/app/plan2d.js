@@ -217,6 +217,7 @@ function drawPlot() {
   if (z.w > 0 && z.d > 0) h += R2(z.x, z.y, z.w, z.d, "url(#hz)", "var(--ink-2)", 1, [5, 4]);
   h += R2(0, 0, P.w, P.d, "none", "var(--ink)", 1.5);
   h += L2(0, P.d, P.w, P.d, "var(--red)", 3);
+  if (typeof V === "undefined" || V.fence) h += fence2D();
   h += T2(P.w / 2, P.d + 1.5, "красная линия, улица", {fill: "var(--red)", weight: 500});
   h += T2(P.w / 2, -1.5, fm(P.w) + " м", {fill: "var(--ink-2)"});
   h += T2(-1.5, P.d / 2, fm(P.d) + " м", {fill: "var(--ink-2)", rot: -90});

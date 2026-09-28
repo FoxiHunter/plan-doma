@@ -381,52 +381,6 @@ function buildHouse3D() {
   shadeInterior({x0: Math.min(c0.x, c1.x), z0: Math.min(c0.z, c1.z), x1: Math.max(c0.x, c1.x), z1: Math.max(c0.z, c1.z)}, base, base + H - 0.005, V.mode === "roof" ? 0.3 : 0.8);
 }
 
-function buildFence(R, P) {
-  const H = 1.6;
-  const post = matPlot("post");
-  const mesh = matPlot("fence");
-  const posts = (x0, z0, x1, z1) => {
-    const L = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.max(1, Math.ceil(L / 2.5));
-    for (let i = 0; i <= n; i++) {
-      const x = x0 + (x1 - x0) * i / n;
-      const z = z0 + (z1 - z0) * i / n;
-      B(R, x - 0.03, x + 0.03, 0, H + 0.08, z - 0.03, z + 0.03, post);
-    }
-  };
-  const panel = (x0, z0, x1, z1) => {
-    const pm = Math.abs(z1 - z0) < 0.001
-      ? B(R, Math.min(x0, x1), Math.max(x0, x1), 0.05, H, z0 - 0.004, z0 + 0.004, mesh)
-      : B(R, x0 - 0.004, x0 + 0.004, 0.05, H, Math.min(z0, z1), Math.max(z0, z1), mesh);
-    if (pm) pm.castShadow = false;
-  };
-  const seg = (x0, z0, x1, z1) => {
-    if (Math.hypot(x1 - x0, z1 - z0) < 0.05) return;
-    posts(x0, z0, x1, z1);
-    panel(x0, z0, x1, z1);
-  };
-  seg(0, 0, P.w, 0);
-  seg(0, 0, 0, P.d);
-  seg(P.w, 0, P.w, P.d);
-  const gw = Math.min(4, P.w * 0.4);
-  const gx0 = P.w / 2 - gw / 2;
-  const gx1 = P.w / 2 + gw / 2;
-  const wk = gx1 + 1.1 < P.w - 0.3;
-  seg(0, P.d, gx0, P.d);
-  seg(wk ? gx1 + 1.2 : gx1, P.d, P.w, P.d);
-  panel(gx0 + 0.05, P.d, gx1 - 0.05, P.d);
-  for (const [a, b] of [[gx0, gx1]].concat(wk ? [[gx1 + 0.1, gx1 + 1.1]] : [])) {
-    B(R, a, b, 0.05, 0.1, P.d - 0.02, P.d + 0.02, post);
-    B(R, a, b, H - 0.05, H, P.d - 0.02, P.d + 0.02, post);
-    B(R, a, a + 0.05, 0.05, H, P.d - 0.02, P.d + 0.02, post);
-    B(R, b - 0.05, b, 0.05, H, P.d - 0.02, P.d + 0.02, post);
-  }
-  if (wk) {
-    panel(gx1 + 0.15, P.d, gx1 + 1.05, P.d);
-    B(R, gx1 + 1.1, gx1 + 1.2, 0, H + 0.08, P.d - 0.05, P.d + 0.05, post);
-  }
-}
-
 function build3D() {
   if (!V.scene) return;
   clear3D();
@@ -436,7 +390,7 @@ function build3D() {
   const P = S.plot;
   const R = V.root;
   const far = 450;
-  ground(R, -far, P.w + far, -far, P.d + far, -0.02, matPlot(grassKey("meadow")));
+  ground(R, -far, P.w + far, -far, P.d + far, -0.05, matPlot(grassKey("meadow")));
   ground(R, 0, P.w, 0, P.d, 0, matPlot(grassKey("grass")));
   const X0 = -far;
   const X1 = P.w + far;

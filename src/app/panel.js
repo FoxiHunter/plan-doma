@@ -59,7 +59,7 @@ function secSelected() {
       pos +
       row(num("Поворот, °", "sel.rot", it.rot || 0, "in-rot", 15), num("Над полом, м", "sel.z", it.z || 0, "in-z")) +
       `<div class="btns">${btn("rot-15", "↺ 15°")}${btn("rot", "↻ 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (md.lamp ? lampSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
+      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (md.lamp ? lampSec(it) : "") + (md.fs ? fenceSecSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
   }
   if (sel.t === "room") {
     const types = Object.keys(TYPES).map(t => `<option${t === it.type ? " selected" : ""}>${t}</option>`).join("");
@@ -146,6 +146,7 @@ function projectHTML() {
   if (tab === "plot") {
     h += sec("Участок", row(num("Ширина вдоль улицы, м", "plot.w", S.plot.w), num("Глубина, м", "plot.d", S.plot.d)));
     h += sec("Отступы от границ", row3(num("От улицы, м", "plot.street", S.plot.street), num("Сбоку, м", "plot.side", S.plot.side), num("Сзади, м", "plot.back", S.plot.back)) + `<p class="hint">Дом должен стоять внутри штриховки.</p>`);
+    h += plotFenceSec();
     h += sunSec();
   } else {
     const Hs = S.house;
@@ -345,7 +346,7 @@ function updUndo() {
 function applyBind(el) {
   const b = el.dataset.b;
   const it = selItem();
-  if (b === "sel.open") {
+  if (b === "sel.open" && el.type === "checkbox") {
     if (!it) return false;
     it.open = el.checked;
     return true;
@@ -392,9 +393,15 @@ function applyBind(el) {
   if (b === "sel.open") {
     if (!it) return false;
     it.open = clamp((parseFloat(el.value) || 0) / 100, 0, 1);
-    animTo(animKey(sel.t, it.id), it.open);
+    animTo(sel.t === "obj" ? animKey("obj", it.id, "gate") : animKey(sel.t, it.id), it.open);
     return true;
   }
+  if (b === "fence.fs") {
+    if (!it || !has(FENCES, el.value)) return false;
+    it.fs = el.value;
+    return true;
+  }
+  if (b.indexOf("pf.") === 0) return fenceBind(b, el);
   if (b.indexOf("op.") === 0) {
     if (!it || sel.t !== "obj") return false;
     const [, oid, f] = b.split(".");
@@ -737,6 +744,13 @@ panel.addEventListener("click", e => {
     }
   } else if (a === "toggle-open") {
     if (sel) toggleOpen({t: sel.t, id: sel.id});
+    return;
+  } else if (a === "gate-toggle") {
+    if (sel && sel.t === "obj") toggleOpen({t: "obj", id: sel.id, gate: true});
+    return;
+  } else if (a === "pf-gate" || a === "pf-wicket") {
+    toggleFence({t: "fence", part: a === "pf-gate" ? "gate" : "wicket"});
+    renderPanel();
     return;
   } else if (a === "op-toggle") {
     if (sel && sel.t === "obj") toggleOpen({t: "obj", id: sel.id, open: b.dataset.id});

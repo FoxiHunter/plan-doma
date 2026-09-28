@@ -26,6 +26,7 @@ uniform float uPud;
 uniform float uRainOn;
 uniform float uTime;
 uniform float uPudK;
+uniform float uWave;
 float shHash( vec2 p ) {
 	vec3 q = fract( vec3( p.xyx ) * 0.1031 );
 	q += dot( q, q.yzx + 33.33 );
@@ -51,6 +52,16 @@ float shLM( vec4 a, vec4 b, vec3 p, float inside ) {
 const SH_MAIN = `vec3 shWP = ( vec4( - vViewPosition - viewMatrix[ 3 ].xyz, 0.0 ) * viewMatrix ).xyz;
 float shIn = step( uInBox.x, shWP.x ) * step( shWP.x, uInBox.z ) * step( uInBox.y, shWP.z ) * step( shWP.z, uInBox.w ) * step( uInY.x, shWP.y ) * step( shWP.y, uInY.y );
 float shAmb = mix( 1.0, uInK, shIn );
+if ( uWave > 0.5 ) {
+	vec2 shQ = shWP.xz * 1.8;
+	float shT = uTime * 0.5 + 3.0;
+	float shE = 0.03;
+	float shH0 = shNoise( shQ + shT ) + 0.5 * shNoise( shQ * 2.7 - shT * 1.4 );
+	float shHX = shNoise( shQ + vec2( shE, 0.0 ) + shT ) + 0.5 * shNoise( ( shQ + vec2( shE, 0.0 ) ) * 2.7 - shT * 1.4 );
+	float shHZ = shNoise( shQ + vec2( 0.0, shE ) + shT ) + 0.5 * shNoise( ( shQ + vec2( 0.0, shE ) ) * 2.7 - shT * 1.4 );
+	vec3 shWv = normalize( vec3( ( shH0 - shHX ) / shE * 0.06, 1.0, ( shH0 - shHZ ) / shE * 0.06 ) );
+	normal = normalize( ( viewMatrix * vec4( shWv, 0.0 ) ).xyz );
+}
 if ( uSnow + uWet + uPud > 0.001 && shIn < 0.5 ) {
 	vec3 shWN = normalize( ( vec4( geometryNormal, 0.0 ) * viewMatrix ).xyz );
 	float shNz = shNoise( shWP.xz * 1.7 ) * 0.6 + shNoise( shWP.xz * 6.3 ) * 0.4;
@@ -155,9 +166,10 @@ const SH_CHUNKS = (() => {
   return {begin: pre + dir, maps, nrm, phys, fall};
 })();
 
-function shadePatch(sh, wind, pudK) {
+function shadePatch(sh, wind, pudK, wave) {
   Object.assign(sh.uniforms, SHU);
   sh.uniforms.uPudK = {value: pudK === undefined ? 0.6 : pudK};
+  sh.uniforms.uWave = {value: wave || 0};
   if (wind) sh.vertexShader = "uniform float uTime;\nuniform vec3 uWind;\nuniform vec4 uInBox;\n" + sh.vertexShader.replace("#include <begin_vertex>", SH_WIND);
   sh.fragmentShader = sh.fragmentShader
     .replace("#include <bsdfs>", SH_CHUNKS.fall)
