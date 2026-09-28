@@ -947,7 +947,7 @@ function ghostThing(kind, wx, wz, inHouse) {
     GH.obj = g;
   }
   const K = MODELS[kind] || MODELS.other;
-  GH.obj.position.set(wx, (inHouse ? S.house.base + 0.02 : 0) + (K.z || 0), wz);
+  GH.obj.position.set(wx, (inHouse ? S.house.base + 0.02 : 0) + modelZ(K), wz);
   GH.obj.rotation.y = inHouse ? -S.house.rot * Math.PI / 180 : 0;
   V.need = true;
 }

@@ -153,7 +153,8 @@ function thingGroup(o, parent, mfn, y0, pick) {
   g.rotation.y = -(o.rot || 0) * Math.PI / 180;
   g.userData.pick = pick;
   g.userData.dims = o.w + "|" + o.d + "|" + o.h + "|" + o.kind;
-  buildModel(g, o, mfn, false);
+  const P = buildModel(g, o, mfn, false);
+  if (modelOf(o).lamp) lampThing(g, P, o, pick.t === "item");
   parent.add(g);
   if (!V.hq && sel && sel.t === pick.t && sel.id === pick.id) edges(g, o.w + 0.04, o.h + 0.04, o.d + 0.04, 0, o.h / 2, 0, selColor());
   return g;
@@ -169,6 +170,7 @@ function syncThing3D() {
   const y0 = sel.t === "item" ? S.house.base + 0.02 : 0;
   g.position.set(it.x + it.w / 2, y0 + (it.z || 0), it.y + it.d / 2);
   g.rotation.y = -(it.rot || 0) * Math.PI / 180;
+  if (LAMP.lit) lampShadowsDirty();
   V.need = true;
   return true;
 }
@@ -341,6 +343,7 @@ function buildHouse3D() {
   for (const [w, L] of winLines) win3D(g, w, L, base, m);
   baseboards(g, ws, sides, base, m);
   for (const it of S.items) thingGroup(it, g, m, base + 0.02, {t: "item", id: it.id});
+  autoLights(g, base, H, m);
   if (V.mode === "roof") {
     const c = B(g, e.minX, e.maxX, base + H - 0.02, base + H - 0.001, e.minY, e.maxY, m(hk("ceiling", "plaster")));
     if (c) c.userData.pick = hp;
@@ -428,6 +431,7 @@ function build3D() {
   if (!V.scene) return;
   clear3D();
   animClear();
+  lampsBegin();
   setClip(null);
   const P = S.plot;
   const R = V.root;
@@ -471,6 +475,7 @@ function build3D() {
     }
   }
   buildHouse3D();
+  lampsFinish();
   fitSun();
   pruneMats(V.scene);
 }
@@ -548,6 +553,7 @@ function init3D() {
   V.camera = new THREE.PerspectiveCamera(50, 1.6, 0.05, 3000);
   V.root = new THREE.Group();
   V.scene.add(V.root);
+  V.scene.onBeforeRender = lampSync;
   V.scene.fog = new THREE.Fog(new THREE.Color(0xdce6ec), 160, 900);
   V.hemi = new THREE.HemisphereLight(lin(0xdfe9f5), lin(0x8d8a82), 0.12);
   V.scene.add(V.hemi);

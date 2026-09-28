@@ -17,6 +17,7 @@
         RF.q = ui.q;
         RF.max = QUALITY[ui.q][1];
       }
+      if (has(LAMP_MODES, ui.lights)) LAMP.mode = ui.lights;
       if (ui.sky && typeof ui.sky === "object") {
         const k = ui.sky;
         if (k.m >= 1 && k.m <= 12) SKY.m = Math.round(k.m);

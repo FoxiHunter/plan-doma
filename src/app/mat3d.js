@@ -137,6 +137,10 @@ const MDEF = {
   water: {n: "Вода", g: "glass", c: 0x3a8fb3, r: 0.03, m: 0.1, op: 0.82, env: 1.4},
   snow: {map: "snow", c: 0xf6f8fb, r: 0.75},
   lamp: {c: 0xfff4dc, r: 0.3, em: 0xfff0d0},
+  bulb_off: {c: 0xeeeae2, r: 0.25, op: 0.85},
+  lampshade: {n: "Абажур", g: "fabric", map: "fabric", c: 0xefe6d2, r: 1, sheen: 0.6, side: 2},
+  opal: {n: "Матовый плафон", g: "glass", c: 0xf4f2ee, r: 0.4, op: 0.92},
+  shade_metal: {n: "Металл плафона", g: "metal", c: 0x2e3135, r: 0.45, m: 0.6, side: 2},
   redlamp: {c: 0x9e1111, r: 0.3, em: 0x5a0000},
   skin: {c: 0xd6a588, r: 0.65},
   hair: {c: 0x3a2a1f, r: 0.85},
@@ -181,6 +185,9 @@ function baseDef(base) {
     const [kind, hx] = base.split("#");
     const c = parseInt(hx, 16);
     if (kind === "paint") def = {c, r: 0.4, m: 0.45, cc: 1, ccr: 0.03};
+    else if (kind === "glow") def = {c, r: 0.35, em: c, emi: 5};
+    else if (kind === "soft") def = {c: 0xf4f1ea, r: 0.6, em: c, emi: 1.4};
+    else if (kind === "shadeon") def = {map: "fabric", c: 0xefe6d2, r: 1, em: c, emi: 0.8, side: 2};
     else if (kind === "fabric") def = {map: "fabric", c, r: 1, sheen: 1};
     else def = {c, r: 0.7};
   }

@@ -329,6 +329,7 @@ function applySky(force) {
     clearTimeout(SKY.envTimer);
     SKY.envTimer = setTimeout(() => applySky(true), 200);
   }
+  lampSkyCheck(st);
   skyFx(st);
   sunPath();
   syncSkyUI();
@@ -584,6 +585,8 @@ function syncSkyUI() {
   if (mm && document.activeElement !== mm) mm.value = String(SKY.m);
   const wt = $("#skw");
   if (wt) wt.value = SKY.weather;
+  const lt = $("#skl");
+  if (lt) lt.value = LAMP.mode;
   const pb = $("#skplay");
   if (pb) pb.setAttribute("aria-pressed", String(SKY.play));
   const pp = $("#skpath");
@@ -652,4 +655,9 @@ function skyUIInit() {
   });
   const pp = $("#skpath");
   if (pp) pp.addEventListener("click", () => skySet({path: !SKY.path}));
+  const lt = $("#skl");
+  if (lt) {
+    lt.innerHTML = Object.entries(LAMP_MODES).map(([key, v]) => `<option value="${key}">${v}</option>`).join("");
+    lt.addEventListener("change", () => setLampMode(lt.value));
+  }
 }

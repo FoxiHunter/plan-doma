@@ -59,7 +59,7 @@ function secSelected() {
       pos +
       row(num("Поворот, °", "sel.rot", it.rot || 0, "in-rot", 15), num("Над полом, м", "sel.z", it.z || 0, "in-z")) +
       `<div class="btns">${btn("rot-15", "↺ 15°")}${btn("rot", "↻ 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
-      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
+      `<p class="hint">Размер меняют квадратики на плане или клавиша 3 в 3D. Кружок над моделью крутит её, Alt даёт шаг 1°.</p>`) + (md.lamp ? lampSec(it) : "") + (sel.t === "obj" && md.ops ? opsSec(it) : "") + matsSec(sel.t, it);
   }
   if (sel.t === "room") {
     const types = Object.keys(TYPES).map(t => `<option${t === it.type ? " selected" : ""}>${t}</option>`).join("");
@@ -154,6 +154,8 @@ function projectHTML() {
       row(num("Высота потолка, м", "house.h", Hs.h), num("Цоколь, м", "house.base", Hs.base)) +
       row(num("Высота проёмов, м", "house.doorH", Hs.doorH)));
     h += roofSec();
+    h += sec("Свет в доме", `<label class="check"><input type="checkbox" data-b="house.autoLights"${Hs.autoLights ? " checked" : ""}>Потолочный свет в каждой комнате сам</label>` +
+      `<p class="hint">В сумерках и ночью в комнатах загорается потолочный свет по площади и типу комнаты. Если поставить в комнату свою люстру или подвес из каталога, её свет заменит автоматический. Общий выключатель внизу 3D-вида.</p>`);
     h += matsSec("house", S.house, "Отделка дома");
   }
   return h;
@@ -429,6 +431,26 @@ function applyBind(el) {
     op[f] = clamp(r2(v), lim[f][0], lim[f][1]);
     return true;
   }
+  if (b === "lamp.on") {
+    if (!it) return false;
+    if (el.checked) delete it.on;
+    else it.on = false;
+    return true;
+  }
+  if (b === "lamp.k") {
+    if (!it) return false;
+    it.k = clamp(Math.round((Number(el.value) || 3000) / 100) * 100, 1800, 7000);
+    return true;
+  }
+  if (b === "lamp.lm") {
+    if (!it) return false;
+    it.lm = clamp(Math.round(Number(el.value) || 800), 20, 20000);
+    return true;
+  }
+  if (b === "house.autoLights") {
+    S.house.autoLights = el.checked;
+    return true;
+  }
   if (b === "sel.side") {
     if (!it) return false;
     it.side = el.value === "-1" ? -1 : 1;
@@ -567,6 +589,15 @@ panel.addEventListener("input", e => {
     return;
   }
   if (!el.dataset || !el.dataset.b || el.tagName === "SELECT") return;
+  if (el.type === "range" && el.dataset.b === "lamp.lm") {
+    if (applyBind(el)) {
+      const sp = el.closest(".f") && el.closest(".f").querySelector("b");
+      if (sp) sp.textContent = el.value + " лм";
+      schedule3D();
+      save();
+    }
+    return;
+  }
   if (el.type === "range" && /\.open$/.test(el.dataset.b)) {
     if (applyBind(el)) {
       const lb = el.closest(".f");
@@ -590,6 +621,20 @@ panel.addEventListener("change", e => {
   applyBind(el);
   changed();
 });
+
+function lampSec(it) {
+  const L = lampDef(it);
+  const K = lampTemp(it);
+  const lm = lampLm(it);
+  const tl = Object.assign({}, LAMP_TEMPS);
+  if (!has(tl, String(K))) tl[K] = K + " K";
+  const temps = Object.entries(tl).map(([key, v]) => `<option value="${key}"${Number(key) === K ? " selected" : ""}>${v}</option>`).join("");
+  const top = Math.max(L.lm * 4, lm);
+  const why = LAMP.lit ? "" : LAMP.mode === "off" ? "Сейчас весь свет выключен внизу 3D-вида. " : "Сейчас светло, лампы включатся в сумерках или кнопкой «Свет вкл.» внизу 3D-вида. ";
+  return sec("Свет", `<label class="check"><input type="checkbox" data-b="lamp.on"${it.on !== false ? " checked" : ""}>Лампа включена</label>` +
+    row(`<label class="f">Цвет света<select data-b="lamp.k">${temps}</select></label>`, `<label class="f">Яркость <b>${lm} лм</b><input type="range" min="50" max="${top}" step="50" data-b="lamp.lm" value="${lm}"></label>`) +
+    `<p class="hint">${why}Двойной клик по лампе в 3D или клик в прогулке щёлкает выключателем.</p>`);
+}
 
 function openRow(v, act) {
   const pc = Math.round((v || 0) * 100);

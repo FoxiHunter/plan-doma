@@ -237,6 +237,33 @@ setTimeout(() => {
   test("все материалы получают общий патч шейдера", () => run(`(() => { const sh = {uniforms: {}, fragmentShader: THREE.ShaderLib.physical.fragmentShader}; mat("glass", true).onBeforeCompile(sh); return sh.fragmentShader.includes("uSkyIdx") && sh.fragmentShader.includes("shAmb") && !!sh.uniforms.uEnvDiff && !sh.fragmentShader.includes("#include <lights_fragment_begin>"); })()`));
   test("лак, ткань и стекло стали физическими материалами", () => run(`mat("lacquer").isMeshPhysicalMaterial && !!mat("fabric_grey").sheen && mat("glass").transmission > 0.5 && !mat("plaster").isMeshPhysicalMaterial`));
   test("внутри дома рассеянный свет приглушается", () => run(`(() => { S = presetExample(); V.mode = "roof"; build3D(); const b = SHU.uInBox.value; const ok = b.z > b.x && b.w > b.y && SHU.uInK.value < 0.5; V.mode = "noroof"; build3D(); return ok && SHU.uInK.value > 0.5; })()`));
+  const lights = () => run("(() => { let n = 0; V.root.traverse(o => { if (o.isPointLight) n++; }); return n; })()");
+  test("лампы из каталога светят ночью, свет не проходит сквозь стены", () => {
+    run("S = presetExample(); S.items.push(thing('floorlamp', 1, 1)); S.objects.push(thing('streetlamp', 3, 26)); LAMP.mode = 'on'; build3D(); lampSync();");
+    const n = lights();
+    const masked = run("(() => { let ok = true; V.root.traverse(o => { if (o.isPointLight && !(o.userData.lb && o.userData.lb.z > 0)) ok = false; }); return ok; })()");
+    return n === run("S.rooms.length") + 2 + run("S.rooms.filter(r => Math.max(r.w, r.d) > 6.5).length") && masked && run("SHU.uPLB.value[0].z") > 0;
+  });
+  test("днём свет сам выключается", () => {
+    run("LAMP.mode = 'auto'; SKY.m = 6; SKY.d = 21; SKY.t = 720; SKY.weather = 'clear'; applySky(true); build3D();");
+    const day = lights();
+    run("SKY.t = 23 * 60; applySky(true); build3D();");
+    return day === 0 && lights() > 5;
+  });
+  test("своя люстра заменяет потолочный свет комнаты", () => {
+    run("S = presetExample(); LAMP.mode = 'on'; build3D();");
+    const before = lights();
+    run("(() => { const r = S.rooms.find(q => q.name === 'Спальня 1'); S.items.push(thing('chandelier', r.x + 1, r.y + 1)); build3D(); })()");
+    return lights() === before && run("thing('ceil', 0, 0).z") === run("r2(S.house.h - 0.12)");
+  });
+  test("выключатель лампы попадает в историю и переживает sanitize", () => {
+    run("S = presetExample(); S.items.push(thing('floorlamp', 1, 1, {id: 'fl'})); changed();");
+    const h0 = run("hist.length");
+    run("toggleOpen({t: 'item', id: 'fl'})");
+    const s2 = run("(() => { const p = JSON.parse(JSON.stringify(S)); p.items[p.items.length - 1].k = 99999; p.items[p.items.length - 1].lm = -5; return sanitize(p).items.find(x => x.id === 'fl'); })()");
+    return run("hist.length") === h0 + 1 && s2.on === false && s2.k === 7000 && s2.lm === 20;
+  });
+  run("LAMP.mode = 'auto';");
   run("S = presetExample(); changed(); save();");
   setTimeout(() => {
     test("план сохраняется в localStorage", () => (w.localStorage.getItem("house-plan-v2") || "").length > 500);

@@ -441,6 +441,7 @@ body.walking .sunbar { bottom: 58px; }
             <input type="number" id="skd" min="1" max="31" step="1" value="21" aria-label="День месяца">
             <select id="skm" aria-label="Месяц"></select>
             <select id="skw" aria-label="Погода" data-tip="Погода"></select>
+            <select id="skl" aria-label="Свет" data-tip="Свет в доме и на участке" data-tipd="«Свет сам» включает лампы в сумерках и ночью"></select>
             <button type="button" class="ib" id="skpath" aria-pressed="false" aria-label="Путь солнца" data-tip="Путь солнца" data-tipd="Дуга солнца за выбранный день с отметками по часам"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="2.6"/><path d="M3 19c2-6 5.2-9 9-9s7 3 9 9M3 19h18"/></svg></button>
           </div>
           <div class="help3 glass" id="help3" hidden>
@@ -515,6 +516,7 @@ body.walking .sunbar { bottom: 58px; }
 <script src="app/matui.js"></script>
 <script src="app/wizard.js"></script>
 <script src="app/three-d.js"></script>
+<script src="app/lamps.js"></script>
 <script src="app/openings3d.js"></script>
 <script src="app/roof3d.js"></script>
 <script src="app/sky.js"></script>

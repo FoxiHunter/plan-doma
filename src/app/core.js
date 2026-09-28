@@ -57,11 +57,16 @@ function win(x, y, o, w, sill, h) {
 
 function thing(kind, x, y, over) {
   const K = MODELS[kind] || MODELS.other;
-  return Object.assign({id: uid(), kind, name: K.name, x, y, w: K.w, d: K.d, h: K.h, z: K.z || 0, rot: 0}, over || {});
+  return Object.assign({id: uid(), kind, name: K.name, x, y, w: K.w, d: K.d, h: K.h, z: modelZ(K), rot: 0}, over || {});
+}
+
+function modelZ(K) {
+  if (K.z === "ceil") return Math.max(0, r2(S.house.h - K.h));
+  return typeof K.z === "number" ? K.z : 0;
 }
 
 function baseHouse(cx, cy) {
-  return {cx, cy, rot: 0, wall: 0.4, inner: 0.12, h: 2.8, base: 0.5, doorH: 2.1, roof: "gable", pitch: 30, over: 0.5, ridge: "long", pitch2: 25, overG: 0.4, hipCut: 0.35, low: "b", gutters: true, chim: false, chx: 0, chy: 0, chh: 0.6};
+  return {cx, cy, rot: 0, wall: 0.4, inner: 0.12, h: 2.8, base: 0.5, doorH: 2.1, roof: "gable", pitch: 30, over: 0.5, ridge: "long", pitch2: 25, overG: 0.4, hipCut: 0.35, low: "b", gutters: true, chim: false, chx: 0, chy: 0, chh: 0.6, autoLights: true};
 }
 
 function plotDefault() {
@@ -925,7 +930,7 @@ function save() {
 
 function saveUI() {
   try {
-    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path}}));
+    localStorage.setItem(LS_UI, JSON.stringify({view, mode: V.mode, labels: V.labels, fence: V.fence, sunbar: V.sunbar, cut: V.cut, wheel: UIP.wheel, ptab: UIP.ptab, gmode, recent: UIP.recent, q: RF.q, sky: {m: SKY.m, d: SKY.d, t: Math.round(SKY.t), weather: SKY.weather, path: SKY.path}, lights: LAMP.mode}));
   } catch (err) {
     return;
   }
@@ -1039,10 +1044,15 @@ function sanitize(d) {
       w,
       d: dd,
       h: clamp(n(o.h, K.h), 0.01, 20),
-      z: clamp(n(o.z, K.z || 0), 0, 20),
+      z: clamp(n(o.z, typeof K.z === "number" ? K.z : 0), 0, 20),
       rot: normDeg(rot)
     }, o);
     if (K.ops && Array.isArray(o.opens)) res.opens = opens(o.opens);
+    if (K.lamp) {
+      if (o.on === false) res.on = false;
+      if (typeof o.k === "number" && isFinite(o.k)) res.k = clamp(Math.round(o.k / 100) * 100, 1800, 7000);
+      if (typeof o.lm === "number" && isFinite(o.lm)) res.lm = clamp(Math.round(o.lm), 20, 20000);
+    }
     return res;
   });
   return {
@@ -1083,7 +1093,8 @@ function sanitize(d) {
       chim: !!d.house.chim,
       chx: n(d.house.chx, 0),
       chy: n(d.house.chy, 0),
-      chh: clamp(n(d.house.chh, H0.chh), 0.2, 3)
+      chh: clamp(n(d.house.chh, H0.chh), 0.2, 3),
+      autoLights: d.house.autoLights !== false
     }, d.house),
     rooms: arr(d.rooms).map(r => wm({
       id: sid(r.id),

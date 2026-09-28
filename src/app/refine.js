@@ -247,5 +247,6 @@ function setQuality(q) {
     }
   }
   refineReset();
+  if (LAMP.lit) schedule3D();
   V.need = true;
 }

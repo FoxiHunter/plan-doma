@@ -3,6 +3,7 @@ const CATS = [
   ["build", "Постройки"],
   ["yard", "Сад и двор"],
   ["people", "Люди и машины"],
+  ["light", "Свет"],
   ["living", "Гостиная"],
   ["bed", "Спальня"],
   ["kitchen", "Кухня и столовая"],
@@ -33,7 +34,17 @@ const MODELS = {
   bench: {cat: "yard", name: "Скамейка", w: 1.5, d: 0.55, h: 0.85, g: "other", sym: "chair"},
   swing: {cat: "yard", name: "Качели", w: 2.6, d: 1.6, h: 2.2, g: "other"},
   gardenset: {cat: "yard", name: "Садовый стол и 4 стула", w: 1.9, d: 1.9, h: 0.9, g: "other", sym: "dining4"},
-  lamp: {cat: "yard", name: "Фонарь", w: 0.3, d: 0.3, h: 2.4, g: "other", sym: "round"},
+  lamp: {cat: "light", name: "Садовый фонарь", w: 0.3, d: 0.3, h: 2.4, g: "other", sym: "lamp", lamp: {lm: 1500, k: 3000}},
+  streetlamp: {cat: "light", name: "Уличный фонарь на столбе", w: 0.4, d: 1.5, h: 6, g: "other", sym: "lamp", lamp: {lm: 8000, k: 4000}},
+  bollard: {cat: "light", name: "Светильник-столбик", w: 0.18, d: 0.18, h: 0.6, g: "other", sym: "lamp", lamp: {lm: 250, k: 3000}},
+  walllamp: {cat: "light", name: "Настенный уличный фонарь", w: 0.22, d: 0.26, h: 0.38, z: 2, g: "other", sym: "lamp", lamp: {lm: 600, k: 3000}},
+  garland: {cat: "light", name: "Гирлянда на столбиках", w: 5, d: 0.12, h: 2.6, g: "other", sym: "garland", lamp: {lm: 600, k: 2200}},
+  ceil: {cat: "light", name: "Потолочный светильник", w: 0.5, d: 0.5, h: 0.12, z: "ceil", sym: "lamp", lamp: {lm: 1800, k: 3000, ceil: true}},
+  chandelier: {cat: "light", name: "Люстра", w: 0.8, d: 0.8, h: 0.75, z: "ceil", sym: "lamp", lamp: {lm: 3000, k: 2700, ceil: true}},
+  pendant: {cat: "light", name: "Подвесной светильник", w: 0.36, d: 0.36, h: 0.9, z: "ceil", sym: "lamp", lamp: {lm: 800, k: 2700, ceil: true}},
+  floorlamp: {cat: "light", name: "Торшер", w: 0.45, d: 0.45, h: 1.65, sym: "lamp", lamp: {lm: 1200, k: 2700}},
+  tablelamp: {cat: "light", name: "Настольная лампа", w: 0.3, d: 0.3, h: 0.5, z: 0.75, sym: "lamp", lamp: {lm: 450, k: 2700}},
+  sconce: {cat: "light", name: "Бра", w: 0.26, d: 0.2, h: 0.32, z: 1.7, sym: "lamp", lamp: {lm: 450, k: 2700}},
   person: {cat: "people", name: "Человек 175 см", w: 0.5, d: 0.3, h: 1.75, g: "other", sym: "person"},
   car: {cat: "people", name: "Легковой автомобиль", w: 1.85, d: 4.6, h: 1.5, g: "pass", sym: "car"},
   sofa: {cat: "living", name: "Диван трёхместный", w: 2.2, d: 0.95, h: 0.85, sym: "sofa"},
@@ -507,13 +518,169 @@ MB.gardenset = (g, P, m) => {
   }
 };
 
+function ns(mesh) {
+  if (mesh) mesh.castShadow = false;
+  return mesh;
+}
+
+function bulbMat(P, m, soft) {
+  return P.lit ? m(glowKey(P.K, soft ? "soft" : "glow"), "bulb") : m(soft ? "opal" : "bulb_off", "bulb");
+}
+
+function shadeMat(P, m) {
+  return P.lit ? m(glowKey(P.K, "shadeon"), "shade") : m("lampshade", "shade");
+}
+
+function Shell(p, rTop, rBot, y0, y1, x, z, mt, seg) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, y1 - y0, seg || 24, 1, true);
+  uvScale(g, 2 * Math.PI * Math.max(rTop, rBot), y1 - y0);
+  const mesh = addMesh(p, g, mt);
+  mesh.position.set(x, (y0 + y1) / 2, z);
+  return mesh;
+}
+
+function lightAt(P, x, y, z) {
+  if (P.lights) P.lights.push([x, y, z]);
+}
+
 MB.lamp = (g, P, m) => {
   const h = P.h;
   Cy(g, 0.1, 0, 0.1, 0, 0, m("darkmetal", "body"), 12);
   Cy(g, 0.035, 0.1, h - 0.3, 0, 0, m("darkmetal", "body"), 10);
-  B(g, -0.1, 0.1, h - 0.3, h - 0.08, -0.1, 0.1, m("lamp", "lamp"));
-  const cap = Cone(g, 0.17, h - 0.08, h, 0, 0, m("darkmetal", "body"), 4);
+  ns(B(g, -0.1, 0.1, h - 0.3, h - 0.08, -0.1, 0.1, bulbMat(P, m, true)));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * 0.1 - 0.012, sx * 0.1 + 0.012, h - 0.3, h - 0.08, sz * 0.1 - 0.012, sz * 0.1 + 0.012, m("darkmetal", "body")));
+  const cap = ns(Cone(g, 0.17, h - 0.08, h, 0, 0, m("darkmetal", "body"), 4));
   cap.rotation.y = Math.PI / 4;
+  lightAt(P, 0, h - 0.19, 0);
+};
+
+MB.streetlamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const pz = -d / 2 + 0.15;
+  Cy(g, 0.14, 0, 0.5, 0, pz, m("concrete", "base"), 16);
+  Cy(g, 0.075, 0.5, h - 0.25, 0, pz, m("graphite", "body"), 16, 0.05);
+  const hz = d / 2 - 0.25;
+  Lb(g, [0, h - 0.3, pz], [0, h - 0.12, hz - 0.1], 0.04, 0.035, m("graphite", "body"), 10);
+  ns(RB(g, -Math.min(0.2, w / 2), Math.min(0.2, w / 2), h - 0.2, h - 0.08, hz - 0.3, hz + 0.22, 0.03, m("graphite", "body")));
+  ns(B(g, -Math.min(0.17, w / 2 - 0.03), Math.min(0.17, w / 2 - 0.03), h - 0.215, h - 0.2, hz - 0.26, hz + 0.18, bulbMat(P, m, true)));
+  lightAt(P, 0, h - 0.4, hz);
+};
+
+MB.bollard = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Cy(g, r, 0, h - 0.14, 0, 0, m("graphite", "body"), 20);
+  ns(Cy(g, r * 0.92, h - 0.14, h - 0.04, 0, 0, bulbMat(P, m, true), 20));
+  ns(Cy(g, r * 1.05, h - 0.04, h, 0, 0, m("graphite", "body"), 20));
+  lightAt(P, 0, h - 0.09, 0);
+};
+
+MB.walllamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const zb = -d / 2;
+  B(g, -0.05, 0.05, h * 0.2, h * 0.8, zb, zb + 0.02, m("graphite", "body"));
+  Lb(g, [0, h * 0.5, zb + 0.02], [0, h * 0.5, zb + 0.08], 0.012, 0.012, m("graphite", "body"), 8);
+  const bw = Math.min(w, d - 0.08) / 2;
+  const zc = zb + 0.08 + bw;
+  ns(B(g, -bw, bw, 0.02, h - 0.08, zc - bw, zc + bw, m("glass_frost", "glass")));
+  ns(Sp(g, 0.035, 0, h * 0.45, zc, bulbMat(P, m), 1, 1.4, 1, 12));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) ns(B(g, sx * bw - 0.01, sx * bw + 0.01, 0.02, h - 0.08, zc + sz * bw - 0.01, zc + sz * bw + 0.01, m("graphite", "body")));
+  ns(B(g, -bw - 0.02, bw + 0.02, 0, 0.025, zc - bw - 0.02, zc + bw + 0.02, m("graphite", "body")));
+  const cap = ns(Cone(g, bw * 1.6, h - 0.08, h, 0, zc, m("graphite", "body"), 4));
+  cap.rotation.y = Math.PI / 4;
+  lightAt(P, 0, h * 0.45, zc);
+};
+
+MB.garland = (g, P, m) => {
+  const {w, h} = P;
+  const x0 = -w / 2 + 0.05;
+  const x1 = w / 2 - 0.05;
+  for (const x of [x0, x1]) Cy(g, 0.04, 0, h, x, 0, m("wood_dark", "body"), 10);
+  const sag = Math.min(0.5, w * 0.08);
+  const yAt = t => h - 0.08 - sag * 4 * t * (1 - t);
+  const pts = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = i / 16;
+    pts.push([x0 + (x1 - x0) * t, yAt(t), 0]);
+  }
+  ns(Tube(g, pts, 0.004, m("black", "wire"), 32));
+  const n = Math.max(2, Math.round((x1 - x0) / 0.45));
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    ns(Sp(g, 0.03, x0 + (x1 - x0) * t, yAt(t) - 0.05, 0, bulbMat(P, m), 1, 1.25, 1, 10));
+  }
+  for (const t of [0.25, 0.75]) lightAt(P, x0 + (x1 - x0) * t, yAt(t) - 0.1, 0);
+};
+
+MB.ceil = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  ns(Cy(g, r * 0.96, h - 0.02, h, 0, 0, m("white", "body"), 32));
+  ns(Cy(g, r, 0, h - 0.02, 0, 0, bulbMat(P, m, true), 32, r * 0.96));
+  lightAt(P, 0, -0.06, 0);
+};
+
+MB.chandelier = (g, P, m) => {
+  const {w, d, h} = P;
+  const R = Math.min(w, d) / 2 * 0.82;
+  const met = m("brass", "body");
+  ns(Cy(g, 0.07, h - 0.03, h, 0, 0, met, 20));
+  ns(Cy(g, 0.008, 0.3, h - 0.03, 0, 0, met, 8));
+  ns(Sp(g, 0.05, 0, 0.3, 0, met, 1, 0.8, 1, 16));
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2;
+    const x = Math.cos(a) * R;
+    const z = Math.sin(a) * R;
+    ns(Tube(g, [[0, 0.3, 0], [x * 0.5, 0.2, z * 0.5], [x * 0.95, 0.24, z * 0.95], [x, 0.33, z]], 0.008, met, 12));
+    ns(Cy(g, 0.022, 0.33, 0.36, x, z, met, 10));
+    ns(Shell(g, 0.05, 0.075, 0.36, 0.5, x, z, shadeMat(P, m), 16));
+    ns(Sp(g, 0.022, x, 0.41, z, bulbMat(P, m), 1, 1.3, 1, 10));
+  }
+  lightAt(P, 0, 0.4, 0);
+};
+
+MB.pendant = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  ns(Cy(g, 0.05, h - 0.02, h, 0, 0, m("shade_metal", "body"), 16));
+  ns(Cy(g, 0.004, 0.24, h - 0.02, 0, 0, m("black", "wire"), 6));
+  ns(Shell(g, 0.05, r, 0.02, 0.24, 0, 0, m("shade_metal", "body"), 28));
+  ns(Cy(g, 0.05, 0.24, 0.25, 0, 0, m("shade_metal", "body"), 16));
+  ns(Sp(g, 0.04, 0, 0.08, 0, bulbMat(P, m), 1, 1.2, 1, 12));
+  lightAt(P, 0, 0.0, 0);
+};
+
+MB.floorlamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Cy(g, r * 0.62, 0, 0.03, 0, 0, m("graphite", "body"), 24);
+  Cy(g, 0.012, 0.03, h - 0.3, 0, 0, m("graphite", "body"), 8);
+  ns(Shell(g, r * 0.78, r, h - 0.34, h, 0, 0, shadeMat(P, m), 28));
+  ns(Sp(g, 0.035, 0, h - 0.18, 0, bulbMat(P, m), 1, 1.3, 1, 12));
+  lightAt(P, 0, h - 0.17, 0);
+};
+
+MB.tablelamp = (g, P, m) => {
+  const {w, d, h} = P;
+  const r = Math.min(w, d) / 2;
+  Sp(g, 1, 0, h * 0.2, 0, m("ceramic", "body"), r * 0.42, h * 0.2, r * 0.42, 20);
+  Cy(g, 0.01, h * 0.35, h - 0.16, 0, 0, m("brass", "stem"), 8);
+  ns(Shell(g, r * 0.72, r, h - 0.22, h, 0, 0, shadeMat(P, m), 24));
+  ns(Sp(g, 0.025, 0, h - 0.12, 0, bulbMat(P, m), 1, 1.3, 1, 10));
+  lightAt(P, 0, h - 0.11, 0);
+};
+
+MB.sconce = (g, P, m) => {
+  const {w, d, h} = P;
+  const zb = -d / 2;
+  B(g, -0.05, 0.05, h * 0.25, h * 0.6, zb, zb + 0.015, m("brass", "body"));
+  Lb(g, [0, h * 0.42, zb + 0.015], [0, h * 0.4, zb + d * 0.55], 0.008, 0.008, m("brass", "body"), 8);
+  const r = Math.min(w / 2, d * 0.45);
+  const zc = zb + d * 0.55;
+  ns(Shell(g, r, r * 0.7, h * 0.4, h, 0, zc, shadeMat(P, m), 20));
+  ns(Sp(g, 0.022, 0, h * 0.55, zc, bulbMat(P, m), 1, 1.3, 1, 10));
+  lightAt(P, 0, h * 0.62, zc);
 };
 
 MB.person = (g, P, m) => {
@@ -961,7 +1128,7 @@ const PARTN = {
   splash: "Фартук", hood: "Вытяжка", ceramic: "Керамика", button: "Кнопка смыва", lid2: "Сиденье", mirror: "Зеркало",
   mirrorframe: "Рама зеркала", floor: "Пол", drain: "Трап", drum: "Люк и ручки", panel: "Панель", flue: "Дымоход",
   hooks: "Крючки", clothes: "Одежда", rails2: "Направляющие", inwalls: "Стены внутри", gatebox: "Короб и направляющие",
-  winframe: "Рамы окон", sill: "Отлив"
+  winframe: "Рамы окон", sill: "Отлив", bulb: "Лампа", shade: "Абажур", stem: "Ножка", wire: "Провод"
 };
 const SLOTC = new Map();
 let SLOTM = null;
@@ -1004,11 +1171,16 @@ function modelSlots(o) {
 }
 
 function buildModel(g, o, m, ghost) {
-  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: o.id && !ghost && o.id !== "ghost" && o.id.indexOf("thumb-") !== 0 ? o : null};
+  const P = {w: Math.max(0.05, o.w), d: Math.max(0.05, o.d), h: Math.max(0.01, o.h), o: o.id && !ghost && o.id !== "ghost" && o.id.indexOf("thumb-") !== 0 ? o : null, lights: []};
+  if (P.o && modelOf(o).lamp && typeof lampLit === "function") {
+    P.lit = lampLit(o);
+    P.K = lampTemp(o);
+  }
   const rnd = srng(hashStr(o.id || o.kind));
   const mm = ghost ? () => ghostMat() : slotMat(o, m);
   const fn = MB[o.kind] || MB.other;
   fn(g, P, mm, rnd);
+  return P;
 }
 
 function sym2D(o) {
@@ -1137,6 +1309,17 @@ function sym2D(o) {
     case "car": {
       const r = Math.min(w, d) * 0.18;
       return R(x0, y0, w, d, f, r) + R(x0 + 0.12, y0 + d * 0.2, w - 0.24, d * 0.52, "none", r * 0.6) + Ln(x0 + 0.12, y0 + d * 0.72 - 0.35, x0 + w - 0.12, y0 + d * 0.72 - 0.35);
+    }
+    case "lamp": {
+      const r = Math.min(w, d) / 2;
+      const q = r * 0.7071;
+      return `<circle cx="0" cy="0" r="${r}" fill="${f}" stroke="${st}" stroke-width="${sw}"/>` + Ln(-q, -q, q, q) + Ln(-q, q, q, -q);
+    }
+    case "garland": {
+      let s = Ln(x0, 0, x0 + w, 0, true);
+      const n = Math.max(2, Math.round(w / 0.45));
+      for (let i = 1; i < n; i++) s += `<circle cx="${x0 + w * i / n}" cy="0" r="0.05" fill="#f5c542" stroke="${st}" stroke-width="${sw}"/>`;
+      return s + `<circle cx="${x0}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/><circle cx="${x0 + w}" cy="0" r="0.06" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`;
     }
     case "person":
       return El(0, 0, w / 2, d / 2, f) + `<circle cx="0" cy="0" r="${Math.min(w, d) * 0.33}" fill="${f}" stroke="${st}" stroke-width="${sw}"/>` + Ln(0, d * 0.3, 0, d / 2 + 0.08);
