@@ -174,7 +174,7 @@ function projectHTML() {
       `<p class="hint">В сумерках и ночью в комнатах загорается потолочный свет по площади и типу комнаты. Если поставить в комнату свою люстру или подвес из каталога, её свет заменит автоматический. Общий выключатель внизу 3D-вида.</p>`);
     h += matsSec("house", S.house, "Отделка дома");
   }
-  return h;
+  return h + boqHTML();
 }
 
 function roofSec() {
@@ -742,6 +742,8 @@ panel.addEventListener("click", e => {
       it.rot = normDeg((it.rot || 0) - 15);
       ch = true;
     }
+  } else if (a === "boq-csv") {
+    boqCSV();
   } else if (a === "win-view") {
     if (view === "2d") {
       view = "3d";
@@ -897,6 +899,8 @@ function menuAction(a, el) {
     exportPlanPNG();
   } else if (a === "plan-svg") {
     exportPlanSVG();
+  } else if (a === "boq-csv") {
+    boqCSV();
   } else if (a === "shot") {
     snapshotHQ();
   } else if (a === "zip") {
