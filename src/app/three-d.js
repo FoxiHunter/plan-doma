@@ -398,7 +398,7 @@ function build3D() {
   const R = V.root;
   const far = 450;
   ground(R, -far, P.w + far, -far, P.d + far, -0.05, matPlot(grassKey("meadow")));
-  ground(R, 0, P.w, 0, P.d, 0, matPlot(grassKey("grass")));
+  ground(R, 0, P.w, 0, P.d, 0, matPlot(grassKey("grass"))).layers.enable(1);
   const X0 = -far;
   const X1 = P.w + far;
   B(R, X0, X1, -0.02, 0.03, P.d, P.d + 1.8, matPlot("sidewalk"));
@@ -426,6 +426,7 @@ function build3D() {
   shadeInterior(null);
   for (const o of S.objects) {
     const g = thingGroup(o, R, matPlot, 0, {t: "obj", id: o.id});
+    smapTag(g, o);
     const md = modelOf(o);
     if (V.labels && !V.hq && !V.walk && (md.cat === "build" || o.name !== md.name)) {
       const sp = label(o.name);
@@ -438,7 +439,9 @@ function build3D() {
   buildHouse3D();
   lampsFinish();
   fitSun();
+  alphaShadows(V.scene);
   pruneMats(V.scene);
+  smapPlaced();
 }
 
 function fitSun() {

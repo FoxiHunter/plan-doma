@@ -213,8 +213,9 @@ function drawPlot() {
   let h = R2(0, 0, P.w, P.d, "var(--land)");
   for (let i = 1; i < P.w; i++) h += L2(i, 0, i, P.d, i % 5 ? "var(--line)" : "var(--line-2)", i % 5 ? 0.5 : 1);
   for (let j = 1; j < P.d; j++) h += L2(0, j, P.w, j, j % 5 ? "var(--line)" : "var(--line-2)", j % 5 ? 0.5 : 1);
+  if (typeof SMAP !== "undefined") h += smap2D();
   const z = zone();
-  if (z.w > 0 && z.d > 0) h += R2(z.x, z.y, z.w, z.d, "url(#hz)", "var(--ink-2)", 1, [5, 4]);
+  if (z.w > 0 && z.d > 0) h += R2(z.x, z.y, z.w, z.d, typeof SMAP !== "undefined" && SMAP.on ? "none" : "url(#hz)", "var(--ink-2)", 1, [5, 4]);
   h += R2(0, 0, P.w, P.d, "none", "var(--ink)", 1.5);
   h += L2(0, P.d, P.w, P.d, "var(--red)", 3);
   if (typeof V === "undefined" || V.fence) h += fence2D();
@@ -706,6 +707,10 @@ svg.addEventListener("pointermove", e => {
   if (P2.ptrs.has(e.pointerId)) P2.ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if (!drag) {
     if (tool) toolHover2(pt(e));
+    else if (SMAP.on && tab === "plot") {
+      const p = pt(e);
+      smapCur(smapAt(p.x, p.y));
+    }
     return;
   }
   if (drag.type === "pinch") {

@@ -328,6 +328,14 @@ body.walking .sunbar { bottom: 62px; }
 .v-split .br { bottom: auto; top: 128px; left: 12px; right: auto; }
 .v-split .help3 { bottom: auto; top: 180px; left: 12px; right: auto; }
 .brk { display: none; flex-basis: 100%; height: 0; }
+.smleg { position: absolute; z-index: 8; left: 72px; bottom: 64px; width: 280px; padding: 10px 12px; border-radius: 14px; font-size: 12px; color: var(--ink); display: grid; gap: 6px; }
+.smleg b { font-size: 12.5px; font-weight: 600; }
+.smleg small { color: var(--ink-2); line-height: 1.35; }
+.smleg small.cur { color: var(--ink); font-weight: 600; }
+.smleg small.cur:empty { display: none; }
+.smbar { height: 10px; border-radius: 5px; }
+.smticks { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-3); margin-top: -3px; }
+.stagewrap:has(.v-3d) .smleg { left: 76px; bottom: 76px; }
 .nav3 { position: absolute; z-index: 6; right: 12px; bottom: 14px; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 16px; }
 .navpad { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 1px; }
 .nav3 button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-2); cursor: pointer; padding: 0; touch-action: none; }
@@ -464,6 +472,7 @@ body.walking .sunbar { bottom: 62px; }
           <select id="skw" aria-label="Погода" data-tip="Погода"></select>
           <select id="skl" aria-label="Свет" data-tip="Свет в доме и на участке" data-tipd="«Свет сам» включает лампы в сумерках и ночью"></select>
           <button type="button" class="ib" id="skwx" aria-pressed="false" aria-label="Погода и симуляция" data-tip="Погода и симуляция" data-tipd="Ветер, снег на земле, мокрые дорожки и лужи, скорость времени"><svg class="i" viewBox="0 0 24 24"><path d="M7 17.5a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.5 3.3 3.3 0 0 1-.2 6.5z"/><path d="M9 20.5l.8-1.5M13 20.5l.8-1.5"/></svg></button>
+          <button type="button" class="ib" id="skmap" aria-pressed="false" aria-label="Карта солнца" data-tip="Карта солнца на участке" data-tipd="Сколько часов прямого солнца получает каждое место участка в выбранный день. Помогает выбрать место для грядок, бассейна и террасы"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 12h17M12 3.5v17"/><circle cx="16.5" cy="7.5" r="1.6"/></svg></button>
           <button type="button" class="ib" id="skpath" aria-pressed="false" aria-label="Путь солнца" data-tip="Путь солнца" data-tipd="Дуга солнца за выбранный день с отметками по часам"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="2.6"/><path d="M3 19c2-6 5.2-9 9-9s7 3 9 9M3 19h18"/></svg></button>
         </div>
         <div class="wxpop glass" id="wxpop" hidden>
@@ -614,6 +623,7 @@ body.walking .sunbar { bottom: 62px; }
       <button type="button" data-tool="catalog" aria-label="Каталог моделей" data-tip="Каталог моделей" data-tipd="Мебель, техника, свет, заборы, постройки, растения и машины"><svg class="i" viewBox="0 0 24 24"><path d="M4.5 17.5V13a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4.5M4.5 17.5h15M6.5 11V8.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2V11M6.5 17.5v2M17.5 17.5v2"/></svg></button>
     </nav>
     <div class="hintpill glass" id="hint"></div>
+    <div class="smleg glass" id="smleg" hidden></div>
     <div class="toolchip" id="toolchip" hidden><span></span><button type="button">Отмена, Esc</button></div>
   </div>
   <aside class="side" id="side">
@@ -655,6 +665,7 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/sky.js"></script>
 <script src="app/weather.js"></script>
 <script src="app/refine.js"></script>
+<script src="app/sunmap.js"></script>
 <script src="app/controls3d.js"></script>
 <script src="app/render.js"></script>
 <script src="app/main.js"></script>

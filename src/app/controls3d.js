@@ -1138,6 +1138,10 @@ function onDown3(e) {
 
 function onMove3(e) {
   if (!IN.g) {
+    if (SMAP.on && SMAP.grid && !tool) {
+      const gp = groundAt(e.clientX, e.clientY, 0);
+      smapCur(gp ? smapAt(gp.x, gp.z) : null);
+    }
     if (tool) toolHover3(e);
     else if (GZ.F && !V.walk) {
       const hp = gizmoHit(e.clientX, e.clientY);

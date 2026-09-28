@@ -814,6 +814,8 @@ panel.addEventListener("click", e => {
     ch = true;
   } else if (a === "sky-path") {
     skySet({path: !SKY.path});
+  } else if (a === "sun-map") {
+    smapToggle();
   } else if (a === "dup") {
     ch = dupSel();
   } else if (a === "del") {

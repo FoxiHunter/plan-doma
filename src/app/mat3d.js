@@ -338,6 +338,22 @@ function matHouse(name) {
   return mat(name, true);
 }
 
+const ADEP = new Map();
+
+function alphaShadows(root) {
+  root.traverse(o => {
+    const m = o.isMesh && !Array.isArray(o.material) ? o.material : null;
+    if (!m || !(m.alphaTest > 0) || !m.map) return;
+    let d = ADEP.get(m);
+    if (!d) {
+      d = [new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: m.map, alphaTest: m.alphaTest}), new THREE.MeshDistanceMaterial({map: m.map, alphaTest: m.alphaTest})];
+      ADEP.set(m, d);
+    }
+    o.customDepthMaterial = d[0];
+    o.customDistanceMaterial = d[1];
+  });
+}
+
 function pruneMats(root) {
   const used = new Set();
   root.traverse(o => {
@@ -346,6 +362,11 @@ function pruneMats(root) {
   });
   for (const [key, m] of MATC) {
     if (key.indexOf("@") < 0 || used.has(m)) continue;
+    const d = ADEP.get(m);
+    if (d) {
+      for (const x of d) x.dispose();
+      ADEP.delete(m);
+    }
     m.dispose();
     MATC.delete(key);
   }

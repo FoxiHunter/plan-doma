@@ -637,6 +637,10 @@ function skySet(p) {
   SKY.d = clamp(Math.round(SKY.d), 1, new Date(Date.UTC(skyYear(), SKY.m, 0)).getUTCDate());
   applySky();
   saveUI();
+  if (SMAP.on) {
+    smapPlaced();
+    smapUI();
+  }
   if (UIP.ptab === "proj" && tab === "plot") renderPanel();
 }
 
@@ -647,7 +651,7 @@ function sunSec() {
     `<label class="f">Город рядом<select data-b="site.city"><option value="">Свои координаты</option>${cities}</select></label>` +
     row(num("Широта, °", "site.lat", site.lat, "in-lat", 0.01), num("Долгота, °", "site.lon", site.lon, "in-lon", 0.01)) +
     row(num("Часовой пояс, UTC+", "site.tz", site.tz, "in-tz", 1), num("Север от верха плана, °", "site.north", site.north, "in-north", 5)) +
-    `<div class="btns">${btn("north-l", "Север ↺ 15°")}${btn("north-r", "Север ↻ 15°")}${btn("sky-path", SKY.path ? "Спрятать путь солнца" : "Показать путь солнца")}</div>` +
+    `<div class="btns">${btn("north-l", "Север ↺ 15°")}${btn("north-r", "Север ↻ 15°")}${btn("sky-path", SKY.path ? "Спрятать путь солнца" : "Показать путь солнца")}${btn("sun-map", SMAP.on ? "Спрятать карту солнца" : "Карта солнца на участке")}</div>` +
     `<p class="hint">Север 0° значит, что верх плана смотрит на север, а улица на юг. Стрелка «С» на плане участка показывает север.</p>`);
   const day = daySun(SKY.m, SKY.d);
   const md = `${SKY.d} ${MONTHS[SKY.m - 1]}`;
@@ -693,6 +697,8 @@ function skyUIInit() {
   });
   const pp = $("#skpath");
   if (pp) pp.addEventListener("click", () => skySet({path: !SKY.path}));
+  const sm = $("#skmap");
+  if (sm) sm.addEventListener("click", () => smapToggle());
   const lt = $("#skl");
   if (lt) {
     lt.innerHTML = Object.entries(LAMP_MODES).map(([key, v]) => `<option value="${key}">${v}</option>`).join("");
