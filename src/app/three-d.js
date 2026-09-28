@@ -234,6 +234,18 @@ function baseboards(g, ws, sides, base, m) {
   }
 }
 
+function wallBoxes(ws, sides, t, y0, y1) {
+  const joint = (s, at) => ws.walls.some(q => q.o !== s.o && near(q.c, at) && s.c > q.a - 0.02 && s.c < q.b + 0.02) || sides.some(q => q.o !== s.o && near(q.c, at));
+  const out = [];
+  for (const s of ws.walls) {
+    const a = s.a - (joint(s, s.a) ? t / 2 : 0);
+    const b = s.b + (joint(s, s.b) ? t / 2 : 0);
+    if (s.o === "h") out.push([a, b, y0, y1, s.c - t / 2, s.c + t / 2]);
+    else out.push([s.c - t / 2, s.c + t / 2, y0, y1, a, b]);
+  }
+  return out;
+}
+
 function buildHouse3D() {
   const e = ext();
   if (!e) return;
@@ -282,12 +294,7 @@ function buildHouse3D() {
   const holes = [];
   const y0 = base;
   const y1 = base + H;
-  for (const s of ws.walls) {
-    const a = s.a - t / 2;
-    const b = s.b + t / 2;
-    if (s.o === "h") boxes.push([a, b, y0, y1, s.c - t / 2, s.c + t / 2]);
-    else boxes.push([s.c - t / 2, s.c + t / 2, y0, y1, a, b]);
-  }
+  for (const bx of wallBoxes(ws, sides, t, y0, y1)) boxes.push(bx);
   boxes.push([e.minX - wl, e.maxX + wl, y0, y1, e.minY - wl, e.minY]);
   boxes.push([e.minX - wl, e.maxX + wl, y0, y1, e.maxY, e.maxY + wl]);
   boxes.push([e.minX - wl, e.minX, y0, y1, e.minY, e.maxY]);

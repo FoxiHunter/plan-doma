@@ -290,11 +290,116 @@ function roomAt(px, py) {
   return null;
 }
 
+function pairKey(a, b) {
+  return a < b ? a + "|" + b : b + "|" + a;
+}
+
+function noWallSet() {
+  return new Set((S.nowall || []).map(p => pairKey(p[0], p[1])));
+}
+
+function sharedEdge(A, B) {
+  if (near(A.x + A.w, B.x) || near(B.x + B.w, A.x)) {
+    const c = near(A.x + A.w, B.x) ? B.x : A.x;
+    const a = Math.max(A.y, B.y);
+    const b = Math.min(A.y + A.d, B.y + B.d);
+    if (b - a > 0.05) return {o: "v", c: r2(c), a: r2(a), b: r2(b)};
+  }
+  if (near(A.y + A.d, B.y) || near(B.y + B.d, A.y)) {
+    const c = near(A.y + A.d, B.y) ? B.y : A.y;
+    const a = Math.max(A.x, B.x);
+    const b = Math.min(A.x + A.w, B.x + B.w);
+    if (b - a > 0.05) return {o: "h", c: r2(c), a: r2(a), b: r2(b)};
+  }
+  return null;
+}
+
+function neighbors(r) {
+  const out = [];
+  for (const q of S.rooms) {
+    if (q === r) continue;
+    const e = sharedEdge(r, q);
+    if (e) out.push({r: q, e});
+  }
+  return out;
+}
+
+function wallGone(A, B) {
+  return (A.open && B.open) || noWallSet().has(pairKey(A.id, B.id));
+}
+
+function setNoWall(A, B, off) {
+  const key = pairKey(A.id, B.id);
+  S.nowall = (S.nowall || []).filter(p => pairKey(p[0], p[1]) !== key);
+  if (off) {
+    S.nowall.push([A.id, B.id]);
+    const sh = sharedEdge(A, B);
+    if (sh) S.doors = S.doors.filter(d => !(d.o === sh.o && near(across(d), sh.c) && along(d) > sh.a - 0.01 && along(d) < sh.b + 0.01));
+  }
+  if (!S.nowall.length) delete S.nowall;
+}
+
+function wallPairAt(p, maxDist) {
+  const ws = wallSegs();
+  const e = ext();
+  if (!e) return null;
+  let best = null;
+  for (const L of ws.walls.concat(ws.soft, extSides(e))) {
+    const al = L.o === "h" ? p.x : p.y;
+    const ac = L.o === "h" ? p.y : p.x;
+    const pos = clamp(al, L.a + 0.02, L.b - 0.02);
+    const d = Math.hypot(al - pos, ac - L.c);
+    if (!best || d < best.d) best = {L, pos, d};
+  }
+  if (!best || best.d > (maxDist || 0.6)) return null;
+  const {L, pos} = best;
+  const A = L.o === "h" ? roomAt(pos, L.c - 0.05) : roomAt(L.c - 0.05, pos);
+  const B = L.o === "h" ? roomAt(pos, L.c + 0.05) : roomAt(L.c + 0.05, pos);
+  if (!A || !B || A === B) return {L, ext: true};
+  return {L, A, B, e: sharedEdge(A, B)};
+}
+
+function toggleWallAt(p, maxDist) {
+  const h = wallPairAt(p, maxDist);
+  if (!h) {
+    setStatus("Здесь нет стены, кликни ближе к стене");
+    return false;
+  }
+  if (h.ext) {
+    setStatus("Наружную стену убрать нельзя, можно поставить в ней проём");
+    return false;
+  }
+  if (h.A.open && h.B.open) {
+    setStatus("Между двумя открытыми зонами стены и так нет. Сними галочку «Открытая зона» у одной из комнат");
+    return false;
+  }
+  const off = !noWallSet().has(pairKey(h.A.id, h.B.id));
+  setNoWall(h.A, h.B, off);
+  setStatus(off ? `Стены между «${h.A.name}» и «${h.B.name}» больше нет` : `Стена между «${h.A.name}» и «${h.B.name}» вернулась`);
+  changed();
+  return true;
+}
+
+function openingSpan(it) {
+  const al = along(it);
+  const ac = across(it);
+  const A = it.o === "h" ? roomAt(al, ac - 0.05) : roomAt(ac - 0.05, al);
+  const B = it.o === "h" ? roomAt(al, ac + 0.05) : roomAt(ac + 0.05, al);
+  if (A && B && A !== B) {
+    const sh = sharedEdge(A, B);
+    return sh ? {a: sh.a, b: sh.b} : null;
+  }
+  const r = A || B;
+  if (!r) return null;
+  return it.o === "h" ? {a: r.x, b: r.x + r.w} : {a: r.y, b: r.y + r.d};
+}
+
 function wallSegs() {
   const e = ext();
   const walls = [];
   const soft = [];
   if (!e) return {walls, soft};
+  const NW = noWallSet();
   const xs = new Set();
   const ys = new Set();
   for (const r of S.rooms) {
@@ -318,7 +423,7 @@ function wallSegs() {
         const m = (a + b) / 2;
         const A = o === "h" ? roomAt(m, c - 0.01) : roomAt(c - 0.01, m);
         const B2 = o === "h" ? roomAt(m, c + 0.01) : roomAt(c + 0.01, m);
-        const isSoft = !!(A && B2 && A !== B2 && A.open && B2.open);
+        const isSoft = !!(A && B2 && A !== B2 && ((A.open && B2.open) || NW.has(pairKey(A.id, B2.id))));
         const isWall = !!((A || B2) && A !== B2 && !isSoft);
         if (isWall) {
           if (cw && near(cw.b, a)) cw.b = b;
@@ -1057,7 +1162,7 @@ function sanitize(d) {
     }
     return res;
   });
-  return {
+  const out = {
     v: 3,
     snap: [0.05, 0.1, 0.5].includes(d.snap) ? d.snap : 0.1,
     plot: Object.assign({
@@ -1115,7 +1220,7 @@ function sanitize(d) {
         x: n(x.x, 0),
         y: n(x.y, 0),
         o: x.o === "v" ? "v" : "h",
-        w: clamp(n(x.w, 0.9), 0.5, 4),
+        w: clamp(n(x.w, 0.9), 0.5, 20),
         side: x.side === -1 ? -1 : 1,
         hinge: x.hinge === 1 ? 1 : 0,
         kind,
@@ -1140,6 +1245,10 @@ function sanitize(d) {
     items: things(d.items),
     objects: things(d.objects)
   };
+  const ids = new Set(out.rooms.map(r => r.id));
+  const nw = (Array.isArray(d.nowall) ? d.nowall : []).filter(p => Array.isArray(p) && p.length === 2).map(p => [sid(p[0]), sid(p[1])]).filter(p => p[0] !== p[1] && ids.has(p[0]) && ids.has(p[1])).slice(0, 300);
+  if (nw.length) out.nowall = nw;
+  return out;
 }
 
 function loadLocal() {

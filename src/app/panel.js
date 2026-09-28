@@ -4,7 +4,8 @@ const HINT = {
   house: "Тяни комнаты, двери, окна и мебель. Комнаты липнут к соседним стенам, Alt отключает привязку. R поворачивает, Delete удаляет.",
   room: "Зажми и протяни на плане дома или по полу в 3D, получится комната. Esc отменяет.",
   open: "Кликни по стене, проём встанет в эту точку. Shift ставит несколько подряд, Esc отменяет.",
-  thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет."
+  thing: "Кликни место на плане или в 3D. Внутри дома модель встанет в дом, снаружи на участок. Shift ставит несколько подряд, Esc отменяет.",
+  wall: "Кликни по стене между двумя комнатами, и её не станет вместе с дверями на ней. Клик по пунктиру возвращает стену. Esc отменяет."
 };
 const TOOLNAMES = {door: "Дверь", open: "Проём", arch: "Арка", win: "Окно"};
 
@@ -34,6 +35,17 @@ function sideOptions(it) {
   if (L.ext) return [[-L.out, "Внутрь дома"], [L.out, "Наружу"]];
   const nm = r => (r ? "В «" + r.name + "»" : "Наружу");
   return [[1, nm(at(1))], [-1, nm(at(-1))]];
+}
+
+function wallsList(r) {
+  const nb = neighbors(r);
+  if (!nb.length) return "";
+  const rows = nb.map(({r: q, e}) => {
+    const gone = wallGone(r, q);
+    const act = r.open && q.open ? `<span class="a">открытые зоны</span>` : btn("wall-toggle", gone ? "Вернуть стену" : "Убрать стену", "", ` data-id="${esc(q.id)}"`);
+    return `<div class="wrow"><span class="sw" style="background:${FILL[grp(q)]}"></span><span class="nm">${esc(q.name)}<small>${gone ? "без стены" : "стена"}, ${fm(e.b - e.a)} м</small></span>${act}</div>`;
+  }).join("");
+  return `<h3 class="sub">Соседние комнаты</h3><div class="wlist">${rows}</div>`;
 }
 
 function secSelected() {
@@ -68,6 +80,7 @@ function secSelected() {
       row(num("Ширина, м", "sel.w", it.w, "in-w"), num("Глубина, м", "sel.d", it.d, "in-d")) +
       row(num("От левого края, м", "sel.x", it.x, "in-x"), num("От верхнего края, м", "sel.y", it.y, "in-y")) +
       `<label class="check"><input type="checkbox" data-b="sel.open"${it.open ? " checked" : ""}>Открытая зона, между открытыми нет стен</label>` +
+      wallsList(it) +
       `<div class="btns">${btn("add-door", "Дверь в комнату")}${btn("add-win", "Окно")}</div>` +
       `<div class="btns">${btn("rot", "Повернуть на 90°")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
       `<p class="hint">Двери, окна и мебель в комнате ездят и крутятся вместе с ней.</p>`) + matsSec("room", it);
@@ -83,9 +96,10 @@ function secSelected() {
     const ops = Object.entries(DOOR_OPS).map(([key, v]) => `<option value="${key}"${key === it.op ? " selected" : ""}>${v}</option>`).join("");
     const lfs = Object.entries(LEAFS).map(([key, v]) => `<option value="${key}"${key === it.leaf ? " selected" : ""}>${v}</option>`).join("");
     const mech = real ? row(`<label class="f">Как открывается<select data-b="sel.op">${ops}</select></label>`, `<label class="f">Полотно<select data-b="sel.leaf">${lfs}</select></label>`) + openRow(it.open, "toggle-open") : "";
+    const full = !real ? `<div class="btns">${btn("door-full", "На всю стену")}</div><p class="hint">Проём оставляет стену над собой. Чтобы убрать стену целиком, выбери комнату и нажми «Убрать стену» у соседа или возьми инструмент «Убрать стену» слева.</p>` : "";
     return sec(esc(doorLabel(it)),
       row(`<label class="f">Что это<select data-b="sel.kind">${kinds}</select></label>`, num("Ширина, м", "sel.w", it.w, "in-w")) +
-      swing + mech +
+      swing + mech + full +
       `<div class="btns">${btn("rot", "Следующий вариант (R)")}${btn("focus", "Показать")}${btn("dup", "Копия")}${btn("del", "Удалить", "danger")}</div>` +
       `<p class="hint">Высота всех проёмов задаётся в параметрах дома, сейчас ${fm(S.house.doorH)} м. Арка круглая, её верх на этой высоте.</p>`) + matsSec("door", it);
   }
@@ -301,7 +315,7 @@ function syncTools() {
   }
   const t3 = $("#toolchip");
   if (t3) {
-    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
+    const nm = tool ? (tool.t === "room" ? "Комната" : tool.t === "wall" ? "Убрать или вернуть стену" : tool.t === "open" ? TOOLNAMES[tool.kind] : (MODELS[tool.kind] || MODELS.other).name) : "";
     t3.hidden = !tool;
     t3.querySelector("span").textContent = nm;
   }
@@ -311,7 +325,7 @@ function setTool(t) {
   tool = t;
   ghost2 = null;
   if (typeof clearGhost === "function" && GH.root) clearGhost();
-  if (t && (t.t === "room" || t.t === "open") && tab !== "house") {
+  if (t && (t.t === "room" || t.t === "open" || t.t === "wall") && tab !== "house") {
     tab = "house";
     sel = null;
     frozen = null;
@@ -574,7 +588,8 @@ function applyBind(el) {
   }
   if (f === "w" || f === "d") {
     const min = sel.t === "door" ? 0.5 : isThing ? 0.05 : 0.3;
-    const nv = clamp(r2(v), min, sel.t === "door" ? 4 : sel.t === "win" ? 6 : 100);
+    const sp = sel.t === "door" ? openingSpan(it) : null;
+    const nv = clamp(r2(v), min, sel.t === "door" ? (sp ? Math.max(0.5, r2(sp.b - sp.a)) : 4) : sel.t === "win" ? 6 : 100);
     if (isThing) {
       const c = f === "w" ? it.x + it.w / 2 : it.y + it.d / 2;
       it[f] = nv;
@@ -751,6 +766,20 @@ panel.addEventListener("click", e => {
   } else if (a === "toggle-open") {
     if (sel) toggleOpen({t: sel.t, id: sel.id});
     return;
+  } else if (a === "wall-toggle") {
+    const q = S.rooms.find(x => x.id === b.dataset.id);
+    if (it && q && sel.t === "room") {
+      setNoWall(it, q, !wallGone(it, q));
+      ch = true;
+    }
+  } else if (a === "door-full") {
+    const sp = it && sel.t === "door" ? openingSpan(it) : null;
+    if (sp) {
+      it.w = r2(sp.b - sp.a);
+      if (it.o === "h") it.x = r2((sp.a + sp.b) / 2);
+      else it.y = r2((sp.a + sp.b) / 2);
+      ch = true;
+    }
   } else if (a === "gate-toggle") {
     if (sel && sel.t === "obj") toggleOpen({t: "obj", id: sel.id, gate: true});
     return;
@@ -946,7 +975,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click
   tab = b.dataset.tab;
   sel = null;
   frozen = null;
-  if (tool && (tool.t === "room" || tool.t === "open") && tab !== "house") tool = null;
+  if (tool && (tool.t === "room" || tool.t === "open" || tool.t === "wall") && tab !== "house") tool = null;
   renderAll();
 }));
 
@@ -979,6 +1008,7 @@ document.querySelectorAll("#rail [data-tool]").forEach(b => b.addEventListener("
     saveUI();
     renderPanel();
   } else if (t === "person") setTool(tool && tool.t === "thing" && tool.kind === "person" ? null : {t: "thing", kind: "person"});
+  else if (t === "wall") setTool(tool && tool.t === "wall" ? null : {t: "wall"});
   else setTool(tool && tool.t === "open" && tool.kind === t ? null : {t: "open", kind: t});
 }));
 

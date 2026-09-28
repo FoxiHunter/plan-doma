@@ -498,6 +498,17 @@ function ghostSVG() {
     const sides = extSides(e);
     return "kind" in g.it ? drawDoor(g.it, lineOf(g.it, ws, sides, false), false, true) : drawWin(g.it, lineOf(g.it, ws, sides, true), false, true);
   }
+  if (g.t === "wall" && tab === "house") {
+    const h = g.hit;
+    if (!h) return "";
+    const E = h.ext ? h.L : h.e || h.L;
+    const col = h.ext ? "var(--red)" : "var(--sel)";
+    const ln = E.o === "h" ? L2(E.a, E.c, E.b, E.c, col, 7) : L2(E.c, E.a, E.c, E.b, col, 7);
+    const gone = !h.ext && wallGone(h.A, h.B);
+    const mx = E.o === "h" ? (E.a + E.b) / 2 : E.c;
+    const my = E.o === "h" ? E.c : (E.a + E.b) / 2;
+    return `<g pointer-events="none" opacity="0.75">${ln}${T2(mx, my - 0.45, h.ext ? "наружную нельзя" : gone ? "вернуть стену" : "убрать стену", {fill: col, weight: 600, halo: "var(--paper)"})}</g>`;
+  }
   if (g.t === "thing") {
     const K = MODELS[g.kind] || MODELS.other;
     const o = {id: "ghost", kind: g.kind, w: K.w, d: K.d, h: K.h, x: g.x - K.w / 2, y: g.y - K.d / 2, rot: g.rot || 0};
@@ -611,6 +622,8 @@ function toolHover2(p) {
     else ghost2 = {t: "thing", kind: tool.kind, x: p.x, y: p.y, rot: tp.inHouse ? S.house.rot : 0};
   } else if (tool.t === "room" && !drag) {
     ghost2 = null;
+  } else if (tool.t === "wall") {
+    ghost2 = tab === "house" ? {t: "wall", hit: wallPairAt(p, 0.6)} : null;
   }
   render2D();
 }
@@ -810,6 +823,14 @@ function endDrag(e) {
       const tp = toolPoint2(p);
       ghost2 = null;
       dropThing(tool.kind, tp.wx, tp.wz, tp.inHouse, e.shiftKey);
+    } else if (tool && tool.t === "wall") {
+      if (tab !== "house") {
+        tab = "house";
+        renderAll();
+        return;
+      }
+      ghost2 = null;
+      toggleWallAt(p, 0.6);
     }
     return;
   }

@@ -316,6 +316,23 @@ setTimeout(() => {
     run("UIP.theme = 'auto'; applyTheme(); setSide(true); saveUI();");
     return ok && !d.documentElement.dataset.theme && !d.getElementById("app").classList.contains("side-off");
   });
+  test("стена между двумя комнатами убирается целиком вместе с дверью и возвращается", () => {
+    run("S = presetExample(); for (const r of S.rooms) r.open = false; S.doors.push(door(7.5, 5.2, 'h', 0.9, 1, 0, 'open')); changed();");
+    const before = run("wallSegs().soft.length");
+    const on = run("toggleWallAt({x: 9, y: 5.25}, 0.6)");
+    const gone = run("(() => { const ws = wallSegs(); return ws.soft.some(q => q.o === 'h' && Math.abs(q.c - 5.2) < 0.01 && q.a <= 6.21 && q.b >= 12.99) && !S.doors.some(d => d.o === 'h' && Math.abs(d.y - 5.2) < 0.01 && d.x > 6.2); })()");
+    const pairs = run("S.nowall.length");
+    run("toggleWallAt({x: 9, y: 5.25}, 0.6)");
+    return before === 0 && on && gone && pairs === 1 && !run("S.nowall") && run("wallSegs().soft.length") === 0;
+  });
+  test("наружную стену убрать нельзя, sanitize чистит чужие пары", () => {
+    run("S = presetExample(); changed();");
+    const ext = run("toggleWallAt({x: 5, y: 9.4}, 0.6)");
+    const s2 = run("(() => { const p = presetExample(); p.nowall = [[p.rooms[0].id, p.rooms[1].id], ['zzz', p.rooms[0].id], [p.rooms[2].id, p.rooms[2].id]]; return sanitize(p).nowall; })()");
+    return ext === false && s2.length === 1;
+  });
+  test("проём растягивается на всю стену между комнатами", () => run(`(() => { S = presetExample(); for (const r of S.rooms) r.open = false; const d = door(8, 5.2, 'h', 1, 1, 0, 'open'); S.doors.push(d); changed(); sel = {t: 'door', id: d.id}; const sp = openingSpan(d); d.w = r2(sp.b - sp.a); d.x = r2((sp.a + sp.b) / 2); sel = null; return Math.abs(d.w - 6.8) < 0.01 && Math.abs(d.x - 9.6) < 0.01 && !!lineOf(d, wallSegs(), extSides(ext()), false); })()`));
+  test("у свободного конца стены нет огрызка", () => run(`(() => { S = presetBlank(); S.rooms = [room('A', 'Другое', 0, 0, 3, 3), room('B', 'Другое', 3, 0, 3, 3), room('C', 'Другое', 0, 3, 6, 2)]; setNoWall(S.rooms[0], S.rooms[1], true); setNoWall(S.rooms[0], S.rooms[2], true); const ws = wallSegs(); const bx = wallBoxes(ws, extSides(ext()), 0.12, 0, 3); const w = bx.find(b => Math.abs(b[4] - 2.94) < 0.001); return !!w && Math.abs(w[0] - 3) < 0.001 && Math.abs(w[1] - 6.06) < 0.001; })()`));
   run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
   run("LAMP.mode = 'auto';");
   run("S = presetExample(); changed(); save();");

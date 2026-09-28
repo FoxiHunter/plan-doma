@@ -994,6 +994,18 @@ function toolHover3(e) {
     ghostThing(tool.kind, p.x, p.z, inH);
   } else if (tool.t === "room") {
     if (!IN.g) clearGhost();
+  } else if (tool.t === "wall") {
+    const p = pointAt(e.clientX, e.clientY);
+    const h = p && ext() ? wallPairAt(worldToHouse(p.x, p.z), 0.7) : null;
+    if (!h || h.ext) {
+      clearGhost();
+      return;
+    }
+    const E = h.e || h.L;
+    const Hs = S.house;
+    const th = Hs.inner + 0.06;
+    if (E.o === "h") ghostBoxHouse((E.a + E.b) / 2, E.c, E.b - E.a, th, Hs.base, Hs.base + Hs.h);
+    else ghostBoxHouse(E.c, (E.a + E.b) / 2, th, E.b - E.a, Hs.base, Hs.base + Hs.h);
   }
 }
 
@@ -1050,6 +1062,10 @@ function toolUp3(e, g) {
     const kind = tool.kind;
     clearGhost();
     dropThing(kind, p.x, p.z, inH, e.shiftKey);
+  } else if (tool.t === "wall") {
+    const p = pointAt(e.clientX, e.clientY);
+    clearGhost();
+    if (p && ext()) toggleWallAt(worldToHouse(p.x, p.z), 0.7);
   }
 }
 
