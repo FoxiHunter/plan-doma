@@ -308,13 +308,14 @@ function applySky(force) {
     V.sun.castShadow = st.sunI > 0.02;
     fitSun();
   }
+  const bright = typeof ltplBright === "function" && ltplBright();
   if (V.hemi) {
     const lum = (st.hor.r + st.hor.g + st.hor.b) / 3;
     V.hemi.color.copy(st.hor).lerp(new THREE.Color(lum, lum, lum), 0.6);
     V.hemi.groundColor.copy(lin(0xb3a48c)).multiplyScalar(clamp(0.3 * lum + 0.12 * st.sunI * Math.max(0, st.dir.y), 0, 1.5));
-    V.hemi.intensity = 0.3;
+    V.hemi.intensity = bright ? 0.45 : 0.3;
   }
-  if (V.renderer) V.renderer.toneMappingExposure = st.expo;
+  if (V.renderer) V.renderer.toneMappingExposure = st.expo * (bright ? 1.3 : 1);
   const fc = new THREE.Color().copy(st.hor).convertLinearToSRGB();
   if (V.scene.fog) {
     V.scene.fog.color.copy(fc).multiplyScalar(Math.min(1, st.expo * 0.9));
@@ -705,4 +706,5 @@ function skyUIInit() {
     lt.addEventListener("change", () => setLampMode(lt.value));
   }
   wxUIInit();
+  ltplInit();
 }

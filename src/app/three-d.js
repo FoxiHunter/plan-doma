@@ -385,7 +385,7 @@ function buildHouse3D() {
   setClip(cutc);
   const c0 = houseToWorld(e.minX, e.minY);
   const c1 = houseToWorld(e.maxX, e.maxY);
-  shadeInterior({x0: Math.min(c0.x, c1.x), z0: Math.min(c0.z, c1.z), x1: Math.max(c0.x, c1.x), z1: Math.max(c0.z, c1.z)}, base, base + H - 0.005, V.mode === "roof" ? 0.3 : 0.8);
+  shadeInterior({x0: Math.min(c0.x, c1.x), z0: Math.min(c0.z, c1.z), x1: Math.max(c0.x, c1.x), z1: Math.max(c0.z, c1.z)}, base, base + H - 0.005, inAmbK());
 }
 
 function build3D() {
