@@ -98,17 +98,22 @@ function fronts(g, x0, x1, y0, y1, zf, sgn, cols, rows, fm, hm, vertical) {
       const e = y0 + (j + 1) * rh - 0.002;
       B(g, a, b, c, e, z0, z1, fm);
       if (!hm) continue;
-      const hz0 = sgn > 0 ? z1 : z0 - 0.025;
-      const hz1 = sgn > 0 ? z1 + 0.025 : z0;
+      const zs0 = sgn > 0 ? z1 : z0 - 0.02;
+      const zs1 = sgn > 0 ? z1 + 0.02 : z0;
+      const zb0 = sgn > 0 ? z1 + 0.012 : z0 - 0.026;
+      const zb1 = sgn > 0 ? z1 + 0.026 : z0 - 0.012;
       if (vertical) {
         const hx = cols > 1 ? (i % 2 ? a + 0.045 : b - 0.045) : b - 0.045;
         const hy = rows === 1 ? Math.min(c + 1.05, (c + e) / 2) : (c + e) / 2;
-        const hl = Math.min(0.18, (e - c) * 0.4);
-        B(g, hx - 0.007, hx + 0.007, hy - hl / 2, hy + hl / 2, hz0, hz1, hm);
+        const hl = Math.min(0.2, (e - c) * 0.4);
+        for (const q of [-1, 1]) B(g, hx - 0.004, hx + 0.004, hy + q * (hl / 2 - 0.02) - 0.004, hy + q * (hl / 2 - 0.02) + 0.004, zs0, zs1, hm);
+        RB(g, hx - 0.007, hx + 0.007, hy - hl / 2, hy + hl / 2, zb0, zb1, 0.006, hm);
       } else {
-        const hw = Math.min(0.16, (b - a) * 0.4);
+        const hw = Math.min(0.18, (b - a) * 0.4);
         const hy = e - Math.min(0.05, (e - c) * 0.25);
-        B(g, (a + b) / 2 - hw / 2, (a + b) / 2 + hw / 2, hy - 0.007, hy + 0.007, hz0, hz1, hm);
+        const hx = (a + b) / 2;
+        for (const q of [-1, 1]) B(g, hx + q * (hw / 2 - 0.02) - 0.004, hx + q * (hw / 2 - 0.02) + 0.004, hy - 0.004, hy + 0.004, zs0, zs1, hm);
+        RB(g, hx - hw / 2, hx + hw / 2, hy - 0.007, hy + 0.007, zb0, zb1, 0.006, hm);
       }
     }
   }
@@ -536,17 +541,19 @@ MB.chair = (g, P, m) => {
   const {w, d, h} = P;
   const sy = Math.min(0.46, h * 0.52);
   const wood = m("wood_mid", "chair");
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.03);
-    const z = sz * (d / 2 - 0.03);
-    B(g, x - 0.018, x + 0.018, 0, sy - 0.03, z - 0.018, z + 0.018, wood);
-  }
-  RB(g, -w / 2, w / 2, sy - 0.045, sy, -d / 2, d / 2, 0.012, m("fabric_grey", "seat"));
   for (const sx of [-1, 1]) {
-    const x = sx * (w / 2 - 0.03);
-    B(g, x - 0.018, x + 0.018, sy, h, -d / 2 + 0.012, -d / 2 + 0.048, wood);
+    const x = sx * (w / 2 - 0.035);
+    TLeg(g, x, d / 2 - 0.04, 0, sy - 0.03, 0.013, 0.019, wood);
+    Lb(g, [x, 0, -d / 2 + 0.035], [x, h - 0.05, -d / 2 + 0.01], 0.014, 0.019, wood, 10);
   }
-  RB(g, -w / 2 + 0.01, w / 2 - 0.01, h - 0.24, h, -d / 2 + 0.01, -d / 2 + 0.04, 0.01, wood);
+  RB(g, -w / 2 + 0.01, w / 2 - 0.01, sy - 0.055, sy - 0.03, -d / 2 + 0.02, d / 2 - 0.01, 0.008, wood);
+  Cushion(g, -w / 2, w / 2, sy - 0.035, sy + 0.01, -d / 2 + 0.03, d / 2, 0.018, 0.012, m("fabric_grey", "seat"));
+  const bk = new THREE.Group();
+  bk.position.set(0, h - 0.16, -d / 2 + 0.03);
+  bk.rotation.x = Math.PI / 2 - 0.13;
+  g.add(bk);
+  Cushion(bk, -w / 2 + 0.02, w / 2 - 0.02, -0.02, 0.02, -0.11, 0.11, 0.015, 0.008, m("fabric_grey", "seat"));
+  CyX(g, 0.012, -w / 2 + 0.035, w / 2 - 0.035, sy * 0.45, d / 2 - 0.04, wood, 8);
 };
 
 MB.gardenset = (g, P, m) => {
@@ -763,34 +770,44 @@ MB.sofa = (g, P, m, rnd, opt) => {
   const fab = m(o.fab || "fabric_grey", "uph");
   const armL = o.armL !== false;
   const armR = o.armR !== false;
-  const arm = Math.min(0.2, w * 0.14);
-  const back = Math.min(0.22, d * 0.25);
-  const seatY = Math.min(0.44, h * 0.52);
-  legs4(g, w, d, 0.08, 0.08, 0.02, m("wood_dark", "legs"));
+  const arm = Math.min(0.19, w * 0.13);
+  const bf = Math.min(0.13, d * 0.14);
+  const bc = Math.min(0.19, d * 0.2);
+  const seatY = Math.min(0.45, h * 0.53);
+  const legs = m("wood_dark", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.07), sz * (d / 2 - 0.07), 0, 0.1, 0.014, 0.022, legs);
   const xl = -w / 2 + (armL ? arm : 0);
   const xr = w / 2 - (armR ? arm : 0);
-  RB(g, xl - 0.01, xr + 0.01, 0.08, seatY - 0.1, -d / 2 + back - 0.02, d / 2, 0.03, fab);
-  RB(g, -w / 2, w / 2, 0.08, h, -d / 2, -d / 2 + back, 0.05, fab);
-  if (armL) RB(g, -w / 2, -w / 2 + arm, 0.08, Math.min(h, seatY + 0.2), -d / 2, d / 2, 0.05, fab);
-  if (armR) RB(g, w / 2 - arm, w / 2, 0.08, Math.min(h, seatY + 0.2), -d / 2, d / 2, 0.05, fab);
+  Cushion(g, xl - 0.01, xr + 0.01, 0.1, seatY - 0.13, -d / 2 + bf - 0.02, d / 2, 0.03, 0, fab);
+  Cushion(g, -w / 2, w / 2, 0.1, h - 0.07, -d / 2, -d / 2 + bf, 0.045, 0, fab);
+  const armTop = Math.min(h - 0.05, seatY + 0.2);
+  if (armL) Cushion(g, -w / 2, -w / 2 + arm, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
+  if (armR) Cushion(g, w / 2 - arm, w / 2, 0.1, armTop, -d / 2, d / 2, 0.07, 0.01, fab);
   const inner = xr - xl;
   const n = inner > 1.5 ? 3 : inner > 0.95 ? 2 : 1;
   const cw = inner / n;
+  const zb = -d / 2 + bf;
+  const ch = h - seatY + 0.02;
   for (let i = 0; i < n; i++) {
     const x0 = xl + i * cw;
-    RB(g, x0 + 0.005, x0 + cw - 0.005, seatY - 0.12, seatY, -d / 2 + back, d / 2 - 0.02, 0.05, fab);
-    RB(g, x0 + 0.01, x0 + cw - 0.01, seatY - 0.02, h - 0.02, -d / 2 + back - 0.02, -d / 2 + back + 0.16, 0.06, fab);
+    Cushion(g, x0 + 0.004, x0 + cw - 0.004, seatY - 0.135, seatY, zb + bc - 0.03, d / 2 - 0.005, 0.045, 0.028, fab);
+    const bg = new THREE.Group();
+    bg.position.set(x0 + cw / 2, seatY + ch / 2 - 0.03, zb + bc / 2);
+    bg.rotation.x = Math.PI / 2 - 0.16;
+    g.add(bg);
+    Cushion(bg, -cw / 2 + 0.006, cw / 2 - 0.006, -bc / 2, bc / 2, -ch / 2, ch / 2, 0.06, 0.035, fab);
   }
-  if (inner > 1.3) {
+  if (inner > 1.1) {
+    const cm = m(o.pill || "fabric_terra", "cushions");
     for (const sx of [-1, 1]) {
       if ((sx < 0 && !armL) || (sx > 0 && !armR)) continue;
-      const x = sx < 0 ? xl + 0.05 : xr - 0.45;
-      RB(g, x, x + 0.4, seatY, seatY + 0.38, -d / 2 + back + 0.14, -d / 2 + back + 0.27, 0.05, m("fabric_terra", "cushions"));
+      const x = sx < 0 ? xl + 0.25 : xr - 0.25;
+      Pillow(g, x, seatY + 0.2, zb + bc + 0.07, 0.42, 0.42, 0.15, cm, -0.32, sx * -0.18);
     }
   }
 };
 
-MB.armchair = (g, P, m, rnd) => MB.sofa(g, P, m, rnd, {fab: "fabric_green"});
+MB.armchair = (g, P, m, rnd) => MB.sofa(g, P, m, rnd, {fab: "fabric_green", pill: "fabric_beige"});
 
 MB.sofaL = (g, P, m, rnd) => {
   const {w, d, h} = P;
@@ -801,21 +818,19 @@ MB.sofaL = (g, P, m, rnd) => {
   MB.sofa(main, {w, d: sd, h}, m, rnd, {armR: false});
   const cw = Math.min(0.95, w * 0.4);
   const fab = m("fabric_grey", "uph");
-  RB(g, w / 2 - cw, w / 2, 0.08, 0.34, -d / 2 + sd - 0.05, d / 2, 0.03, fab);
-  RB(g, w / 2 - cw + 0.005, w / 2 - 0.005, 0.32, 0.44, -d / 2 + sd, d / 2 - 0.02, 0.05, fab);
-  Cy(g, 0.02, 0, 0.08, w / 2 - 0.08, d / 2 - 0.08, m("wood_dark", "legs"), 8);
-  Cy(g, 0.02, 0, 0.08, w / 2 - cw + 0.08, d / 2 - 0.08, m("wood_dark", "legs"), 8);
+  const seatY = Math.min(0.45, h * 0.53);
+  Cushion(g, w / 2 - cw, w / 2, 0.1, seatY - 0.13, -d / 2 + sd - 0.05, d / 2, 0.03, 0, fab);
+  Cushion(g, w / 2 - cw + 0.004, w / 2 - 0.004, seatY - 0.135, seatY, -d / 2 + sd - 0.02, d / 2 - 0.005, 0.045, 0.028, fab);
+  const legs = m("wood_dark", "legs");
+  TLeg(g, w / 2 - 0.07, d / 2 - 0.07, 0, 0.1, 0.014, 0.022, legs);
+  TLeg(g, w / 2 - cw + 0.07, d / 2 - 0.07, 0, 0.1, 0.014, 0.022, legs);
 };
 
 MB.coffee = (g, P, m) => {
   const {w, d, h} = P;
-  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.012, m("wood_mid", "top"));
-  B(g, -w / 2 + 0.06, w / 2 - 0.06, 0.1, 0.12, -d / 2 + 0.06, d / 2 - 0.06, m("wood_mid", "shelf"));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.05);
-    const z = sz * (d / 2 - 0.05);
-    B(g, x - 0.018, x + 0.018, 0, h - 0.04, z - 0.018, z + 0.018, m("black", "legs"));
-  }
+  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.016, m("wood_mid", "top"));
+  RB(g, -w / 2 + 0.06, w / 2 - 0.06, 0.1, 0.12, -d / 2 + 0.06, d / 2 - 0.06, 0.006, m("wood_mid", "shelf"));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.06), sz * (d / 2 - 0.06), 0, h - 0.04, 0.011, 0.018, m("black", "legs"));
 };
 
 MB.tv = (g, P, m) => {
@@ -886,16 +901,35 @@ MB.plant = (g, P, m, rnd) => {
 MB.bed = (g, P, m) => {
   const {w, d, h} = P;
   const fab = m("fabric_beige", "bed");
-  const hb = 0.08;
-  legs4(g, w, d, 0.1, 0.07, 0.025, m("wood_dark", "legs"));
-  RB(g, -w / 2, w / 2, 0.1, 0.34, -d / 2 + hb, d / 2, 0.03, fab);
-  RB(g, -w / 2 + 0.03, w / 2 - 0.03, 0.32, 0.55, -d / 2 + hb + 0.02, d / 2 - 0.03, 0.06, m("fabric_white", "mattress"));
-  RB(g, -w / 2, w / 2, 0.1, h, -d / 2, -d / 2 + hb, 0.03, fab);
+  const hb = 0.09;
+  const legs = m("wood_dark", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.08), sz * (d / 2 - 0.08), 0, 0.09, 0.016, 0.022, legs);
+  Cushion(g, -w / 2, w / 2, 0.09, 0.36, -d / 2 + hb - 0.01, d / 2, 0.035, 0, fab);
+  Cushion(g, -w / 2 + 0.03, w / 2 - 0.03, 0.34, 0.56, -d / 2 + hb + 0.02, d / 2 - 0.03, 0.06, 0.012, m("fabric_white", "mattress"));
+  Cushion(g, -w / 2, w / 2, 0.09, 0.4, -d / 2, -d / 2 + hb, 0.03, 0, fab);
+  const hbTop = Math.max(0.8, h);
+  const nc = Math.max(3, Math.round(w / 0.2));
+  const cw = w / nc;
+  const hm = m("fabric_beige", "headboard");
+  for (let i = 0; i < nc; i++) {
+    const hg = new THREE.Group();
+    hg.position.set(-w / 2 + (i + 0.5) * cw, (0.36 + hbTop) / 2, -d / 2 + hb / 2 + 0.01);
+    hg.rotation.x = Math.PI / 2;
+    g.add(hg);
+    Cushion(hg, -cw / 2 + 0.003, cw / 2 - 0.003, -hb / 2, hb / 2, -(hbTop - 0.36) / 2, (hbTop - 0.36) / 2, 0.035, 0.018, hm);
+  }
+  const zd = -d / 2 + hb + 0.52;
+  Cushion(g, -w / 2 - 0.02, w / 2 + 0.02, 0.4, 0.63, zd, d / 2 + 0.03, 0.08, 0.03, m("fabric_blue", "blanket"));
+  CyX(g, 0.045, -w / 2 - 0.015, w / 2 + 0.015, 0.6, zd + 0.02, m("fabric_white", "blanket"), 14);
   const np = w > 1.3 ? 2 : 1;
-  const pw = (w - 0.1) / np;
-  for (let i = 0; i < np; i++) RB(g, -w / 2 + 0.05 + i * pw + 0.02, -w / 2 + 0.05 + (i + 1) * pw - 0.02, 0.53, 0.67, -d / 2 + hb + 0.06, -d / 2 + hb + 0.44, 0.06, m("fabric_white", "pillows"));
-  RB(g, -w / 2 + 0.01, w / 2 - 0.01, 0.5, 0.6, -d / 2 + hb + 0.55, d / 2 - 0.01, 0.04, m("fabric_blue", "blanket"));
-  RB(g, -w / 2 + 0.005, w / 2 - 0.005, 0.56, 0.62, d / 2 - 0.45, d / 2, 0.03, m("fabric_grey", "throw"));
+  const pw = Math.min(0.68, (w - 0.12) / np - 0.03);
+  const pm = m("fabric_white", "pillows");
+  for (let i = 0; i < np; i++) {
+    const x = np === 1 ? 0 : (i ? 1 : -1) * (w / 4);
+    Pillow(g, x, 0.66, -d / 2 + hb + 0.2, pw, 0.44, 0.17, pm, -1.2, 0);
+  }
+  if (w > 1.3) Pillow(g, 0, 0.72, -d / 2 + hb + 0.36, 0.45, 0.32, 0.13, m("fabric_terra", "cushions"), -0.55, 0);
+  Cushion(g, -w / 2 - 0.03, w / 2 + 0.03, 0.5, 0.645, d / 2 - 0.5, d / 2 + 0.035, 0.05, 0.012, m("fabric_grey", "throw"));
 };
 
 MB.bed2 = MB.bed;
@@ -941,7 +975,6 @@ MB.kitchen = (g, P, m) => {
   const top = m("graphite", "top");
   const ct = Math.min(0.86, h - 0.04);
   B(g, -w / 2, w / 2, 0, 0.1, -d / 2, d / 2 - 0.07, m("graphite", "plinth"));
-  B(g, -w / 2, w / 2, 0.1, ct, -d / 2, d / 2 - 0.02, body);
   const n = Math.max(1, Math.round(w / 0.6));
   const mw = w / n;
   const sinkI = Math.min(n - 1, Math.floor(n * 0.3));
@@ -957,11 +990,40 @@ MB.kitchen = (g, P, m) => {
       fronts(g, x0, x0 + mw, 0.1, ct, d / 2 - 0.02, 1, 1, i % 2 ? 3 : 1, front, m("steel", "handles"), i % 2 === 0);
     }
   }
-  B(g, -w / 2, w / 2, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
   const sx = -w / 2 + (sinkI + 0.5) * mw;
-  B(g, sx - Math.min(0.24, mw / 2 - 0.05), sx + Math.min(0.24, mw / 2 - 0.05), ct + 0.04, ct + 0.043, -d / 2 + 0.14, d / 2 - 0.07, m("steel", "sink"));
-  Cy(g, 0.018, ct + 0.04, ct + 0.32, sx, -d / 2 + 0.08, m("chrome", "faucet"), 10);
-  Lb(g, [sx, ct + 0.31, -d / 2 + 0.08], [sx, ct + 0.3, -d / 2 + 0.28], 0.012, 0.012, m("chrome", "faucet"), 8);
+  const sw = Math.max(0.12, Math.min(0.24, mw / 2 - 0.05));
+  const s0 = -d / 2 + 0.14;
+  const s1 = d / 2 - 0.07;
+  B(g, -w / 2, sx - sw, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
+  B(g, sx + sw, w / 2, ct, ct + 0.04, -d / 2, d / 2 + 0.01, top);
+  B(g, sx - sw, sx + sw, ct, ct + 0.04, -d / 2, s0, top);
+  B(g, sx - sw, sx + sw, ct, ct + 0.04, s1, d / 2 + 0.01, top);
+  const sk = m("steel", "sink");
+  const sb = ct - 0.17;
+  B(g, -w / 2, sx - sw, 0.1, ct, -d / 2, d / 2 - 0.02, body);
+  B(g, sx + sw, w / 2, 0.1, ct, -d / 2, d / 2 - 0.02, body);
+  B(g, sx - sw, sx + sw, 0.1, sb, -d / 2, d / 2 - 0.02, body);
+  B(g, sx - sw, sx + sw, sb, ct, -d / 2, s0, body);
+  B(g, sx - sw, sx + sw, sb, ct, s1, d / 2 - 0.02, body);
+  B(g, sx - sw, sx + sw, sb, sb + 0.01, s0, s1, sk);
+  B(g, sx - sw, sx - sw + 0.008, sb, ct + 0.04, s0, s1, sk);
+  B(g, sx + sw - 0.008, sx + sw, sb, ct + 0.04, s0, s1, sk);
+  B(g, sx - sw, sx + sw, sb, ct + 0.04, s0, s0 + 0.008, sk);
+  B(g, sx - sw, sx + sw, sb, ct + 0.04, s1 - 0.008, s1, sk);
+  Cy(g, 0.03, sb + 0.01, sb + 0.013, sx, (s0 + s1) / 2, m("darkmetal", "sink"), 16);
+  const fc = m("chrome", "faucet");
+  const fz = -d / 2 + 0.07;
+  Cy(g, 0.024, ct + 0.04, ct + 0.07, sx, fz, fc, 14);
+  Cy(g, 0.013, ct + 0.07, ct + 0.3, sx, fz, fc, 10);
+  let prev = [sx, ct + 0.3, fz];
+  for (let i = 1; i <= 6; i++) {
+    const a = i / 6 * Math.PI;
+    const pt = [sx, ct + 0.3 + Math.sin(a) * 0.09, fz + 0.09 - Math.cos(a) * 0.09];
+    Lb(g, prev, pt, 0.012, 0.012, fc, 8);
+    prev = pt;
+  }
+  Lb(g, prev, [sx, prev[1] - 0.05, prev[2]], 0.012, 0.011, fc, 8);
+  Lb(g, [sx, ct + 0.12, fz], [sx + 0.07, ct + 0.14, fz], 0.006, 0.006, fc, 6);
   let hx = null;
   if (hobI >= 0) {
     hx = -w / 2 + (hobI + 0.5) * mw;
@@ -1000,14 +1062,14 @@ MB.island = (g, P, m) => {
 
 MB.table = (g, P, m) => {
   const {w, d, h} = P;
-    RB(g, -w / 2, w / 2, h - 0.035, h, -d / 2, d / 2, 0.01, m("wood_light", "top"));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (w / 2 - 0.07);
-    const z = sz * (d / 2 - 0.07);
-    B(g, x - 0.025, x + 0.025, 0, h - 0.035, z - 0.025, z + 0.025, m("wood_light", "legs"));
-  }
-  B(g, -w / 2 + 0.09, w / 2 - 0.09, h - 0.11, h - 0.035, -d / 2 + 0.07, -d / 2 + 0.09, m("wood_light", "rails"));
-  B(g, -w / 2 + 0.09, w / 2 - 0.09, h - 0.11, h - 0.035, d / 2 - 0.09, d / 2 - 0.07, m("wood_light", "rails"));
+  RB(g, -w / 2, w / 2, h - 0.04, h, -d / 2, d / 2, 0.014, m("wood_light", "top"));
+  const lg = m("wood_light", "legs");
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) TLeg(g, sx * (w / 2 - 0.08), sz * (d / 2 - 0.08), 0, h - 0.04, 0.018, 0.028, lg);
+  const rl = m("wood_light", "rails");
+  RB(g, -w / 2 + 0.1, w / 2 - 0.1, h - 0.11, h - 0.04, -d / 2 + 0.07, -d / 2 + 0.09, 0.004, rl);
+  RB(g, -w / 2 + 0.1, w / 2 - 0.1, h - 0.11, h - 0.04, d / 2 - 0.09, d / 2 - 0.07, 0.004, rl);
+  RB(g, -w / 2 + 0.07, -w / 2 + 0.09, h - 0.11, h - 0.04, -d / 2 + 0.1, d / 2 - 0.1, 0.004, rl);
+  RB(g, w / 2 - 0.09, w / 2 - 0.07, h - 0.11, h - 0.04, -d / 2 + 0.1, d / 2 - 0.1, 0.004, rl);
 };
 
 MB.dining = (g, P, m) => {
@@ -1161,7 +1223,7 @@ function modelOf(o) {
 
 const PARTN = {
   body: "Корпус", top: "Столешница", legs: "Ножки", rails: "Царги", fronts: "Фасады", handles: "Ручки", plinth: "Цоколь",
-  chair: "Каркас стульев", seat: "Сиденье", uph: "Обивка", cushions: "Декоративные подушки", bed: "Кровать", mattress: "Матрас",
+  chair: "Каркас стульев", seat: "Сиденье", uph: "Обивка", cushions: "Декоративные подушки", bed: "Кровать", headboard: "Изголовье", mattress: "Матрас",
   pillows: "Подушки", blanket: "Одеяло", throw: "Плед", shelf: "Полка", books: "Книги", tv: "Телевизор", screen: "Экран",
   rug: "Ковёр", center: "Середина ковра", pot: "Горшок", soil: "Земля", stems: "Стебли", leaves: "Листья", trunk: "Ствол",
   crown: "Крона", crown2: "Светлая листва", needles: "Хвоя", paving: "Покрытие", paint: "Кузов", glass: "Стекло", tires: "Шины",

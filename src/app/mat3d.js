@@ -445,6 +445,81 @@ function RB(p, x0, x1, y0, y1, z0, z1, rad, mt) {
   return m;
 }
 
+function Cushion(p, x0, x1, y0, y1, z0, z1, rad, bulge, mt) {
+  const w = x1 - x0;
+  const h = y1 - y0;
+  const d = z1 - z0;
+  if (w <= 0.01 || h <= 0.01 || d <= 0.01) return null;
+  const r = Math.max(0.004, Math.min(rad, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002));
+  const sg = (v, a, b) => Math.max(a, Math.min(b, Math.round(v / 0.045)));
+  const g = new THREE.BoxGeometry(w, h, d, sg(w, 6, 28), sg(h, 4, 14), sg(d, 6, 28));
+  const pos = g.attributes.position;
+  const nor = g.attributes.normal;
+  const uv = g.attributes.uv;
+  const hw = w / 2;
+  const hh = h / 2;
+  const hd = d / 2;
+  const bu = bulge || 0;
+  const v = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const n = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const ax = Math.abs(nor.getX(i));
+    const ay = Math.abs(nor.getY(i));
+    if (ay > 0.5) uv.setXY(i, v.x + hw, v.z + hd);
+    else if (ax > 0.5) uv.setXY(i, v.z + hd, v.y + hh);
+    else uv.setXY(i, v.x + hw, v.y + hh);
+    c.set(Math.max(-hw + r, Math.min(hw - r, v.x)), Math.max(-hh + r, Math.min(hh - r, v.y)), Math.max(-hd + r, Math.min(hd - r, v.z)));
+    n.copy(v).sub(c);
+    if (n.lengthSq() > 1e-12) {
+      n.normalize();
+      v.copy(c).addScaledVector(n, r);
+    } else n.fromBufferAttribute(nor, i);
+    if (bu) {
+      const u = v.x / hw;
+      const t = v.z / hd;
+      const k = Math.max(0, 1 - u * u) * Math.max(0, 1 - t * t);
+      const f = Math.max(0, v.y / hh);
+      v.y += bu * k * f;
+      if (n.y > 0) {
+        const dx = bu * f * -2 * u / hw * Math.max(0, 1 - t * t);
+        const dz = bu * f * -2 * t / hd * Math.max(0, 1 - u * u);
+        n.x -= dx * n.y;
+        n.z -= dz * n.y;
+        n.normalize();
+      }
+    }
+    pos.setXYZ(i, v.x, v.y, v.z);
+    nor.setXYZ(i, n.x, n.y, n.z);
+  }
+  const m = addMesh(p, g, mt);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  return m;
+}
+
+function Pillow(p, x, y, z, w, h, t, mt, tilt, rotY) {
+  const g = new THREE.BoxGeometry(w, h, t, 14, 12, 1);
+  const pos = g.attributes.position;
+  const uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) / (w / 2);
+    const v = pos.getY(i) / (h / 2);
+    const f = Math.sqrt(Math.max(0.02, (1 - Math.pow(Math.abs(u), 3)) * (1 - Math.pow(Math.abs(v), 3))));
+    pos.setXYZ(i, pos.getX(i) * (1 - 0.07 * v * v), pos.getY(i) * (1 - 0.07 * u * u), pos.getZ(i) * f);
+    uv.setXY(i, pos.getX(i) + w / 2, pos.getY(i) + h / 2);
+  }
+  g.computeVertexNormals();
+  const m = addMesh(p, g, mt);
+  m.position.set(x, y, z);
+  m.rotation.set(tilt || 0, rotY || 0, 0, "YXZ");
+  return m;
+}
+
+function TLeg(p, x, z, y0, y1, rBot, rTop, mt) {
+  return Cy(p, rBot, y0, y1, x, z, mt, 12, rTop);
+}
+
 function Cy(p, r, y0, y1, x, z, mt, seg, rTop) {
   if (y1 - y0 <= 0.001) return null;
   const g = new THREE.CylinderGeometry(rTop === undefined ? r : rTop, r, y1 - y0, seg || 20);
