@@ -125,6 +125,16 @@ svg.i { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-widt
 .pop.set { padding: 12px 14px; display: grid; gap: 10px; min-width: 280px; }
 .pop.set label { display: grid; grid-template-columns: 1fr 150px; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .pop.set select { border: 1px solid var(--line-2); border-radius: 9px; padding: 6px 8px; background: var(--paper); color: var(--ink); font-size: 13px; }
+.pop.set input { border: 1px solid var(--line-2); border-radius: 9px; padding: 6px 8px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; width: 100%; min-width: 0; box-sizing: border-box; }
+.agpop { width: 330px; }
+.agpop label { grid-template-columns: 52px 1fr; }
+.agst { margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.agb { position: relative; }
+.agb::after { content: ""; position: absolute; right: 5px; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 2px var(--glass-strong); }
+.agb[data-st="off"]::after { display: none; }
+.agb[data-st="on"]::after { background: var(--ok); }
+.agb[data-st="busy"]::after { background: var(--accent); }
+.agb[data-st="bad"]::after, .agb[data-st="moved"]::after, .agb[data-st="ver"]::after { background: var(--red); }
 .rail { position: absolute; z-index: 19; left: 12px; top: 76px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px; border-radius: 16px; max-height: calc(100% - 90px); overflow-y: auto; scrollbar-width: none; }
 .rail button { position: relative; width: 42px; height: 42px; border-radius: 12px; border: 0; background: transparent; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; flex: none; transition: background 0.15s, color 0.15s; }
 .rail button:hover { background: var(--hover); color: var(--ink); }
@@ -591,6 +601,17 @@ body.walking .sunbar { bottom: 62px; }
         <button type="button" class="ib" id="undo" aria-label="Отменить" data-tip="Отменить" data-tipk="Ctrl+Z"><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
         <button type="button" class="ib" id="redo" aria-label="Вернуть" data-tip="Вернуть" data-tipk="Ctrl+Y"><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
         <div class="vsep"></div>
+        <div class="menu">
+          <button type="button" class="ib agb" id="agbtn" aria-expanded="false" aria-label="Claude" data-tip="Claude" data-tipd="Подключение к Claude Desktop, чтобы он строил план вместе с тобой" data-st="off"><svg class="i" viewBox="0 0 24 24"><path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18"/></svg></button>
+          <div class="pop set agpop" hidden>
+            <div class="cap">Claude</div>
+            <p class="agst" id="agst"></p>
+            <label>Код<input type="text" id="agtoken" autocomplete="off" spellcheck="false" aria-label="Код подключения"></label>
+            <label>Порт<input type="text" id="agport" inputmode="numeric" autocomplete="off" aria-label="Порт сервера"></label>
+            <button type="button" id="agon">Подключить<span>Код и порт подставятся сами, если попросить Claude «открой план»</span></button>
+            <button type="button" id="agoff" hidden>Отключить<span>Claude перестанет видеть эту вкладку</span></button>
+          </div>
+        </div>
         <button type="button" class="ib" id="theme" aria-label="Тема" data-tip="Светлая или тёмная тема"><svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
         <div class="menu">
           <button type="button" class="ib" aria-expanded="false" aria-label="Настройки" data-tip="Настройки"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2.1 1.2M17.7 15.3l2.1 1.2M4.2 16.5l2.1-1.2M17.7 8.7l2.1-1.2"/><circle cx="12" cy="12" r="7.2"/></svg></button>
@@ -745,6 +766,8 @@ body.walking .sunbar { bottom: 62px; }
 <script src="app/controls3d.js"></script>
 <script src="app/render.js"></script>
 <script src="app/pano.js"></script>
+<script src="app/agenttools.js"></script>
+<script src="app/agent.js"></script>
 <script src="app/main.js"></script>
 </body>
 </html>

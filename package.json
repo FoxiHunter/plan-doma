@@ -14,5 +14,9 @@
   "optionalDependencies": {
     "gl": "8.1.6",
     "pngjs": "7.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "ws": "8.22.0"
   }
 }
