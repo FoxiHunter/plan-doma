@@ -166,6 +166,223 @@ const ZF = `window.zfScan = function (root) {
   return {tris: tris.length, hits: [...found.values()].sort((a, b) => b.area - a.area)};
 };`;
 
+async function agentChecks() {
+  const call = async (name, args) => {
+    const r = await w.agentCall(name, args || {});
+    let data = null;
+    try {
+      data = JSON.parse(r.content[0].text);
+    } catch (e) {
+      data = null;
+    }
+    return {err: !!r.isError, text: r.content.map(c => c.text || "").join("\n"), data, r};
+  };
+  const atest = async (name, fn) => {
+    try {
+      const ok = await fn();
+      results.push([ok ? "ok" : "FAIL", name]);
+    } catch (e) {
+      results.push(["FAIL", name + " (" + e.message + ")"]);
+    }
+  };
+  const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+  const r2 = v => Math.round(v * 100) / 100;
+  await atest("инструменты Claude совпадают с обработчиками и со списками приложения", () => {
+    const names = run("AGENT_TOOLS.map(t => t.name)");
+    const E = run("AG_ENUMS");
+    const keys = c => run(`Object.keys(${c})`);
+    const ops = run("[...new Set(Object.values(OP_OPS).flatMap(o => Object.keys(o)))]");
+    const schemas = run("AGENT_TOOLS.every(t => t.description && t.inputSchema && t.inputSchema.type === 'object')");
+    return same(names, keys("AGENT_RUN")) && schemas && same(run("AG_ROOM_TYPES"), keys("TYPES")) && same(E.doorKind, keys("DOOR_KINDS")) && same(E.doorOp, keys("DOOR_OPS")) && same(E.leaf, keys("LEAFS")) &&
+      same(E.winOp, keys("WIN_OPS")) && same(E.roof, keys("ROOFS")) && same(E.fence, keys("FENCES")) && same(E.gate, keys("FENCE_GATES")) && same(E.weather, keys("WEATHER")) && same(E.light, keys("LTPL")) &&
+      same(E.lamps, keys("LAMP_MODES")) && same(E.quality, keys("QUALITY")) && same(E.kitMod, keys("KMODS")) && same(E.opKind, keys("OP_KINDS")) && same(E.opOp, ops) && !run("AGENT_TOOLS.some(t => JSON.stringify(t).includes('</script'))");
+  });
+  await atest("Claude строит дом: комнаты, двери, окна и мебель встают на стены, каждый вызов один шаг истории", async () => {
+    await call("new_plan", {plot: {w: 22, d: 34}, site: {city: "Казань"}});
+    const h0 = run("hist.length");
+    const a = (await call("add_room", {type: "Гостиная", x: 0, y: 0, w: 6, d: 5})).data;
+    const b = (await call("add_room", {type: "Спальня", x: 6.15, y: 0, w: 4, d: 5})).data;
+    const c = (await call("add_room", {type: "Прихожая", x: 0, y: 5, w: 10.15, d: 2.4})).data;
+    const steps = run("hist.length") - h0;
+    const en = (await call("add_opening", {kind: "entry", room: c.id})).data;
+    const d1 = (await call("add_opening", {kind: "door", x: 6, y: 2.5, op: "slide", leaf: "glass"})).data;
+    const d2 = (await call("add_opening", {kind: "door", room: c.id})).data;
+    const wn = (await call("add_opening", {kind: "window", room: a.id, w: 2, op: "lift"})).data;
+    const wb = (await call("add_opening", {kind: "window", room: b.id})).data;
+    const sofa = (await call("add_model", {kind: "sofa", room: a.id, snap: true})).data;
+    const bed = (await call("add_model", {kind: "bed2", room: b.id, cx: 8, cy: 1.5})).data;
+    const tree = (await call("add_model", {kind: "tree", cx: 4, cy: 4})).data;
+    const ws = run("(() => { const e = ext(); const ws = wallSegs(); const sd = extSides(e); return S.doors.every(d => !!lineOf(d, ws, sd, false)) && S.windows.every(x => !!lineOf(x, ws, sd, true)); })()");
+    const entry = run(`(() => { const d = S.doors.find(x => x.id === '${en.id}'); const L = lineOf(d, wallSegs(), extSides(ext()), false); return L.ext && d.kind === 'entry'; })()`);
+    const plan = (await call("get_plan")).data;
+    return steps === 3 && b.x === 6 && b.w === 4.15 && ws && entry && d1.op === "slide" && d1.leaf === "glass" && d2.kind === "door" && wn.op === "lift" && wn.n === 2 && wn.w === 2 && wb.label.indexOf("Спальня") > 0 &&
+      sofa.where === "house" && sofa.room === a.id && Math.min(...Object.values(sofa.gaps)) < 0.01 && bed.room === b.id && Math.abs(bed.x + bed.w / 2 - 8) < 0.01 && tree.where === "plot" &&
+      plan.warnings.house.length === 0 && plan.items.find(i => i.id === sofa.id).room === a.id && plan.rooms.length === 3 && plan.doors.every(x => x.label);
+  });
+  await atest("update везёт с комнатой её двери и мебель, держит центр при новой ширине, отдаёт ошибку на чужое поле", async () => {
+    const p = (await call("get_plan")).data;
+    const b = p.rooms.find(r => r.type === "Спальня");
+    const bed = p.items.find(i => i.kind === "bed2");
+    const win = p.windows.find(x => x.label.indexOf("Спальня") > 0);
+    await call("update", {id: b.id, set: {y: 0.5, carry: true}});
+    const q = (await call("get_plan")).data;
+    const moved = q.items.find(i => i.id === bed.id).y === r2(bed.y + 0.5) && q.windows.find(x => x.id === win.id).y === r2(win.y + 0.5);
+    await call("history", {action: "undo"});
+    const cx0 = bed.x + bed.w / 2;
+    const u = (await call("update", {id: bed.id, set: {w: 1.8, rot: 90, color: "red"}})).data;
+    const centred = Math.abs(u.x + u.w / 2 - cx0) < 0.01 && u.rot === 90 && u.skipped.includes("color");
+    const bad = await call("update", {id: "nope", set: {x: 1}});
+    const badType = await call("update", {id: b.id, set: {type: "Бассейн"}});
+    return moved && centred && bad.err && badType.err && badType.text.indexOf("Спальня") > 0;
+  });
+  await atest("стены, материалы, проёмы, расстояния, перенос и выравнивание работают как в редакторе", async () => {
+    const p = (await call("get_plan")).data;
+    const a = p.rooms.find(r => r.type === "Гостиная");
+    const c = p.rooms.find(r => r.type === "Прихожая");
+    const wl = (await call("set_wall", {a: a.id, b: c.id, wall: false})).data;
+    const back = (await call("set_wall", {a: a.id, b: c.id, wall: true})).data;
+    const noEdge = await call("set_wall", {a: a.id, b: a.id, wall: false});
+    const fl = (await call("set_material", {target: a.id, slot: "floor", material: "parquet", color: "#aa7744"})).data;
+    const fac = (await call("set_material", {target: "house", slot: "facade", color: "#334455"})).data;
+    const slots = (await call("list_materials", {target: a.id})).data;
+    const badSlot = await call("set_material", {target: a.id, slot: "roof", color: "#000000"});
+    const door = p.doors.find(d => d.kind === "door");
+    const op = (await call("open_close", {id: door.id, value: 0.3})).data;
+    const tog = (await call("open_close", {id: door.id})).data;
+    const gate = (await call("open_close", {id: "fence", part: "wicket"})).data;
+    const sofa = p.items.find(i => i.kind === "sofa");
+    const g = (await call("gaps", {id: sofa.id, dir: "d", value: 1})).data;
+    const ch = (await call("add_model", {kind: "chair", room: a.id, x: 1, y: 3})).data;
+    const ch2 = (await call("transform", {ids: [ch.id], op: "duplicate"})).data.ids[0];
+    const ch3 = (await call("transform", {ids: [ch.id, ch2], op: "duplicate"})).data.ids;
+    const al = await call("transform", {ids: [ch.id, ch2].concat(ch3), op: "align", mode: "t"});
+    const tops = run(`[${JSON.stringify([ch.id, ch2].concat(ch3))}].flat().map(id => thingBox(S.items.find(i => i.id === id)).y)`);
+    const mv = (await call("transform", {ids: [ch.id], op: "move", dx: 0.5, dy: 0})).data.items[0];
+    const rm = (await call("remove", {ids: ch3.concat(["zzz"])})).data;
+    const mats = run(`S.rooms.find(r => r.id === '${a.id}').mats.floor`);
+    return wl.wall === false && back.wall === true && noEdge.err && fl.material === "parquet" && fl.color === "#aa7744" && mats.m === "parquet" && fac.color === "#334455" && slots.slots.some(s => s.slot === "floor" && s.own) &&
+      badSlot.err && op.open === 0.3 && tog.open === 0 && gate.open === 1 && Math.abs(g.gaps.d - 1) < 0.01 && ch3.length === 2 && !al.err && tops.every(y => Math.abs(y - tops[0]) < 0.001) &&
+      Math.abs(mv.x - r2(ch.x + 0.5)) < 0.001 && rm.removed.length === 2 && rm.missing[0] === "zzz";
+  });
+  await atest("участок, дом, план целиком, вид, камера, небо, рулетка, солнце, ведомость и история", async () => {
+    const pl = (await call("set_plot", {w: 24, north: 20, fence: {front: "forged", gate: "slide", h: 1.9}})).data;
+    const badCity = await call("set_plot", {city: "Атлантида"});
+    const hs = (await call("set_house", {roof: "shed", pitch: 15, from_street: 6, chim: true})).data;
+    const badRot = await call("set_house", {rot: 45});
+    const fp = run("(() => { const f = footprint(); return r2(S.plot.d - f.y - f.d); })()");
+    const pt = (await call("patch_plan", {patch: {house: {h: 3}, items: [{kind: "tv", x: 1, y: 1}], bogus: 1}})).data;
+    const tv = run(`S.items.find(i => i.id === '${pt.added[0]}').kind`);
+    const json = (await call("get_plan", {format: "json"})).data.plan;
+    const ld = (await call("load_plan", {plan: {plan: json}})).data;
+    const badLoad = await call("load_plan", {plan: {foo: 1}});
+    const vw = (await call("set_view", {tab: "house", view: "2d", mode: "noroof", labels: false, select: json.rooms[0].id})).data;
+    const cam = (await call("camera", {from: [2, 2, 1.6], to: [5, 2, 1.6], coords: "house"})).data;
+    const look = run("(() => { const f = camF(); const d = dirToHouse(f.x, f.z); return d.x > 0.99 && Math.abs(CAM.pos.y - S.house.base - 1.6) < 0.01; })()");
+    const sky = (await call("set_sky", {month: 6, day: 21, time: "21:40", weather: "cloudy", lamps: "on", wind: 3})).data;
+    const badTime = await call("set_sky", {time: "25:99"});
+    const ms = (await call("measure", {from: [0, 0], to: [3, 4]})).data;
+    const msPlot = (await call("measure", {from: [1, 1, 0], to: [1, 3, 2], coords: "plot"})).data;
+    const clear = await call("measure", {clear: true});
+    const sun = (await call("sun_info", {month: 6, day: 21})).data;
+    const noMap = await call("sun_info", {map: true});
+    const bq = (await call("boq")).data;
+    const cat = (await call("list_catalog", {q: "диван"})).data;
+    const mat = (await call("list_materials", {group: "floor"})).data;
+    const view = (await call("get_view")).data;
+    const n = run("hist.length");
+    const un = (await call("history", {action: "undo", steps: 3})).data;
+    const re = (await call("history", {action: "redo", steps: 3})).data;
+    return pl.plot.w === 24 && pl.site.north === 20 && pl.plot.fence.front === "forged" && pl.plot.fence.h === 1.9 && badCity.err && badCity.text.indexOf("Москва") > 0 && hs.house.roof === "shed" && hs.house.pitch === 15 && hs.house.chim &&
+      badRot.err && Math.abs(fp - 6) < 0.01 && tv === "tv" && pt.skipped[0] === "bogus" && ld.rooms === json.rooms.length && badLoad.err && vw.view === "2d" && vw.labels === false && vw.select.id === json.rooms[0].id && !cam.walk && look &&
+      sky.time === "21:40" && sky.weather === "cloudy" && sky.lamps === "on" && badTime.err && ms.length === 5 && Math.abs(msPlot.length - Math.hypot(2, 2)) < 0.01 && !clear.err && !run("MEAS.a") &&
+      sun.facades.length === 4 && sun.rise && noMap.err && bq.rows.length > 10 && cat.models.every(m => m.name.toLowerCase().includes("диван")) && mat.materials.every(m => m.group === "floor") &&
+      view.sky.month === 6 && un.done === 3 && re.done === 3 && run("hist.length") === n;
+  });
+  await atest("снимки и экспорт без 3D отвечают понятной ошибкой, файл плана скачивается, неизвестный инструмент не ломает план", async () => {
+    const before = run("JSON.stringify(S)");
+    const shot = await call("screenshot", {what: "3d"});
+    const vid = await call("export", {kind: "video_orbit"});
+    run("window.__dl = download; window.__name = ''; download = (b, n) => { window.__name = n; };");
+    const js = (await call("export", {kind: "json"})).data;
+    const svgName = (await call("export", {kind: "plan_svg", which: "house"}), run("window.__name"));
+    run("download = window.__dl;");
+    const unk = await call("rm_rf");
+    const bad = await call("add_room", {type: "Спальня", x: "a", y: 0, w: 3, d: 3});
+    return shot.err && shot.text.indexOf("3D") >= 0 && vid.err && js.done && svgName.startsWith("plan-doma-") && svgName.endsWith(".svg") && unk.err && bad.err && run("JSON.stringify(S)") === before;
+  });
+  await atest("ссылка с кодом подключает вкладку сама, код остаётся в браузере, кнопка показывает состояние", () => {
+    run("history.replaceState(null, '', '/#claude=47611.abcdefgh12345678'); agentInit();");
+    const st = run("({port: AG.port, token: AG.token, on: AG.on, hash: location.hash, saved: JSON.parse(localStorage.getItem(AG_LS))})");
+    const dot = w.document.getElementById("agbtn").dataset.st;
+    run("agOff();");
+    const off = run("AG.on === false && JSON.parse(localStorage.getItem(AG_LS)).on === false && !AG.ws");
+    return st.port === 47611 && st.token === "abcdefgh12345678" && st.on && st.hash === "" && st.saved.token === "abcdefgh12345678" && dot === "wait" && off;
+  });
+  await atest("сервер MCP отдаёт инструменты, передаёт вызов во вкладку и обратно, чужой код и чужой сайт не пускает", async () => {
+    const {spawn} = require("child_process");
+    const port = 47700 + Math.floor(Math.random() * 200);
+    const token = "checktoken_" + Math.random().toString(36).slice(2, 12);
+    const srv = spawn(process.execPath, [path.join(__dirname, "..", "mcp", "server.mjs")], {env: Object.assign({}, process.env, {PLAN_DOMA_PORT: String(port), PLAN_DOMA_TOKEN: token}), stdio: ["pipe", "pipe", "pipe"]});
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    const waits = new Map();
+    let buf = "";
+    let log = "";
+    srv.stderr.on("data", d => {
+      log += d;
+    });
+    srv.stdout.on("data", d => {
+      buf += d;
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const m = JSON.parse(buf.slice(0, i));
+        buf = buf.slice(i + 1);
+        if (waits.has(m.id)) waits.get(m.id)(m);
+      }
+    });
+    let id = 0;
+    const rpc = (method, params) => new Promise(res => {
+      const n = ++id;
+      waits.set(n, res);
+      srv.stdin.write(JSON.stringify({jsonrpc: "2.0", id: n, method, params}) + "\n");
+    });
+    try {
+      for (let i = 0; i < 50 && log.indexOf(String(port)) < 0; i++) await sleep(100);
+      const init = await rpc("initialize", {protocolVersion: "2025-06-18", capabilities: {}, clientInfo: {name: "check", version: "1"}});
+      srv.stdin.write(JSON.stringify({jsonrpc: "2.0", method: "notifications/initialized"}) + "\n");
+      const list = (await rpc("tools/list", {})).result.tools.map(t => t.name);
+      const cold = (await rpc("tools/call", {name: "get_plan", arguments: {}})).result;
+      run(`AG.port = ${port}; AG.token = 'wrong_token_123'; AG.on = true; agConnect();`);
+      for (let i = 0; i < 30 && run("AG.state") !== "bad"; i++) await sleep(100);
+      const rejected = run("AG.state") === "bad" && run("AG.on") === false;
+      run(`AG.token = '${token}'; AG.on = true; agConnect();`);
+      for (let i = 0; i < 30 && run("AG.state") !== "on"; i++) await sleep(100);
+      const on = run("AG.state") === "on";
+      const n0 = run("S.rooms.length");
+      const add = (await rpc("tools/call", {name: "add_room", arguments: {type: "Кладовая", x: 30, y: 0, w: 2, d: 2}})).result;
+      const added = run("S.rooms.length") === n0 + 1 && JSON.parse(add.content[0].text).name === "Кладовая";
+      const status = JSON.parse((await rpc("tools/call", {name: "planner_status", arguments: {}})).result.content[0].text);
+      const WS = require("ws");
+      const evil = await new Promise(res => {
+        const s = new WS(`ws://127.0.0.1:${port}/claude`, {origin: "https://evil.example"});
+        s.on("error", e => res(e.message));
+        s.on("open", () => res("open"));
+      });
+      const page = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const trav = (await fetch(`http://127.0.0.1:${port}/%2e%2e/package.json`)).status;
+      run("agOff();");
+      await sleep(200);
+      const gone = (await rpc("tools/call", {name: "boq", arguments: {}})).result;
+      return init.result.serverInfo.name === "plan-doma" && init.result.instructions.indexOf("координат") > 0 && list.length === run("AGENT_TOOLS.length") + 2 && list.includes("open_planner") &&
+        cold.isError && cold.content[0].text.indexOf(token) > 0 && rejected && on && added && status.connected && status.code === token && evil.indexOf("403") >= 0 && page.indexOf("app/agent.js") > 0 && trav === 404 && gone.isError;
+    } finally {
+      srv.stdin.end();
+      await sleep(100);
+      srv.kill();
+    }
+  });
+  run("S = presetExample(); sel = null; tab = 'house'; view = 'split'; V.mode = 'roof'; V.labels = true; LAMP.mode = 'auto'; changed();");
+}
+
 setTimeout(() => {
   const d = w.document;
   test("скрипты грузятся без ошибок", () => errors.length === 0);
@@ -505,34 +722,36 @@ setTimeout(() => {
   test("конструктор кухни: модули, ширина по сумме, левый край на месте, sanitize и смета", () => run(`(() => { S = presetBlank(); S.rooms = [room('К', 'Кухня', 0, 0, 6, 4)]; const k = thing('kitchen', 1, 0); S.items = [k]; tab = 'house'; changed(); sel = {t: 'item', id: k.id}; renderPanel(); const auto = kitMods(k, k.w).map(m => m.t).join(','); const x0 = k.x; document.getElementById('km-new').value = 'fridge'; kitAction('km-add', 0, k); const added = k.mods.length === 6 && k.mods[5].t === 'fridge' && Math.abs(k.w - 3.6) < 0.001 && Math.abs(k.x - x0) < 0.001; const sel0 = document.querySelector('[data-b="km.t.0"]'); kitAction('km-right', 0, k); const swapped = k.mods[0].t === 'sink' && k.mods[1].t === 'base'; kitBind('km.w.1', {value: '5'}, k); const clampW = k.mods[1].w === 1; kitBind('km.up', {checked: false}, k); const upOff = k.up === false && k.h === 2.2; k.mods = k.mods.filter(m => !KMODS[m.t].tall); kitFix(k); const lowH = k.h === 0.92; const san = sanitize({v: 3, plan: {}, ...JSON.parse(JSON.stringify(S))}); const sk = san.items[0]; const sOk = Array.isArray(sk.mods) && sk.up === false && Math.abs(sk.w - k.w) < 0.001; const bad = kitSanitize({mods: [{t: 'xxx', w: 1}, {t: 'sink', w: 9}]}); const rows = boqRows().filter(r => r[0] === 'Кухня'); const top = rows.find(r => r[1] === 'Столешница'); const sym = kitSym(k, -k.w / 2, -k.d / 2, '#000', 0.01, (x, y, w, d) => '<rect/>', () => '<line/>'); return auto === 'base,sink,base,hob,base' && added && swapped && clampW && upOff && lowH && sOk && bad.length === 1 && bad[0].w === 1 && top && Math.abs(top[2] - k.w) < 0.001 && sym.indexOf('<rect/>') >= 0; })()`));
   test("мебель прилипает к стене спиной и к соседней мебели, вдали от стен поворот возвращается", () => run(`(() => { S = presetBlank(); S.rooms = [room('A', 'Спальня', 0, 0, 5, 4), room('B', 'Спальня', 5, 0, 3, 4)]; const wr = thing('wardrobe', 0, 0); S.items = [wr]; tab = 'house'; changed(); const t = S.house.inner / 2; wr.x = 1.2; wr.y = 1.5; snapThing(wr, 0); const mid = wr.rot === 0; wr.x = 5 - t - 0.6 - 0.15 - (wr.w - 0.6) / 2 - 0.3; wr.y = 1.5; const bx = thingBox(wr); wr.x += (5 - t - 0.15) - (bx.x + bx.w); snapThing(wr, 0); const b2 = thingBox(wr); const wall = wr.rot === 90 && Math.abs(b2.x + b2.w - (5 - t)) < 0.005; const bed = thing('bed2', 1, 0.3); const ns = thing('nightstand', 0, 0.2); S.items = [bed, ns]; const bb = thingBox(bed); ns.x = bb.x - ns.w - 0.05; ns.y = 0.5; snapThing(ns, 0); const nb = thingBox(ns); const touch = Math.abs(nb.x + nb.w - bb.x) < 0.005; const table = thing('table', 2, 1.5); S.items = [table]; table.x = 0.1; snapThing(table, 0); const sofa = thing('sofa', 0, 1); S.items = [sofa]; sofa.x = -0.6; sofa.rot = 270; snapThing(sofa, 0); const sb = thingBox(sofa); const pushed = sofa.rot === 270 && Math.abs(sb.x) < 0.01; return mid && wall && touch && pushed && table.rot === 0 && Math.abs(thingBox(table).x - 0) < 0.005; })()`));
   test("выбор нескольких: Shift, рамка, выравнивание, поворот группы, копия, удаление, стрелки", () => run(`(() => { S = presetBlank(); S.rooms = [room('A', 'Гостиная', 0, 0, 8, 6)]; S.items = [thing('chair', 1, 1), thing('chair', 2.3, 1.6), thing('chair', 4, 1.2), thing('plant', 6, 4)]; tab = 'house'; changed(); const [a, b, c, d] = S.items; sel = {t: 'item', id: a.id}; selToggle('item', b.id); const two = selIds().length === 2; selToggle('item', b.id); const back = !selIds() && sel.id === a.id; selSet('item', boxPick('item', {x: 0.5, y: 0.5, w: 4.2, d: 1.8})); const boxed = selIds().length === 3; renderPanel(); const panel = document.getElementById('panel').innerHTML.indexOf('Выбрано 3') >= 0 && gapTarget() === null; groupAlign('t'); const top = [a, b, c].every(q => Math.abs(thingBox(q).y - thingBox(a).y) < 1e-9); groupAlign('dx'); const bs = [a, b, c].map(q => thingBox(q)).sort((p, q) => p.x - q.x); const even = Math.abs((bs[1].x - bs[0].x - bs[0].w) - (bs[2].x - bs[1].x - bs[1].w)) < 0.011; const G0 = groupBox([a, b, c]); rotateSel(); const G1 = groupBox([a, b, c]); const rot = [a, b, c].every(q => q.rot === 90) && Math.abs(G0.x + G0.w / 2 - G1.x - G1.w / 2) < 0.02 && Math.abs(G0.y + G0.d / 2 - G1.y - G1.d / 2) < 0.02; const x0 = a.x; moveSel(1, 0, 0.5); const moved = Math.abs(a.x - x0 - 0.5) < 1e-9 && selIds().length === 3; dupSel(); const dup = S.items.length === 7 && selIds().length === 3 && !selIds().includes(a.id); delSel(); const del = S.items.length === 4 && sel === null && S.items.includes(d); return two && back && boxed && panel && top && even && rot && moved && dup && del; })()`));
-  run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
-  run("LAMP.mode = 'auto';");
-  run("S = presetExample(); changed(); save();");
-  setTimeout(() => {
-    test("план сохраняется в localStorage", () => (w.localStorage.getItem("house-plan-v2") || "").length > 500);
-    const web = new JSDOM(fs.readFileSync(path.join(__dirname, "..", "site", "index.html"), "utf8"), {
-      runScripts: "dangerously",
-      pretendToBeVisual: true,
-      url: "http://localhost/",
-      beforeParse(ww) {
-        ww.ResizeObserver = class {
-          observe() {}
-        };
-        ww.TextEncoder = require("util").TextEncoder;
-        ww.HTMLCanvasElement.prototype.getContext = t => (t === "2d" ? fake2d : null);
-        ww.addEventListener("error", e => errors.push("site: " + e.message));
-      }
-    });
+  agentChecks().then(() => {
+    run("Object.assign(WX, {snow: 0, wet: 0, pud: 0}); SKY.weather = 'clear'; applySky(true);");
+    run("LAMP.mode = 'auto';");
+    run("S = presetExample(); changed(); save();");
     setTimeout(() => {
-      const wr = c => web.window.eval(c);
-      test("сайт открывается пустым с мастером участка", () => wr("WEB") === true && wr("S.rooms.length") === 0 && !web.window.document.getElementById("wiz").hidden && web.window.document.querySelectorAll("[data-m^='preset:']").length === 1);
-      test("мастер создаёт участок по введённым размерам", () => {
-        wr(`document.getElementById("wz-w").value = "20"; document.getElementById("wz-d").value = "40"; document.getElementById("wz-city").value = "Казань"; document.getElementById("wz-n").value = "90"; wizCreate();`);
-        return wr("S.plot.w") === 20 && wr("S.plot.d") === 40 && wr("S.site.city") === "Казань" && wr("S.site.north") === 90 && web.window.document.getElementById("wiz").hidden;
+      test("план сохраняется в localStorage", () => (w.localStorage.getItem("house-plan-v2") || "").length > 500);
+      const web = new JSDOM(fs.readFileSync(path.join(__dirname, "..", "site", "index.html"), "utf8"), {
+        runScripts: "dangerously",
+        pretendToBeVisual: true,
+        url: "http://localhost/",
+        beforeParse(ww) {
+          ww.ResizeObserver = class {
+            observe() {}
+          };
+          ww.TextEncoder = require("util").TextEncoder;
+          ww.HTMLCanvasElement.prototype.getContext = t => (t === "2d" ? fake2d : null);
+          ww.addEventListener("error", e => errors.push("site: " + e.message));
+        }
       });
-      for (const [st, n] of results) console.log(st.padEnd(5), n);
-      if (errors.length) console.log(errors.join("\n"));
-      process.exit(results.some(r => r[0] === "FAIL") || errors.length ? 1 : 0);
-    }, 700);
-  }, 500);
+      setTimeout(() => {
+        const wr = c => web.window.eval(c);
+        test("сайт открывается пустым с мастером участка", () => wr("WEB") === true && wr("S.rooms.length") === 0 && !web.window.document.getElementById("wiz").hidden && web.window.document.querySelectorAll("[data-m^='preset:']").length === 1);
+        test("мастер создаёт участок по введённым размерам", () => {
+          wr(`document.getElementById("wz-w").value = "20"; document.getElementById("wz-d").value = "40"; document.getElementById("wz-city").value = "Казань"; document.getElementById("wz-n").value = "90"; wizCreate();`);
+          return wr("S.plot.w") === 20 && wr("S.plot.d") === 40 && wr("S.site.city") === "Казань" && wr("S.site.north") === 90 && web.window.document.getElementById("wiz").hidden;
+        });
+        for (const [st, n] of results) console.log(st.padEnd(5), n);
+        if (errors.length) console.log(errors.join("\n"));
+        process.exit(results.some(r => r[0] === "FAIL") || errors.length ? 1 : 0);
+      }, 700);
+    }, 500);
+  });
 }, 700);

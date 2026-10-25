@@ -63,4 +63,5 @@
   renderAll();
   camPreset(had || !WEB ? "iso" : "plot", true);
   if (WEB && !had) wizOpen();
+  agentInit();
 })();

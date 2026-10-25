@@ -6,3 +6,4 @@ renders/
 docs/project-memory.md
 .claude/settings.local.json
 src/app/presets.local.js
+mcp/.token
