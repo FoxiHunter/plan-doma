@@ -318,6 +318,29 @@ async function agentChecks() {
     const off = run("AG.on === false && JSON.parse(localStorage.getItem(AG_LS)).on === false && !AG.ws");
     return st.port === 47611 && st.token === "abcdefgh12345678" && st.on && st.hash === "" && st.saved.token === "abcdefgh12345678" && dot === "wait" && off;
   });
+  await atest("установщик дописывает сервер в настройки Claude Desktop, сохраняет старые настройки и копию, испорченный файл не трогает", () => {
+    const {spawnSync} = require("child_process");
+    const os = require("os");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "plan-doma-"));
+    const cfg = path.join(dir, "Claude", "claude_desktop_config.json");
+    const inst = path.join(__dirname, "..", "mcp", "install.mjs");
+    const go = () => spawnSync(process.execPath, [inst, cfg], {encoding: "utf8"});
+    try {
+      const fresh = go();
+      const a = JSON.parse(fs.readFileSync(cfg, "utf8"));
+      fs.writeFileSync(cfg, "\uFEFF" + JSON.stringify({preferences: {x: 1}, mcpServers: {other: {command: "a"}}}));
+      const again = go();
+      const b = JSON.parse(fs.readFileSync(cfg, "utf8"));
+      const bak = fs.existsSync(cfg + ".bak");
+      fs.writeFileSync(cfg, "{broken");
+      const bad = go();
+      const kept = fs.readFileSync(cfg, "utf8") === "{broken";
+      const S1 = a.mcpServers["plan-doma"];
+      return fresh.status === 0 && S1.command === process.execPath && S1.args[0] === path.join(__dirname, "..", "mcp", "server.mjs") && again.status === 0 && b.preferences.x === 1 && b.mcpServers.other.command === "a" && b.mcpServers["plan-doma"].args.length === 1 && bak && bad.status === 1 && kept;
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
   await atest("сервер MCP отдаёт инструменты, передаёт вызов во вкладку и обратно, чужой код и чужой сайт не пускает", async () => {
     const {spawn} = require("child_process");
     const port = 47700 + Math.floor(Math.random() * 200);

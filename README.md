@@ -65,8 +65,8 @@ npm run check
 
 ### Настройка
 
-1. Нужен Node 18 или новее. В папке проекта выполнить `npm install`.
-2. В Claude Desktop открыть Settings, вкладку Developer, нажать Edit Config и добавить сервер с полным путём к файлу. В Windows обратные косые черты в JSON пишутся двойными.
+1. Нужен Node 18 или новее. В папке проекта выполнить `npm install --omit=optional`.
+2. Там же выполнить `node mcp/install.mjs`. Он сам допишет сервер в настройки Claude Desktop с полными путями к Node и к серверу, остальные настройки оставит как были и положит рядом копию `.bak`. Вручную то же самое делается в Claude Desktop через Settings, вкладку Developer и кнопку Edit Config. В Windows обратные косые черты в JSON пишутся двойными.
 
 ```json
 {
